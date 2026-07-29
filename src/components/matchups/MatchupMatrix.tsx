@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { computeHeroStats, getEventType } from "@/lib/stats";
 import { getAvailableFormats } from "@/lib/meta-stats";
-import { getHeroByName, resolveHeroName, isLivingLegendHero } from "@/lib/heroes";
+import { getHeroByName, resolveHeroName, isLivingLegendHero, buildHeroLabels } from "@/lib/heroes";
 
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
 import { MatchResult, type MatchRecord, type LeaderboardEntry, type HeroStats } from "@/types";
@@ -34,6 +34,7 @@ function passesHeroFilter(name: string, ageFilter: AgeFilter, includeLivingLegen
   if (ageFilter === "young" && !isYoungHero(name)) return false;
   return true;
 }
+
 
 interface MatchupMatrixProps {
   matches: MatchRecord[];
@@ -650,6 +651,10 @@ function PersonalGrid({
     () => allOpponents.filter((o) => passesHeroFilter(o, ageFilter, includeLivingLegend)),
     [allOpponents, ageFilter, includeLivingLegend]
   );
+  const heroLabels = useMemo(
+    () => buildHeroLabels([...new Set([...filteredStats.map((h) => h.heroName), ...filteredOpponents])]),
+    [filteredStats, filteredOpponents]
+  );
 
   if (filteredStats.length === 0 || filteredOpponents.length === 0) {
     return (
@@ -675,20 +680,27 @@ function PersonalGrid({
               <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-surface z-20">
                 Your Hero / Opp
               </th>
-              {filteredOpponents.map((opp) => (
+              {filteredOpponents.map((opp) => {
+                const lbl = heroLabels.get(opp);
+                return (
                 <th
                   key={opp}
+                  title={opp}
                   onClick={() => setHighlightCol(highlightCol === opp ? null : opp)}
                   className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-surface z-10 cursor-pointer select-none transition-colors ${
                     highlightCol === opp ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
                   }`}
                 >
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-0.5">
                     <HeroImg name={opp} />
-                    <span className="text-[10px] leading-tight">{opp.split(",")[0]}</span>
+                    <span className="text-[10px] leading-tight">{lbl?.primary ?? opp.split(",")[0]}</span>
+                    {lbl?.secondary && (
+                      <span className="max-w-[76px] truncate text-[8px] leading-none text-fab-gold/70">{lbl.secondary}</span>
+                    )}
                   </div>
                 </th>
-              ))}
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -704,7 +716,12 @@ function PersonalGrid({
                   >
                     <div className="flex items-center gap-1.5">
                       <HeroImg name={hero.heroName} />
-                      <span className="truncate max-w-[120px]">{hero.heroName.split(",")[0]}</span>
+                      <span className="truncate max-w-[150px]" title={hero.heroName}>
+                        {heroLabels.get(hero.heroName)?.primary ?? hero.heroName.split(",")[0]}
+                        {heroLabels.get(hero.heroName)?.secondary && (
+                          <span className="text-fab-gold/70"> · {heroLabels.get(hero.heroName)!.secondary}</span>
+                        )}
+                      </span>
                     </div>
                     <span className="text-[10px] text-fab-dim ml-6">({hero.totalMatches})</span>
                   </td>
@@ -874,6 +891,9 @@ function CommunityMatchupGrid({
     return { heroRows: rows, allHeroes: heroes, totalMatches: total };
   }, [data, ageFilter, includeLivingLegend]);
 
+  // Disambiguate heroes that share a first name (e.g. the three adult Araknis).
+  const heroLabels = useMemo(() => buildHeroLabels(allHeroes), [allHeroes]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -926,20 +946,27 @@ function CommunityMatchupGrid({
               <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-surface z-20">
                 Hero / vs
               </th>
-              {displayCols.map((hero) => (
+              {displayCols.map((hero) => {
+                const lbl = heroLabels.get(hero);
+                return (
                 <th
                   key={hero}
+                  title={hero}
                   onClick={() => setHighlightCol(highlightCol === hero ? null : hero)}
                   className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-surface z-10 cursor-pointer select-none transition-colors ${
                     highlightCol === hero ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
                   }`}
                 >
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-0.5">
                     <HeroImg name={hero} />
-                    <span className="text-[10px] leading-tight">{hero.split(",")[0]}</span>
+                    <span className="text-[10px] leading-tight">{lbl?.primary ?? hero.split(",")[0]}</span>
+                    {lbl?.secondary && (
+                      <span className="max-w-[76px] truncate text-[8px] leading-none text-fab-gold/70">{lbl.secondary}</span>
+                    )}
                   </div>
                 </th>
-              ))}
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -955,7 +982,12 @@ function CommunityMatchupGrid({
                   >
                     <div className="flex items-center gap-1.5">
                       <HeroImg name={row.hero} />
-                      <span className="truncate max-w-[100px]" title={row.hero}>{row.hero.split(",")[0]}</span>
+                      <span className="truncate max-w-[130px]" title={row.hero}>
+                        {heroLabels.get(row.hero)?.primary ?? row.hero.split(",")[0]}
+                        {heroLabels.get(row.hero)?.secondary && (
+                          <span className="text-fab-gold/70"> · {heroLabels.get(row.hero)!.secondary}</span>
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[10px]">
                       <span className={row.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}>{row.overallWinRate.toFixed(0)}%</span>
