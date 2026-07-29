@@ -373,17 +373,20 @@ export function Marquee({
 function Chip({
   active,
   onClick,
+  title,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  title?: string;
   children: ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold transition-all active:scale-[0.97] ${
+      title={title}
+      className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold transition-all active:scale-[0.97] ${
         active
           ? "border-fab-gold/70 bg-fab-gold/15 text-fab-gold ring-1 ring-inset ring-fab-gold/20"
           : "border-fab-border/60 bg-fab-bg/60 text-fab-dim hover:border-fab-border hover:text-fab-text"
@@ -497,8 +500,8 @@ export function LeagueControlBar({
           {showStores && (
             <FilterGroup label="Store">
               {options.stores.map((s) => (
-                <Chip key={s.slug} active={!!filters.stores?.includes(s.slug)} onClick={() => toggle("stores", s.slug)}>
-                  {s.name} <span className="tabular-nums opacity-60">{s.count}</span>
+                <Chip key={s.slug} active={!!filters.stores?.includes(s.slug)} onClick={() => toggle("stores", s.slug)} title={s.name}>
+                  <span className="inline-block max-w-[9rem] truncate align-bottom">{s.name}</span> <span className="tabular-nums opacity-60">{s.count}</span>
                 </Chip>
               ))}
             </FilterGroup>
@@ -545,62 +548,6 @@ function FilterGroup({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-// ── Podium ────────────────────────────────────────────────────────────────────
-
-export function Podium({
-  standings,
-  signatureHeroes,
-}: {
-  standings: LeagueStandingEntry[];
-  signatureHeroes: Record<string, string>;
-}) {
-  const top = standings.slice(0, 3);
-  if (top.length < 2) return null;
-  // Render order: 2nd, 1st, 3rd (center tallest).
-  const order = [top[1], top[0], top[2]].filter(Boolean) as LeagueStandingEntry[];
-  const rankOf = (e: LeagueStandingEntry) => standings.indexOf(e) + 1;
-  const styleFor = (rank: number) =>
-    rank === 1
-      ? { pad: "pt-5", ring: "ring-fab-gold", card: "border-fab-gold/60 bg-fab-gold/[0.06]", av: 64, medal: "text-fab-gold" }
-      : rank === 2
-        ? { pad: "pt-9", ring: "ring-slate-300/70", card: "border-slate-300/40 bg-slate-300/[0.04]", av: 48, medal: "text-slate-200" }
-        : { pad: "pt-9", ring: "ring-amber-500/70", card: "border-amber-600/40 bg-amber-600/[0.05]", av: 48, medal: "text-amber-300" };
-
-  return (
-    <div className="mb-4 flex items-end justify-center gap-2 sm:gap-4">
-      {order.map((e) => {
-        const rank = rankOf(e);
-        const s = styleFor(rank);
-        const wr = winRatePct(e);
-        return (
-          <div key={e.uid} className={`flex-1 ${s.pad} max-w-[220px]`}>
-            <div className={`relative flex flex-col items-center rounded-xl border ${s.card} px-2 py-3 text-center`}>
-              <span className={`pointer-events-none absolute -top-1 right-2 text-4xl font-black opacity-10 ${s.medal}`}>
-                {rank}
-              </span>
-              <span className={`rounded-full ring-2 ${s.ring}`}>
-                <CrestedAvatar photoUrl={e.photoUrl} name={e.displayName} hero={signatureHeroes[e.uid]} size={s.av} />
-              </span>
-              <Link
-                href={`/player/${e.username}`}
-                className="mt-2 max-w-full truncate text-sm font-black text-fab-text hover:text-fab-gold"
-              >
-                {rank === 1 && <Crown className="mr-0.5 inline h-4 w-4 text-fab-gold" />}
-                {e.displayName}
-              </Link>
-              <p className={`text-2xl font-black tabular-nums ${s.medal}`}>{e.points}</p>
-              <p className="text-[11px] text-fab-muted tabular-nums">
-                {e.wins}-{e.losses}
-                {e.draws ? `-${e.draws}` : ""} {wr !== null && `· ${wr}%`}
-              </p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ── Broadcast standings table ─────────────────────────────────────────────────
 
 export function BroadcastStandings({
@@ -616,6 +563,16 @@ export function BroadcastStandings({
   const leaderPts = standings[0]?.points || 0;
   const [openUid, setOpenUid] = useState<string | null>(null);
   const colCount = showByes ? 11 : 10;
+  // A member who hasn't played (0 gp) can outrank a winless-but-played member —
+  // compareStandings breaks 0-point ties on fewest losses, and 0 gp means 0 losses —
+  // so 0-gp rows aren't always a trailing run. Partition explicitly: played first
+  // (keeping standings order), then the yet-to-play group. Don't split if nobody has
+  // played or nobody is 0-gp.
+  const played = standings.filter((e) => (e.matches || 0) > 0);
+  const yetToPlay = standings.filter((e) => (e.matches || 0) === 0);
+  const split = played.length > 0 && yetToPlay.length > 0;
+  const ordered = split ? [...played, ...yetToPlay] : standings;
+  const yetToPlayStart = split ? played.length : standings.length;
   return (
     <div className="overflow-hidden rounded-xl border border-fab-border bg-fab-surface">
       <div className="overflow-x-auto">
@@ -636,14 +593,26 @@ export function BroadcastStandings({
             </tr>
           </thead>
           <tbody>
-            {standings.map((e, i) => {
+            {ordered.map((e, i) => {
               const gap = leaderPts > 0 ? Math.max(0, Math.round((e.points / leaderPts) * 100)) : 0;
               const hasBreakdown = !!e.breakdown?.length;
               const open = openUid === e.uid;
+              const isYetToPlay = i >= yetToPlayStart;
               return (
                 <Fragment key={e.uid}>
+                {i === yetToPlayStart && yetToPlayStart < standings.length && (
+                  <tr className="border-t border-fab-border/40 bg-fab-bg/20">
+                    <td colSpan={colCount} className="px-3 py-1.5">
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-fab-dim">
+                        <span className="h-px w-4 bg-fab-border" /> Yet to play
+                        <span className="text-fab-border">·</span>
+                        {standings.length - yetToPlayStart} {standings.length - yetToPlayStart === 1 ? "player" : "players"}
+                      </span>
+                    </td>
+                  </tr>
+                )}
                 <tr
-                  className={`border-t border-fab-border/40 hover:bg-fab-bg/30 ${i < 3 ? "bg-fab-gold/[0.04]" : ""} ${hasBreakdown ? "cursor-pointer" : ""}`}
+                  className={`border-t border-fab-border/40 hover:bg-fab-bg/30 ${i < 3 && !isYetToPlay ? "bg-fab-gold/[0.04]" : ""} ${isYetToPlay ? "opacity-55" : ""} ${hasBreakdown ? "cursor-pointer" : ""}`}
                   onClick={hasBreakdown ? () => setOpenUid(open ? null : e.uid) : undefined}
                 >
                   <td className="px-3 py-2 text-left font-black tabular-nums">
@@ -665,10 +634,12 @@ export function BroadcastStandings({
                     </div>
                   </td>
                   <td className="px-2 pr-3 py-2 text-right align-middle">
-                    <div className={`font-black tabular-nums ${i < 3 ? "text-fab-gold" : "text-fab-text"}`}>{e.points}</div>
-                    <div className="ml-auto mt-1 h-1 w-14 overflow-hidden rounded-full bg-fab-border">
-                      <div className={`h-full rounded-full ${i < 3 ? "bg-fab-gold/70" : "bg-fab-muted/40"}`} style={{ width: `${gap}%` }} />
-                    </div>
+                    <div className={`font-black tabular-nums ${i < 3 && !isYetToPlay ? "text-fab-gold" : "text-fab-text"}`}>{e.points}</div>
+                    {!isYetToPlay && (
+                      <div className="ml-auto mt-1 h-1 w-14 overflow-hidden rounded-full bg-fab-border">
+                        <div className={`h-full rounded-full ${i < 3 ? "bg-fab-gold/70" : "bg-fab-muted/40"}`} style={{ width: `${gap}%` }} />
+                      </div>
+                    )}
                   </td>
                   <td className="px-2 py-2 text-center"><FormDots results={form[e.uid] || []} /></td>
                   <td className="hidden px-2 py-2 text-right tabular-nums text-emerald-300 sm:table-cell">{e.wins}</td>
@@ -768,6 +739,27 @@ export function StorylineCards({
     const userOf = (uid: string) => byUid.get(uid)?.memberUsername || "";
     const photoOf = (uid: string) => byUid.get(uid)?.memberPhotoUrl;
 
+    // Leader — the current #1, with their lead margin (replaces the old podium).
+    const leader = standings[0];
+    if (leader && leader.matches > 0) {
+      const runnerUp = standings[1];
+      const margin = runnerUp ? leader.points - runnerUp.points : leader.points;
+      const proof = !runnerUp ? "Sole leader" : margin > 0 ? `Leads by ${margin}` : "Tied at the top";
+      out.push(
+        <StoryCard
+          key="leader"
+          icon={<Crown className="h-3.5 w-3.5 text-fab-gold" />}
+          kicker="Leader"
+          photoUrl={leader.photoUrl}
+          name={leader.displayName}
+          hero={heroById[leader.uid]}
+          stat={`${leader.points}`}
+          statCls="text-fab-gold"
+          proof={proof}
+        />,
+      );
+    }
+
     // On Fire — longest active win streak
     const streaks = longestWinStreaks(matches).filter((s) => s.streak >= 3);
     if (streaks[0]) {
@@ -831,7 +823,7 @@ export function StorylineCards({
   }, [matches, standings]);
 
   if (!cards.length) return null;
-  return <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">{cards}</div>;
+  return <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">{cards}</div>;
 }
 
 // ── Meta: KPI strip + hero bars + matrix + store turf + activity ───────────────
@@ -839,9 +831,15 @@ export function StorylineCards({
 export function KpiStrip({ matches }: { matches: PooledMatch[] }) {
   const s = useMemo(() => poolSummary(matches), [matches]);
   const topHero = useMemo(() => heroMetaFromPool(matches)[0], [matches]);
-  const num = [
-    { label: "Matches", value: s.totalMatches },
-    { label: "Players", value: s.players },
+  // Meta-only figures the header stat band can't already show (it owns matches/players).
+  // "Decisive" = matches that produced a winner, so it excludes byes AND draws
+  // (poolSummary.decisiveMatches counts draws as non-bye, which would overstate it).
+  const wl = matches.reduce((n, m) => n + (m.result === MatchResult.Win || m.result === MatchResult.Loss ? 1 : 0), 0);
+  const decisivePct = matches.length > 0 ? Math.round((wl / matches.length) * 100) : 0;
+  const avgPerPlayer = s.players > 0 ? (s.totalMatches / s.players).toFixed(1) : "0";
+  const num: { label: string; value: string | number }[] = [
+    { label: "Decisive", value: `${decisivePct}%` },
+    { label: "Avg / player", value: avgPerPlayer },
     { label: "Heroes", value: s.heroes },
   ];
   return (
@@ -981,7 +979,7 @@ export function MatchupGrid({ matches }: { matches: PooledMatch[] }) {
                 <th className="sticky left-0 z-10 bg-fab-surface p-1.5 text-left font-bold text-fab-dim">hero ＼ vs</th>
                 {names.map((n) => (
                   <th key={n} className="bg-fab-surface p-1.5 font-semibold text-fab-dim" title={n}>
-                    <div className="mx-auto max-w-[56px] truncate">{shortName(n)}</div>
+                    <div className="mx-auto max-w-[72px] truncate">{shortName(n)}</div>
                   </th>
                 ))}
               </tr>
