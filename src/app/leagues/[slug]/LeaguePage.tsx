@@ -71,6 +71,7 @@ import {
   ArrowLeft,
   Image as ImageIcon,
   RefreshCw,
+  MoreVertical,
   Settings,
   ShieldPlus,
   ShieldMinus,
@@ -1079,6 +1080,9 @@ function PlayerCards({
         events: 0,
       }));
 
+  // Which card's management menu is open (managers only).
+  const [menuUid, setMenuUid] = useState<string | null>(null);
+
   return (
     <div>
       <h2 className="mb-2 text-lg font-bold text-fab-gold">Players</h2>
@@ -1094,6 +1098,9 @@ function PlayerCards({
           const notStarted = ranked && p.matches === 0;
           // Owner-level kicks anyone but the owner; a co-admin kicks plain players only.
           const canKick = canManage && !isOrg && (isOwnerLevel || !pIsAdmin);
+          const canManageAdmins = isOwnerLevel && !isOrg;
+          const hasActions = canKick || canManageAdmins;
+          const menuOpen = menuUid === p.uid;
           return (
             <div key={p.uid} className={`relative ${CARD_CLS} p-3 ${notStarted ? "opacity-60" : ""}`}>
               <div className="flex items-center gap-2.5">
@@ -1124,6 +1131,53 @@ function PlayerCards({
                   <p className="truncate text-[11px] text-fab-dim">@{p.username}</p>
                 </div>
                 {ranked && <span className="shrink-0 rounded-md bg-fab-gold/10 px-2 py-0.5 text-sm font-black text-fab-gold">#{i + 1}</span>}
+                {hasActions && (
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setMenuUid(menuOpen ? null : p.uid)}
+                      title="Manage"
+                      aria-label="Manage member"
+                      className={`-mr-1 rounded p-1 transition-colors ${menuOpen ? "text-fab-gold" : "text-fab-dim hover:text-fab-text"}`}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                    {menuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setMenuUid(null)} />
+                        <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-lg border border-fab-border bg-fab-surface py-1 shadow-xl">
+                          {canManageAdmins &&
+                            (pIsAdmin ? (
+                              <button
+                                type="button"
+                                onClick={() => { onRemoveAdmin(p.uid, p.displayName); setMenuUid(null); }}
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-fab-text hover:bg-fab-bg/60"
+                              >
+                                <ShieldMinus className="h-3.5 w-3.5 text-fab-dim" /> Remove admin
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => { onMakeAdmin(p.uid, p.displayName); setMenuUid(null); }}
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-fab-text hover:bg-fab-bg/60"
+                              >
+                                <ShieldPlus className="h-3.5 w-3.5 text-sky-300" /> Make admin
+                              </button>
+                            ))}
+                          {canKick && (
+                            <button
+                              type="button"
+                              onClick={() => { onKick(p.uid); setMenuUid(null); }}
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-rose-300 hover:bg-rose-500/10"
+                            >
+                              <UserMinus className="h-3.5 w-3.5" /> Remove from league
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-fab-muted">
                 <span><b className="text-fab-text">{p.points}</b> pts</span>
@@ -1133,36 +1187,6 @@ function PlayerCards({
                 {(p.events ?? 0) > 0 && <span>{p.events} event{p.events === 1 ? "" : "s"}</span>}
                 {p.storesPlayed > 0 && <span>{p.storesPlayed} store{p.storesPlayed === 1 ? "" : "s"}</span>}
               </div>
-              {canKick && (
-                <button
-                  type="button"
-                  onClick={() => onKick(p.uid)}
-                  title="Remove member"
-                  className="absolute right-2 top-2 rounded p-1 text-fab-dim hover:text-rose-300"
-                >
-                  <UserMinus className="h-3.5 w-3.5" />
-                </button>
-              )}
-              {/* Owner-level (owner or site admin): promote a member to co-admin, or demote. */}
-              {isOwnerLevel && !isOrg && (
-                pIsAdmin ? (
-                  <button
-                    type="button"
-                    onClick={() => onRemoveAdmin(p.uid, p.displayName)}
-                    className="mt-2 inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-[11px] font-bold text-fab-dim hover:text-rose-300"
-                  >
-                    <ShieldMinus className="h-3.5 w-3.5" /> Remove admin
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onMakeAdmin(p.uid, p.displayName)}
-                    className="mt-2 inline-flex items-center gap-1 rounded-md border border-sky-500/40 bg-sky-500/10 px-2 py-1 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20"
-                  >
-                    <ShieldPlus className="h-3.5 w-3.5" /> Make admin
-                  </button>
-                )
-              )}
             </div>
           );
         })}
