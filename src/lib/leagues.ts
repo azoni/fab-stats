@@ -492,6 +492,10 @@ export async function leaveLeague(leagueId: string, uid: string): Promise<void> 
   if (member.role === "organizer") {
     throw new Error("The organizer cannot leave. Transfer organizer role or disband the league.");
   }
+  const league = await getLeague(leagueId);
+  if (league && (league.adminUids || []).includes(uid)) {
+    throw new Error("Admins can't leave while holding the role — ask the owner to remove your admin role first.");
+  }
 
   const now = new Date().toISOString();
   const batch = writeBatch(db);
@@ -511,15 +515,20 @@ export async function leaveLeague(leagueId: string, uid: string): Promise<void> 
 
 export async function kickLeagueMember(
   leagueId: string,
-  organizerUid: string,
+  actorUid: string,
   targetUid: string,
 ): Promise<void> {
   const league = await getLeague(leagueId);
   if (!league) throw new Error("League not found.");
-  if (league.organizerUid !== organizerUid) {
-    throw new Error("Only the organizer can remove members.");
+  const admins = league.adminUids || [];
+  const isOwner = league.organizerUid === actorUid;
+  const isAdmin = admins.includes(actorUid);
+  if (!isOwner && !isAdmin) throw new Error("Only league managers can remove members.");
+  if (targetUid === league.organizerUid) throw new Error("The league owner can't be removed.");
+  // A co-admin can only remove regular players, never another admin.
+  if (!isOwner && admins.includes(targetUid)) {
+    throw new Error("Only the owner can remove another admin.");
   }
-  if (targetUid === organizerUid) throw new Error("Cannot remove the organizer.");
 
   // Verify the target is actually a member before decrementing memberCount,
   // otherwise a stale/duplicate kick drives the count below the real total.
@@ -530,8 +539,38 @@ export async function kickLeagueMember(
   const now = new Date().toISOString();
   const batch = writeBatch(db);
   batch.delete(memberRef);
-  batch.update(doc(db, "leagues", leagueId), { memberCount: increment(-1), updatedAt: now });
+  const leagueUpdate: Record<string, unknown> = { memberCount: increment(-1), updatedAt: now };
+  // Removing an admin (owner-only path above) also drops them from adminUids so
+  // they don't linger as a non-member manager.
+  if (admins.includes(targetUid)) leagueUpdate.adminUids = arrayRemove(targetUid);
+  batch.update(doc(db, "leagues", leagueId), leagueUpdate);
   await batch.commit();
+}
+
+/** Promote a league member to co-admin (owner only). The owner stays the owner;
+ *  a co-admin can manage the league but not disband, transfer, or manage admins. */
+export async function addLeagueAdmin(leagueId: string, ownerUid: string, targetUid: string): Promise<void> {
+  const league = await getLeague(leagueId);
+  if (!league) throw new Error("League not found.");
+  if (league.organizerUid !== ownerUid) throw new Error("Only the league owner can add admins.");
+  if (targetUid === ownerUid) throw new Error("The owner already has full control.");
+  const memberSnap = await getDoc(doc(leagueMembersCollection(leagueId), targetUid));
+  if (!memberSnap.exists()) throw new Error("That player must join the league before becoming an admin.");
+  await updateDoc(doc(db, "leagues", leagueId), {
+    adminUids: arrayUnion(targetUid),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/** Demote a co-admin back to a regular player (owner only). */
+export async function removeLeagueAdmin(leagueId: string, ownerUid: string, targetUid: string): Promise<void> {
+  const league = await getLeague(leagueId);
+  if (!league) throw new Error("League not found.");
+  if (league.organizerUid !== ownerUid) throw new Error("Only the league owner can remove admins.");
+  await updateDoc(doc(db, "leagues", leagueId), {
+    adminUids: arrayRemove(targetUid),
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 // ── Queries ──
