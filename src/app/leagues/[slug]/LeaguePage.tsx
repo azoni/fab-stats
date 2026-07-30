@@ -190,16 +190,15 @@ export default function LeaguePage() {
   // Owner = the league creator (organizerUid), immutable. Co-admins (adminUids)
   // can manage the league but not disband / transfer / manage the admin list.
   const isOwner = !!user && !!league && user.uid === league.organizerUid;
+  const isSiteAdmin = !!user && isAdmin && !!league;
+  // Owner-level = the creator OR a site admin — full control over ANY league,
+  // including managing the admin list and disbanding.
+  const isOwnerLevel = isOwner || isSiteAdmin;
   const isLeagueAdmin = isOwner || (!!user && !!league && (league.adminUids || []).includes(user.uid));
-  // Site admins get manager-equivalent powers for moderation.
-  const canManage = isLeagueAdmin || (!!user && isAdmin && !!league);
-  // Manager-level gates on the league DOC (edit form, banner, seasons, recompute).
+  // Manage the league: edit form, banner, seasons, recompute, approvals, and
+  // removing players. Site admins have full member access via the rules now.
+  const canManage = isLeagueAdmin || isSiteAdmin;
   const canEdit = canManage;
-  // Member moderation (kick / approve join requests) is restricted to league
-  // managers — owner + co-admins. The rules give a bare SITE admin league-doc
-  // edit/season/disband but NOT members/joinRequests access, so don't surface
-  // those controls to a site admin who isn't actually in the league.
-  const canManageMembers = isLeagueAdmin;
   // Kept for a couple of owner-only checks below.
   const isOrganizer = isOwner;
   const isMember = useMemo(
@@ -308,14 +307,14 @@ export default function LeaguePage() {
     };
   }, [leagueId, standingsLoaded, standingsAt, isMember, canEdit, leagueActive]);
 
-  // Managers (owner + co-admins): live pending join requests for the approval panel.
+  // Managers (owner, co-admins, site admins): live pending join requests.
   useEffect(() => {
-    if (!leagueId || !canManageMembers) {
+    if (!leagueId || !canManage) {
       setJoinRequests([]);
       return;
     }
     return subscribeToJoinRequests(leagueId, setJoinRequests);
-  }, [leagueId, canManageMembers]);
+  }, [leagueId, canManage]);
 
   // Non-member: do I already have a pending request?
   useEffect(() => {
@@ -432,7 +431,7 @@ export default function LeaguePage() {
     if (!user || !league) return;
     if (!confirm("Remove this member from the league?")) return;
     try {
-      await kickLeagueMember(league.id, user.uid, uid);
+      await kickLeagueMember(league.id, user.uid, uid, isSiteAdmin);
       toast.success("Member removed.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to remove member.");
@@ -443,7 +442,7 @@ export default function LeaguePage() {
     if (!user || !league) return;
     if (!confirm(`Make ${name} an admin of this league? They'll be able to edit it, manage the banner, approve join requests, and remove players.`)) return;
     try {
-      await addLeagueAdmin(league.id, user.uid, uid);
+      await addLeagueAdmin(league.id, user.uid, uid, isSiteAdmin);
       toast.success(`${name} is now a league admin.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to add admin.");
@@ -454,7 +453,7 @@ export default function LeaguePage() {
     if (!user || !league) return;
     if (!confirm(`Remove ${name}'s admin role? They'll stay a member.`)) return;
     try {
-      await removeLeagueAdmin(league.id, user.uid, uid);
+      await removeLeagueAdmin(league.id, user.uid, uid, isSiteAdmin);
       toast.success(`${name} is no longer an admin.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to remove admin.");
@@ -743,7 +742,7 @@ export default function LeaguePage() {
 
       {leagueTab === "players" && (
         <section className="mt-5 space-y-4">
-          {canManageMembers && (
+          {canManage && (
             <JoinRequestsPanel requests={joinRequests} onApprove={handleApprove} onReject={handleRejectRequest} />
           )}
           <PlayerCards
@@ -752,15 +751,15 @@ export default function LeaguePage() {
             signatureHeroes={signatureHeroes}
             organizerUid={league.organizerUid}
             adminUids={league.adminUids || []}
-            isOwner={isOwner}
-            canManage={canManageMembers}
+            isOwnerLevel={isOwnerLevel}
+            canManage={canManage}
             currentUid={user?.uid || null}
             onKick={handleKick}
             onMakeAdmin={handleMakeAdmin}
             onRemoveAdmin={handleRemoveAdmin}
           />
           <StoresList stores={storeRows} />
-          {(isOwner || isAdmin) && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
+          {isOwnerLevel && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
         </section>
       )}
     </div>
@@ -1043,7 +1042,7 @@ function PlayerCards({
   signatureHeroes,
   organizerUid,
   adminUids,
-  isOwner,
+  isOwnerLevel,
   canManage,
   currentUid,
   onKick,
@@ -1055,7 +1054,7 @@ function PlayerCards({
   signatureHeroes: Record<string, string>;
   organizerUid: string;
   adminUids: string[];
-  isOwner: boolean;
+  isOwnerLevel: boolean;
   canManage: boolean;
   currentUid: string | null;
   onKick: (uid: string) => void;
@@ -1093,8 +1092,8 @@ function PlayerCards({
           const initial = (p.displayName || p.username || "?").charAt(0).toUpperCase();
           // Gate on `ranked` so an uncomputed snapshot (every row 0-gp) doesn't brand everyone.
           const notStarted = ranked && p.matches === 0;
-          // Owner kicks anyone but themselves; a co-admin kicks plain players only.
-          const canKick = canManage && !isOrg && (isOwner || !pIsAdmin);
+          // Owner-level kicks anyone but the owner; a co-admin kicks plain players only.
+          const canKick = canManage && !isOrg && (isOwnerLevel || !pIsAdmin);
           return (
             <div key={p.uid} className={`relative ${CARD_CLS} p-3 ${notStarted ? "opacity-60" : ""}`}>
               <div className="flex items-center gap-2.5">
@@ -1144,8 +1143,8 @@ function PlayerCards({
                   <UserMinus className="h-3.5 w-3.5" />
                 </button>
               )}
-              {/* Owner-only: promote a member to co-admin, or demote one. */}
-              {isOwner && !isOrg && (
+              {/* Owner-level (owner or site admin): promote a member to co-admin, or demote. */}
+              {isOwnerLevel && !isOrg && (
                 pIsAdmin ? (
                   <button
                     type="button"

@@ -1304,24 +1304,25 @@ service cloud.firestore {
           && request.auth.uid == memberId
           && request.resource.data.role == "player"
           && get(/databases/$(database)/documents/leagues/$(leagueId)).data.joinPolicy == "open";
-        // Manager (owner or co-admin) adds a player (approving a join request).
+        // Manager (owner / co-admin) or site admin adds a player (approving a request).
         allow create: if request.auth != null
           && request.resource.data.role == "player"
-          && isLeagueManager(leagueId);
+          && (isLeagueManager(leagueId) || isAdmin());
         // Self-leave — but a co-admin must be demoted by the owner first, otherwise
         // they'd remain in adminUids as a non-member with lingering manager rights.
         allow delete: if request.auth != null && request.auth.uid == memberId
           && !(request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.get('adminUids', []));
-        // Owner kicks anyone.
+        // Owner (or site admin) kicks anyone.
         allow delete: if request.auth != null
-          && get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid;
+          && (get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid
+              || isAdmin());
         // Co-admin kicks a plain player only — never the owner or another admin.
         allow delete: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.get('adminUids', [])
           && memberId != get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid
           && !(memberId in get(/databases/$(database)/documents/leagues/$(leagueId)).data.get('adminUids', []));
-        // Manager can update member docs (roles etc.)
-        allow update: if request.auth != null && isLeagueManager(leagueId);
+        // Manager or site admin can update member docs (roles etc.)
+        allow update: if request.auth != null && (isLeagueManager(leagueId) || isAdmin());
       }
 
       // Join requests for approval-required leagues. Requester + organizer read;
@@ -1329,12 +1330,12 @@ service cloud.firestore {
       // approve) deletes.
       match /joinRequests/{reqId} {
         allow read: if request.auth != null
-          && (request.auth.uid == reqId || isLeagueManager(leagueId));
+          && (request.auth.uid == reqId || isLeagueManager(leagueId) || isAdmin());
         allow create: if request.auth != null
           && request.auth.uid == reqId
           && request.resource.data.uid == reqId;
         allow delete: if request.auth != null
-          && (request.auth.uid == reqId || isLeagueManager(leagueId));
+          && (request.auth.uid == reqId || isLeagueManager(leagueId) || isAdmin());
       }
 
       // Standings: readable by anyone, writable by any league member (so the
@@ -1371,7 +1372,8 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow delete: if request.auth != null
         && resource.data.leagueId != null
-        && get(/databases/$(database)/documents/leagues/$(resource.data.leagueId)).data.organizerUid == request.auth.uid;
+        && (get(/databases/$(database)/documents/leagues/$(resource.data.leagueId)).data.organizerUid == request.auth.uid
+            || isAdmin());
     }
 
     // ── Tier lists ── public (shareable by link) once saved; owner-only writes.
