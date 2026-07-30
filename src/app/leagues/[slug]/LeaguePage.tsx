@@ -8,6 +8,8 @@ import {
   getLeagueBySlug,
   joinLeague,
   kickLeagueMember,
+  addLeagueAdmin,
+  removeLeagueAdmin,
   leaveLeague,
   subscribeToLeague,
   subscribeToLeagueMembers,
@@ -70,6 +72,8 @@ import {
   Image as ImageIcon,
   RefreshCw,
   Settings,
+  ShieldPlus,
+  ShieldMinus,
   UserMinus,
 } from "lucide-react";
 
@@ -183,9 +187,21 @@ export default function LeaguePage() {
     );
   }, [league, directory]);
 
-  const isOrganizer = !!user && !!league && user.uid === league.organizerUid;
-  // Site admins get organizer-equivalent powers for moderation.
-  const canEdit = isOrganizer || (!!user && isAdmin && !!league);
+  // Owner = the league creator (organizerUid), immutable. Co-admins (adminUids)
+  // can manage the league but not disband / transfer / manage the admin list.
+  const isOwner = !!user && !!league && user.uid === league.organizerUid;
+  const isLeagueAdmin = isOwner || (!!user && !!league && (league.adminUids || []).includes(user.uid));
+  // Site admins get manager-equivalent powers for moderation.
+  const canManage = isLeagueAdmin || (!!user && isAdmin && !!league);
+  // Manager-level gates on the league DOC (edit form, banner, seasons, recompute).
+  const canEdit = canManage;
+  // Member moderation (kick / approve join requests) is restricted to league
+  // managers — owner + co-admins. The rules give a bare SITE admin league-doc
+  // edit/season/disband but NOT members/joinRequests access, so don't surface
+  // those controls to a site admin who isn't actually in the league.
+  const canManageMembers = isLeagueAdmin;
+  // Kept for a couple of owner-only checks below.
+  const isOrganizer = isOwner;
   const isMember = useMemo(
     () => !!user && members.some((m) => m.uid === user.uid),
     [user, members],
@@ -292,14 +308,14 @@ export default function LeaguePage() {
     };
   }, [leagueId, standingsLoaded, standingsAt, isMember, canEdit, leagueActive]);
 
-  // Organizer: live pending join requests for the approval panel.
+  // Managers (owner + co-admins): live pending join requests for the approval panel.
   useEffect(() => {
-    if (!leagueId || !isOrganizer) {
+    if (!leagueId || !canManageMembers) {
       setJoinRequests([]);
       return;
     }
     return subscribeToJoinRequests(leagueId, setJoinRequests);
-  }, [leagueId, isOrganizer]);
+  }, [leagueId, canManageMembers]);
 
   // Non-member: do I already have a pending request?
   useEffect(() => {
@@ -423,6 +439,28 @@ export default function LeaguePage() {
     }
   }
 
+  async function handleMakeAdmin(uid: string, name: string) {
+    if (!user || !league) return;
+    if (!confirm(`Make ${name} an admin of this league? They'll be able to edit it, manage the banner, approve join requests, and remove players.`)) return;
+    try {
+      await addLeagueAdmin(league.id, user.uid, uid);
+      toast.success(`${name} is now a league admin.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add admin.");
+    }
+  }
+
+  async function handleRemoveAdmin(uid: string, name: string) {
+    if (!user || !league) return;
+    if (!confirm(`Remove ${name}'s admin role? They'll stay a member.`)) return;
+    try {
+      await removeLeagueAdmin(league.id, user.uid, uid);
+      toast.success(`${name} is no longer an admin.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove admin.");
+    }
+  }
+
   if (loading) {
     return <div className="mx-auto max-w-5xl px-4 py-10 text-fab-dim">Loading league…</div>;
   }
@@ -497,7 +535,7 @@ export default function LeaguePage() {
                 {wearing ? "Wearing badge" : "Wear badge"}
               </button>
             )}
-            {isMember && !isOrganizer && (
+            {isMember && !isLeagueAdmin && (
               <button
                 type="button"
                 onClick={handleLeave}
@@ -705,7 +743,7 @@ export default function LeaguePage() {
 
       {leagueTab === "players" && (
         <section className="mt-5 space-y-4">
-          {isOrganizer && (
+          {canManageMembers && (
             <JoinRequestsPanel requests={joinRequests} onApprove={handleApprove} onReject={handleRejectRequest} />
           )}
           <PlayerCards
@@ -713,12 +751,16 @@ export default function LeaguePage() {
             standings={standings}
             signatureHeroes={signatureHeroes}
             organizerUid={league.organizerUid}
-            isOrganizer={isOrganizer}
+            adminUids={league.adminUids || []}
+            isOwner={isOwner}
+            canManage={canManageMembers}
             currentUid={user?.uid || null}
             onKick={handleKick}
+            onMakeAdmin={handleMakeAdmin}
+            onRemoveAdmin={handleRemoveAdmin}
           />
           <StoresList stores={storeRows} />
-          {canEdit && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
+          {(isOwner || isAdmin) && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
         </section>
       )}
     </div>
@@ -1000,17 +1042,25 @@ function PlayerCards({
   standings,
   signatureHeroes,
   organizerUid,
-  isOrganizer,
+  adminUids,
+  isOwner,
+  canManage,
   currentUid,
   onKick,
+  onMakeAdmin,
+  onRemoveAdmin,
 }: {
   members: LeagueMember[];
   standings: LeagueStandingEntry[] | null;
   signatureHeroes: Record<string, string>;
   organizerUid: string;
-  isOrganizer: boolean;
+  adminUids: string[];
+  isOwner: boolean;
+  canManage: boolean;
   currentUid: string | null;
   onKick: (uid: string) => void;
+  onMakeAdmin: (uid: string, name: string) => void;
+  onRemoveAdmin: (uid: string, name: string) => void;
 }) {
   const ranked = !!(standings && standings.length);
   const rows = ranked
@@ -1036,12 +1086,15 @@ function PlayerCards({
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map((p, i) => {
           const isOrg = p.uid === organizerUid;
+          const pIsAdmin = adminUids.includes(p.uid);
           const isSelf = currentUid === p.uid;
           const decisive = p.matches - p.byes;
           const wr = decisive > 0 ? Math.round((p.wins / decisive) * 100) : null;
           const initial = (p.displayName || p.username || "?").charAt(0).toUpperCase();
           // Gate on `ranked` so an uncomputed snapshot (every row 0-gp) doesn't brand everyone.
           const notStarted = ranked && p.matches === 0;
+          // Owner kicks anyone but themselves; a co-admin kicks plain players only.
+          const canKick = canManage && !isOrg && (isOwner || !pIsAdmin);
           return (
             <div key={p.uid} className={`relative ${CARD_CLS} p-3 ${notStarted ? "opacity-60" : ""}`}>
               <div className="flex items-center gap-2.5">
@@ -1065,6 +1118,7 @@ function PlayerCards({
                       {p.displayName}
                     </Link>
                     {isOrg && <span className="shrink-0 rounded bg-fab-gold/15 px-1 text-[9px] font-bold text-fab-gold">organizer</span>}
+                    {pIsAdmin && !isOrg && <span className="shrink-0 rounded bg-sky-500/15 px-1 text-[9px] font-bold text-sky-300">admin</span>}
                     {isSelf && !isOrg && <span className="shrink-0 text-[9px] text-fab-dim">(you)</span>}
                     {notStarted && <span className="shrink-0 rounded bg-fab-border/40 px-1 text-[9px] font-bold text-fab-dim">Not started</span>}
                   </div>
@@ -1080,7 +1134,7 @@ function PlayerCards({
                 {(p.events ?? 0) > 0 && <span>{p.events} event{p.events === 1 ? "" : "s"}</span>}
                 {p.storesPlayed > 0 && <span>{p.storesPlayed} store{p.storesPlayed === 1 ? "" : "s"}</span>}
               </div>
-              {isOrganizer && !isOrg && (
+              {canKick && (
                 <button
                   type="button"
                   onClick={() => onKick(p.uid)}
@@ -1089,6 +1143,26 @@ function PlayerCards({
                 >
                   <UserMinus className="h-3.5 w-3.5" />
                 </button>
+              )}
+              {/* Owner-only: promote a member to co-admin, or demote one. */}
+              {isOwner && !isOrg && (
+                pIsAdmin ? (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveAdmin(p.uid, p.displayName)}
+                    className="mt-2 inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-[11px] font-bold text-fab-dim hover:text-rose-300"
+                  >
+                    <ShieldMinus className="h-3.5 w-3.5" /> Remove admin
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onMakeAdmin(p.uid, p.displayName)}
+                    className="mt-2 inline-flex items-center gap-1 rounded-md border border-sky-500/40 bg-sky-500/10 px-2 py-1 text-[11px] font-bold text-sky-300 hover:bg-sky-500/20"
+                  >
+                    <ShieldPlus className="h-3.5 w-3.5" /> Make admin
+                  </button>
+                )
               )}
             </div>
           );

@@ -377,6 +377,11 @@ export interface League {
   country?: string;
   organizerUid: string;
   organizerName: string;
+  /** Additional admins (co-organizers) beyond the owner. They can manage the
+   *  league (edit, banner/icon, approve join requests, remove players) but NOT
+   *  disband it, change ownership, or manage this admin list — those stay
+   *  owner-only. Absent on legacy leagues → no co-admins. */
+  adminUids?: string[];
   /** ISO date string YYYY-MM-DD (inclusive) */
   startDate: string;
   /** ISO date string YYYY-MM-DD (inclusive) */
