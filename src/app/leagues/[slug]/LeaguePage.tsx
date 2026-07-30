@@ -1132,51 +1132,15 @@ function PlayerCards({
                 </div>
                 {ranked && <span className="shrink-0 rounded-md bg-fab-gold/10 px-2 py-0.5 text-sm font-black text-fab-gold">#{i + 1}</span>}
                 {hasActions && (
-                  <div className="relative shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setMenuUid(menuOpen ? null : p.uid)}
-                      title="Manage"
-                      aria-label="Manage member"
-                      className={`-mr-1 rounded p-1 transition-colors ${menuOpen ? "text-fab-gold" : "text-fab-dim hover:text-fab-text"}`}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                    {menuOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setMenuUid(null)} />
-                        <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-lg border border-fab-border bg-fab-surface py-1 shadow-xl">
-                          {canManageAdmins &&
-                            (pIsAdmin ? (
-                              <button
-                                type="button"
-                                onClick={() => { onRemoveAdmin(p.uid, p.displayName); setMenuUid(null); }}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-fab-text hover:bg-fab-bg/60"
-                              >
-                                <ShieldMinus className="h-3.5 w-3.5 text-fab-dim" /> Remove admin
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => { onMakeAdmin(p.uid, p.displayName); setMenuUid(null); }}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-fab-text hover:bg-fab-bg/60"
-                              >
-                                <ShieldPlus className="h-3.5 w-3.5 text-sky-300" /> Make admin
-                              </button>
-                            ))}
-                          {canKick && (
-                            <button
-                              type="button"
-                              onClick={() => { onKick(p.uid); setMenuUid(null); }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-rose-300 hover:bg-rose-500/10"
-                            >
-                              <UserMinus className="h-3.5 w-3.5" /> Remove from league
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMenuUid(menuOpen ? null : p.uid)}
+                    title="Manage"
+                    aria-label="Manage member"
+                    className={`-mr-1 shrink-0 rounded p-1 transition-colors ${menuOpen ? "text-fab-gold" : "text-fab-dim hover:text-fab-text"}`}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
                 )}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-fab-muted">
@@ -1187,6 +1151,47 @@ function PlayerCards({
                 {(p.events ?? 0) > 0 && <span>{p.events} event{p.events === 1 ? "" : "s"}</span>}
                 {p.storesPlayed > 0 && <span>{p.storesPlayed} store{p.storesPlayed === 1 ? "" : "s"}</span>}
               </div>
+              {/* Management menu — last child + z-50 so it paints cleanly over the card. */}
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setMenuUid(null)} />
+                  {/* Opaque via the raw token — the bg-fab-surface utility is
+                      frosted (~0.86 alpha) in some themes, which would let the
+                      card's stats bleed through the menu. */}
+                  <div
+                    style={{ backgroundColor: "var(--color-fab-surface-hover)" }}
+                    className="absolute right-2 top-11 z-50 w-44 overflow-hidden rounded-lg border border-fab-border py-1 shadow-2xl ring-1 ring-black/30"
+                  >
+                    {canManageAdmins &&
+                      (pIsAdmin ? (
+                        <button
+                          type="button"
+                          onClick={() => { onRemoveAdmin(p.uid, p.displayName); setMenuUid(null); }}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-fab-text hover:bg-fab-bg/60"
+                        >
+                          <ShieldMinus className="h-3.5 w-3.5 text-fab-dim" /> Remove admin
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { onMakeAdmin(p.uid, p.displayName); setMenuUid(null); }}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-fab-text hover:bg-fab-bg/60"
+                        >
+                          <ShieldPlus className="h-3.5 w-3.5 text-sky-300" /> Make admin
+                        </button>
+                      ))}
+                    {canKick && (
+                      <button
+                        type="button"
+                        onClick={() => { onKick(p.uid); setMenuUid(null); }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-semibold text-rose-300 hover:bg-rose-500/10"
+                      >
+                        <UserMinus className="h-3.5 w-3.5" /> Remove from league
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
