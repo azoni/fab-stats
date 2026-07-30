@@ -517,16 +517,18 @@ export async function kickLeagueMember(
   leagueId: string,
   actorUid: string,
   targetUid: string,
+  isSiteAdmin = false,
 ): Promise<void> {
   const league = await getLeague(leagueId);
   if (!league) throw new Error("League not found.");
   const admins = league.adminUids || [];
-  const isOwner = league.organizerUid === actorUid;
-  const isAdmin = admins.includes(actorUid);
-  if (!isOwner && !isAdmin) throw new Error("Only league managers can remove members.");
+  // Owner-level = the league owner OR a site admin (super-admin over any league).
+  const isOwnerLevel = league.organizerUid === actorUid || isSiteAdmin;
+  const isCoAdmin = admins.includes(actorUid);
+  if (!isOwnerLevel && !isCoAdmin) throw new Error("Only league managers can remove members.");
   if (targetUid === league.organizerUid) throw new Error("The league owner can't be removed.");
   // A co-admin can only remove regular players, never another admin.
-  if (!isOwner && admins.includes(targetUid)) {
+  if (!isOwnerLevel && admins.includes(targetUid)) {
     throw new Error("Only the owner can remove another admin.");
   }
 
@@ -547,13 +549,14 @@ export async function kickLeagueMember(
   await batch.commit();
 }
 
-/** Promote a league member to co-admin (owner only). The owner stays the owner;
- *  a co-admin can manage the league but not disband, transfer, or manage admins. */
-export async function addLeagueAdmin(leagueId: string, ownerUid: string, targetUid: string): Promise<void> {
+/** Promote a league member to co-admin. Owner-only, unless the caller is a site
+ *  admin (super-admin over any league). The owner stays the owner; a co-admin can
+ *  manage the league but not disband, transfer, or manage admins. */
+export async function addLeagueAdmin(leagueId: string, actorUid: string, targetUid: string, isSiteAdmin = false): Promise<void> {
   const league = await getLeague(leagueId);
   if (!league) throw new Error("League not found.");
-  if (league.organizerUid !== ownerUid) throw new Error("Only the league owner can add admins.");
-  if (targetUid === ownerUid) throw new Error("The owner already has full control.");
+  if (league.organizerUid !== actorUid && !isSiteAdmin) throw new Error("Only the league owner can add admins.");
+  if (targetUid === league.organizerUid) throw new Error("The owner already has full control.");
   const memberSnap = await getDoc(doc(leagueMembersCollection(leagueId), targetUid));
   if (!memberSnap.exists()) throw new Error("That player must join the league before becoming an admin.");
   await updateDoc(doc(db, "leagues", leagueId), {
@@ -562,11 +565,11 @@ export async function addLeagueAdmin(leagueId: string, ownerUid: string, targetU
   });
 }
 
-/** Demote a co-admin back to a regular player (owner only). */
-export async function removeLeagueAdmin(leagueId: string, ownerUid: string, targetUid: string): Promise<void> {
+/** Demote a co-admin back to a regular player. Owner-only, unless a site admin. */
+export async function removeLeagueAdmin(leagueId: string, actorUid: string, targetUid: string, isSiteAdmin = false): Promise<void> {
   const league = await getLeague(leagueId);
   if (!league) throw new Error("League not found.");
-  if (league.organizerUid !== ownerUid) throw new Error("Only the league owner can remove admins.");
+  if (league.organizerUid !== actorUid && !isSiteAdmin) throw new Error("Only the league owner can remove admins.");
   await updateDoc(doc(db, "leagues", leagueId), {
     adminUids: arrayRemove(targetUid),
     updatedAt: new Date().toISOString(),
