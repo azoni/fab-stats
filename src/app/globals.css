@@ -1099,6 +1099,21 @@ table thead tr {
   .league-sheen { animation: none; opacity: 1; }
 }
 
+/* ── Season recap: champion-band confetti ──
+   Pure-CSS falling flecks behind the crowned champion. Each fleck sets its own
+   --x / --delay / --dur inline. Static (no fall, faint) for reduced-motion. */
+@keyframes recap-confetti {
+  0% { transform: translateY(-10%) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.9; }
+  100% { transform: translateY(240px) rotate(320deg); opacity: 0; }
+}
+.recap-confetti-piece {
+  animation: recap-confetti var(--dur, 2.6s) linear var(--delay, 0s) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recap-confetti-piece { animation: none; opacity: 0.5; }
+}
+
 /* ── Global keyboard-focus baseline (WCAG 2.4.7) ──
    Focus styling previously existed only on inputs + ui/Button, so the sidebar
    nav, mobile tab bar, and the many inline <Link> buttons showed no visible

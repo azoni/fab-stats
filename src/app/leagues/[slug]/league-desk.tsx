@@ -4,27 +4,32 @@
  * Every module reads the same in-memory match pool (see leagues-insights.ts), so
  * one filter bar re-casts the whole page with no extra Firestore reads.
  */
-import { useMemo, useState, Fragment, type ReactNode, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, Fragment, type ReactNode, type CSSProperties } from "react";
 import Link from "next/link";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import {
   BarChart3,
+  CalendarClock,
   CalendarDays,
   ChevronDown,
   Crown,
   Filter,
   Flame,
   MapPin,
+  PencilRuler,
+  RefreshCw,
   Swords,
   Target,
   TrendingUp,
   Trophy,
   Users,
   X,
+  Zap,
 } from "lucide-react";
-import { MatchResult, type League, type LeagueMember, type LeagueStandingEntry } from "@/types";
+import { MatchResult, type League, type LeagueMember, type LeagueStandingEntry, type LeagueSeasonRecap } from "@/types";
 import { bannerObjectPosition, LEAGUE_DESK_SCRIM } from "@/lib/league-images";
 import { type LeagueMatchupData } from "@/lib/leagues-scoring";
+import { PointsProgression } from "@/components/leagues/PointsProgressionChart";
 import {
   type PooledMatch,
   type FilterOptions,
@@ -39,6 +44,9 @@ import {
   longestWinStreaks,
   eventDaysByUid,
   standingsFromPool,
+  deriveEntryAwards,
+  progressionFromEntries,
+  partitionPlayedFirst,
 } from "@/lib/leagues-insights";
 
 // ── shared helpers ────────────────────────────────────────────────────────────
@@ -75,6 +83,19 @@ function seasonProgress(league: League, today: string) {
   return { pct, week, totalWeeks };
 }
 
+/** The season's closing window — gates the reminder banner + recap preview.
+ *  finalWeek = the last scheduled week OR within 7 days of the end (still Live);
+ *  ended = past the end date (or completed). Shared so the page and the banner
+ *  agree on when to celebrate/remind. */
+export function seasonClosePhase(league: League, today: string) {
+  const status = statusInfo(league, today);
+  const prog = seasonProgress(league, today);
+  const daysToEnd = Math.round((UTC(league.endDate) - UTC(today)) / DAY);
+  const finalWeek = status.live && (prog.week === prog.totalWeeks || (daysToEnd >= 0 && daysToEnd <= 7));
+  const ended = status.label === "Final";
+  return { finalWeek, ended };
+}
+
 function formatDateRange(start: string, end: string) {
   const fmt = (s: string) =>
     new Date(s + "T00:00:00Z").toLocaleDateString(undefined, {
@@ -102,7 +123,7 @@ function Avatar({ photoUrl, name, size = 40 }: { photoUrl?: string; name: string
 }
 
 /** A player avatar notched with their signature-hero crest. */
-function CrestedAvatar({
+export function CrestedAvatar({
   photoUrl,
   name,
   hero,
@@ -687,7 +708,7 @@ export function BroadcastStandings({
 
 // ── Storyline award cards ─────────────────────────────────────────────────────
 
-function StoryCard({
+export function StoryCard({
   icon,
   kicker,
   photoUrl,
@@ -824,6 +845,372 @@ export function StorylineCards({
 
   if (!cards.length) return null;
   return <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">{cards}</div>;
+}
+
+// ── Season reminder banner + recap ─────────────────────────────────────────────
+
+/** A closing-window nudge above the league body: reminds members to import their
+ *  events before the season is archived (final week), points to the recap once it
+ *  ends, or prompts a manager to activate a draft. Silent outside those windows.
+ *  Dismissible per league + season + state (localStorage), so a genuinely new
+ *  message (or a new season) re-surfaces it. Only mount for the CURRENT season. */
+export function SeasonReminderBanner({
+  league,
+  canManage,
+  isMember,
+  onRefresh,
+  onViewRecap,
+  onEdit,
+}: {
+  league: League;
+  canManage: boolean;
+  isMember: boolean;
+  onRefresh: () => void;
+  onViewRecap: () => void;
+  onEdit: () => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { finalWeek, ended } = seasonClosePhase(league, today);
+  const isDraft = statusInfo(league, today).label === "Draft";
+  let state: "ended" | "finalWeek" | "draft" | null =
+    ended ? "ended" : finalWeek ? "finalWeek" : isDraft ? "draft" : null;
+  // A plain player can't act on a draft — only managers see that one.
+  if (state === "draft" && !canManage) state = null;
+
+  const dismissKey = state ? `league-recap-banner:${league.id}:${league.seasonNumber || 1}:${state}` : "";
+  const [hydrated, setHydrated] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  // Read localStorage only after mount (static export prerenders without it) so the
+  // server HTML (banner absent) and the first client render agree, then reveal.
+  useEffect(() => {
+    setHydrated(true);
+    if (!dismissKey) return;
+    try {
+      setDismissed(localStorage.getItem(dismissKey) === "1");
+    } catch {
+      setDismissed(false);
+    }
+  }, [dismissKey]);
+
+  if (!state || !hydrated || dismissed) return null;
+
+  const dismiss = () => {
+    try {
+      localStorage.setItem(dismissKey, "1");
+    } catch {
+      /* ignore */
+    }
+    setDismissed(true);
+  };
+
+  const seasonLabel =
+    league.seasonName || ((league.seasonNumber || 1) > 1 ? `Season ${league.seasonNumber}` : "this season");
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const primaryCls = "rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80";
+  const secondaryCls =
+    "rounded-md border border-fab-border bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-dim hover:text-fab-gold";
+
+  let Icon = CalendarClock;
+  let iconCls = "text-fab-gold";
+  let eyebrow = "Final week";
+  let title = `Final week of ${seasonLabel}.`;
+  let body =
+    "Import any events you played so your record counts before the season is archived. Anything you have not logged will not count.";
+  let note: string | null = null;
+  let panelCls = "border-fab-gold/40 bg-fab-gold/[0.06]";
+  let panelStyle: CSSProperties | undefined;
+  let ctas: ReactNode;
+
+  if (state === "finalWeek") {
+    ctas = (
+      <>
+        <Link href="/import" className={primaryCls}>
+          Import events
+        </Link>
+        {(isMember || canManage) && (
+          <button type="button" onClick={onRefresh} className={secondaryCls}>
+            Refresh standings
+          </button>
+        )}
+      </>
+    );
+  } else if (state === "ended") {
+    Icon = Trophy;
+    eyebrow = "Season complete";
+    title = `${cap(seasonLabel)} has ended.`;
+    body =
+      "Import any events you still have not logged, then refresh. The recap and final standings update as matches come in.";
+    note = canManage ? "When everyone is caught up, start a new season to reset the standings." : null;
+    panelCls = "border-fab-border";
+    panelStyle = { backgroundColor: "var(--color-fab-surface)" };
+    ctas = (
+      <>
+        <Link href="/import" className={primaryCls}>
+          Import events
+        </Link>
+        <button type="button" onClick={onViewRecap} className={secondaryCls}>
+          See recap
+        </button>
+      </>
+    );
+  } else {
+    // draft (managers only)
+    Icon = PencilRuler;
+    iconCls = "text-fab-dim";
+    eyebrow = "Draft";
+    title = `${league.name} is a draft.`;
+    body = "Mark it active from the edit panel so imported matches start counting.";
+    panelCls = "border-fab-border";
+    panelStyle = { backgroundColor: "var(--color-fab-surface)" };
+    ctas = (
+      <button type="button" onClick={onEdit} className={primaryCls}>
+        Edit league
+      </button>
+    );
+  }
+
+  return (
+    <div className={`relative mt-4 overflow-hidden rounded-xl border p-4 ${panelCls}`} style={panelStyle}>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dismiss reminder"
+        className="absolute right-2 top-2 rounded p-1 text-fab-dim hover:text-fab-text"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 gap-3 pr-6">
+          <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${iconCls}`} />
+          <div className="min-w-0">
+            <p className={EYEBROW_CLS}>{eyebrow}</p>
+            <p className="mt-0.5 text-sm font-black text-fab-text">{title}</p>
+            <p className="mt-1 max-w-prose text-xs text-fab-muted">{body}</p>
+            {note && <p className="mt-1 max-w-prose text-xs text-fab-muted">{note}</p>}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">{ctas}</div>
+      </div>
+    </div>
+  );
+}
+
+/** Pure-CSS celebratory flecks behind the crowned champion (keyframes in
+ *  globals.css; static + faint under prefers-reduced-motion). Deterministic
+ *  layout — no Math.random at render, so SSG hydration stays stable. */
+function ChampionConfetti() {
+  const colors = ["var(--color-fab-gold)", "#38bdf8", "#f472b6", "#34d399", "#a78bfa", "#fb923c"];
+  const pieces = Array.from({ length: 18 }, (_, i) => ({
+    left: (i * 53) % 100,
+    delay: (i % 6) * 0.28,
+    dur: 2.2 + (i % 5) * 0.32,
+    color: colors[i % colors.length],
+    w: 4 + (i % 3) * 2,
+  }));
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      {pieces.map((p, i) => (
+        <span
+          key={i}
+          className="recap-confetti-piece absolute top-0 rounded-[1px]"
+          style={{
+            left: `${p.left}%`,
+            width: p.w,
+            height: p.w + 3,
+            background: p.color,
+            ["--delay" as string]: `${p.delay}s`,
+            ["--dur" as string]: `${p.dur}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** The celebratory season recap: champion band, award cards, fun-stats strip,
+ *  heroes of the season, and the points race. ONE render path across three cases:
+ *  a LIVE current season (pass a live-built recap + inProgress), an ARCHIVED season
+ *  (pass the stored recap), or a LEGACY archive (no recap — champion, entries-only
+ *  awards, and the entries-based points race still render; pool-only cards drop). */
+export function SeasonRecap({
+  entries,
+  recap,
+  meta,
+  viewerUid,
+  inProgress,
+}: {
+  entries: LeagueStandingEntry[];
+  recap?: LeagueSeasonRecap;
+  meta: { name: string; seasonNumber?: number; startDate: string; endDate: string; players: number };
+  viewerUid?: string;
+  inProgress?: boolean;
+}) {
+  // Played members first, so the champion (first played), the points-race ranks,
+  // and the frozen StandingsTable below all agree on who is #1 (see
+  // partitionPlayedFirst — a 0-gp member can otherwise sort to the top).
+  const ordered = useMemo(() => partitionPlayedFirst(entries), [entries]);
+  const awards = useMemo(() => deriveEntryAwards(ordered), [ordered]);
+  const prog = useMemo(() => progressionFromEntries(ordered), [ordered]);
+  const byUid = useMemo(() => new Map(ordered.map((e) => [e.uid, e])), [ordered]);
+
+  const heroes = recap?.heroesByUid || {};
+  const champ = awards.champion;
+  if (!champ) return null;
+
+  const record = (e: LeagueStandingEntry) => `${e.wins}-${e.losses}${e.draws ? `-${e.draws}` : ""}`;
+  const onFireEntry = recap?.onFire ? byUid.get(recap.onFire.uid) : undefined;
+  const hasAwards = !!(onFireEntry || awards.sharpest || awards.iron || awards.biggestNight || awards.roadWarrior);
+  const funStats: { label: string; value: string | number }[] = [
+    { label: "Matches", value: recap?.pool?.totalMatches ?? entries.reduce((s, e) => s + e.matches, 0) },
+    { label: "Players", value: meta.players },
+    { label: "Events", value: recap?.pool?.events ?? "—" },
+    { label: "Heroes", value: recap?.pool?.heroes ?? "—" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* 1 — Champion band (opaque surface + gold wash; confetti only once Final) */}
+      <div
+        className="relative overflow-hidden rounded-2xl border border-fab-gold/40"
+        style={{ backgroundColor: "var(--color-fab-surface)" }}
+      >
+        <div
+          aria-hidden
+          className="absolute inset-0 z-0"
+          style={{ background: "radial-gradient(120% 150% at 50% -30%, color-mix(in srgb, var(--color-fab-gold) 20%, transparent), transparent 62%)" }}
+        />
+        {!inProgress && <ChampionConfetti />}
+        <div className="relative z-10 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <CrestedAvatar photoUrl={champ.photoUrl} name={champ.displayName} hero={heroes[champ.uid]} size={64} />
+            <div className="min-w-0">
+              <p className={`inline-flex items-center gap-1.5 ${EYEBROW_CLS}`}>
+                <Crown className="h-3.5 w-3.5 text-fab-gold" /> {inProgress ? "Leading" : "Season champion"}
+              </p>
+              <Link
+                href={`/player/${champ.username}`}
+                className="mt-0.5 block truncate text-xl font-black text-fab-text hover:text-fab-gold sm:text-2xl"
+              >
+                {champ.displayName}
+              </Link>
+              <p className="mt-0.5 truncate text-[11px] text-fab-dim">
+                {meta.name} · {formatDateRange(meta.startDate, meta.endDate)} · {meta.players}{" "}
+                {meta.players === 1 ? "player" : "players"}
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0 pl-20 text-left sm:pl-0 sm:text-right">
+            <p className="text-3xl font-black tabular-nums text-fab-gold sm:text-4xl">{champ.points}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-fab-dim">points · {record(champ)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 2 — Award cards (entries-derived except On fire; each self-guards) */}
+      {hasAwards && (
+        <div>
+          <p className={`mb-2 ${EYEBROW_CLS}`}>{inProgress ? "Season so far" : "Season awards"}</p>
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            {onFireEntry && recap?.onFire && (
+              <StoryCard
+                icon={<Flame className="h-3.5 w-3.5 text-orange-400" />}
+                kicker="On fire"
+                photoUrl={onFireEntry.photoUrl}
+                name={onFireEntry.displayName}
+                hero={heroes[onFireEntry.uid]}
+                stat={`${recap.onFire.streak}W`}
+                statCls="text-orange-300"
+                proof="Longest win streak"
+              />
+            )}
+            {awards.sharpest && (
+              <StoryCard
+                icon={<Target className="h-3.5 w-3.5 text-emerald-400" />}
+                kicker="Sharpest"
+                photoUrl={awards.sharpest.entry.photoUrl}
+                name={awards.sharpest.entry.displayName}
+                hero={heroes[awards.sharpest.entry.uid]}
+                stat={`${awards.sharpest.winRate}%`}
+                statCls="text-emerald-300"
+                proof={`${awards.sharpest.entry.wins}-${awards.sharpest.entry.losses} record`}
+              />
+            )}
+            {awards.iron && (
+              <StoryCard
+                icon={<Swords className="h-3.5 w-3.5 text-sky-400" />}
+                kicker="Iron player"
+                photoUrl={awards.iron.entry.photoUrl}
+                name={awards.iron.entry.displayName}
+                hero={heroes[awards.iron.entry.uid]}
+                stat={`${awards.iron.events}`}
+                statCls="text-sky-300"
+                proof="Events attended"
+              />
+            )}
+            {awards.biggestNight && (
+              <StoryCard
+                icon={<Zap className="h-3.5 w-3.5 text-fab-gold" />}
+                kicker="Biggest night"
+                photoUrl={awards.biggestNight.entry.photoUrl}
+                name={awards.biggestNight.entry.displayName}
+                hero={heroes[awards.biggestNight.entry.uid]}
+                stat={`+${awards.biggestNight.points}`}
+                statCls="text-fab-gold"
+                proof={`${awards.biggestNight.name}${awards.biggestNight.date ? ` · ${awards.biggestNight.date.slice(5)}` : ""}`}
+              />
+            )}
+            {awards.roadWarrior && (
+              <StoryCard
+                icon={<MapPin className="h-3.5 w-3.5 text-violet-400" />}
+                kicker="Road warrior"
+                photoUrl={awards.roadWarrior.entry.photoUrl}
+                name={awards.roadWarrior.entry.displayName}
+                hero={heroes[awards.roadWarrior.entry.uid]}
+                stat={`${awards.roadWarrior.stores}`}
+                statCls="text-violet-300"
+                proof="Stores visited"
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3 — Fun-stats strip (pool headline with entries fallback → never blanks) */}
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {funStats.map((t) => (
+          <div key={t.label} className={`${CARD_CLS} px-3 py-2.5`}>
+            <p className="text-2xl font-black tabular-nums text-fab-text">{t.value}</p>
+            <p className={EYEBROW_CLS}>{t.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 4 — Heroes of the season (pool-only; hidden on legacy archives) */}
+      {recap?.topHeroes?.length ? (
+        <div className={`${CARD_CLS} p-4`}>
+          <h3 className={`mb-2 ${CARD_TITLE_CLS}`}>Heroes of the season</h3>
+          <div className="space-y-1.5">
+            {recap.topHeroes.map((h) => {
+              const wr = Math.round(h.winRate * 100);
+              return (
+                <div key={h.hero} className="flex items-center gap-2">
+                  <HeroImg name={h.hero} size="sm" />
+                  <span className="min-w-0 flex-1 truncate text-xs font-bold text-fab-text" title={h.hero}>
+                    {h.hero.split(",")[0]}
+                  </span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-fab-dim">{h.played} played</span>
+                  <span className="w-10 shrink-0 text-right text-[11px] font-bold tabular-nums text-fab-muted">{wr}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 5 — Points race (entries-derived; renders with no pool) */}
+      {prog.eventDates.length >= 2 && <PointsProgression data={prog} viewerUid={viewerUid ?? null} />}
+    </div>
+  );
 }
 
 // ── Meta: KPI strip + hero bars + matrix + store turf + activity ───────────────

@@ -413,6 +413,24 @@ export interface League {
   updatedAt: string;
 }
 
+/** Pool-only extras captured when a season closes, so an archived recap stays rich
+ *  without re-reading the (now out-of-window) match pool. Anything the frozen
+ *  `entries` can already reconstruct — champion, sharpest, iron player, biggest
+ *  night, road warrior, and the points race — is intentionally NOT stored here.
+ *  Absent on legacy archives (pre-recap); every consumer must falsy-guard. */
+export interface LeagueSeasonRecap {
+  version: 1;
+  /** Signature hero per member uid — crest fuel for the podium + award cards. */
+  heroesByUid?: Record<string, string>;
+  /** Longest league-wide consecutive-win streak (>= 3). Streak order can't be
+   *  reconstructed from entries, so it must be frozen here. */
+  onFire?: { uid: string; streak: number };
+  /** Top heroes by play, with win rate over decisive matches. */
+  topHeroes?: { hero: string; played: number; wins: number; losses: number; winRate: number }[];
+  /** Frozen headline pool counts for the fun-stats strip. */
+  pool?: { totalMatches: number; decisiveMatches: number; players: number; stores: number; heroes: number; events: number };
+}
+
 /** A frozen snapshot of a past league season, archived when a new season starts.
  *  Lives at leagues/{leagueId}/seasons/{seasonId}. */
 export interface LeagueSeasonArchive {
@@ -427,6 +445,10 @@ export interface LeagueSeasonArchive {
   entries: LeagueStandingEntry[];
   memberCountAtClose: number;
   archivedAt: string;
+  /** Celebratory pool-only extras for the recap view (heroes/streak/top heroes/
+   *  pool counts). Absent on legacy archives, which still render a full recap from
+   *  `entries` alone. */
+  recap?: LeagueSeasonRecap;
 }
 
 export interface LeagueMember {

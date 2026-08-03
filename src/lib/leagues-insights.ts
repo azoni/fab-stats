@@ -33,6 +33,7 @@ import {
   type League,
   type LeagueMember,
   type LeagueStandingEntry,
+  type LeagueSeasonRecap,
   type MatchRecord,
 } from "@/types";
 
@@ -277,18 +278,18 @@ export interface PointsProgressionResult {
   eventDates: string[]; // sorted distinct event dates
 }
 
-/** Cumulative league-points progression per player over the sorted union of event
- *  DATES. Built from standingsFromPool's per-event breakdown (floor + attendance
- *  already applied), aggregated by date and carried forward — so each line ends at
- *  the player's EXACT final standing (same scoring as the Standings tab). */
-export function pointsProgression(matches: PooledMatch[], league: League): PointsProgressionResult {
-  const standings = standingsFromPool(matches, league); // scoring parity + rank order
-
+/** Cumulative league-points progression from an ALREADY-RANKED standings list,
+ *  using each entry's per-event breakdown ({date, points}, floor + attendance
+ *  already applied). Aggregated by date and carried forward, so each line ends at
+ *  the entry's EXACT `points`. Needs no match pool — the same chart therefore
+ *  renders for archived and legacy seasons (any entry lacking a breakdown just
+ *  contributes a flat line). Entries must already be in final-rank order. */
+export function progressionFromEntries(entries: LeagueStandingEntry[]): PointsProgressionResult {
   const dateSet = new Set<string>();
-  for (const e of standings) for (const b of e.breakdown || []) if (b.date) dateSet.add(b.date);
+  for (const e of entries) for (const b of e.breakdown || []) if (b.date) dateSet.add(b.date);
   const eventDates = [...dateSet].sort((a, b) => a.localeCompare(b));
 
-  const series: ProgressionSeries[] = standings.map((e, i) => ({
+  const series: ProgressionSeries[] = entries.map((e, i) => ({
     uid: e.uid,
     name: e.displayName,
     username: e.username,
@@ -299,7 +300,7 @@ export function pointsProgression(matches: PooledMatch[], league: League): Point
 
   // Per-uid per-date point delta (two events on one date sum into that date).
   const deltaByUid = new Map<string, Map<string, number>>();
-  for (const e of standings) {
+  for (const e of entries) {
     const m = new Map<string, number>();
     for (const b of e.breakdown || []) {
       if (!b.date) continue;
@@ -325,6 +326,13 @@ export function pointsProgression(matches: PooledMatch[], league: League): Point
   }
   // Invariant: running.get(uid) === series[uid].final (breakdown sums to points).
   return { rows, series, eventDates };
+}
+
+/** Cumulative league-points progression per player over the sorted union of event
+ *  DATES. Thin wrapper: derive scoring-parity standings from the pool, then build
+ *  the progression from their per-event breakdowns (see progressionFromEntries). */
+export function pointsProgression(matches: PooledMatch[], league: League): PointsProgressionResult {
+  return progressionFromEntries(standingsFromPool(matches, league));
 }
 
 export interface HeroMetaRow {
@@ -569,4 +577,105 @@ export function poolSummary(matches: PooledMatch[]): PoolSummary {
     heroes: heroes.size,
     events: events.size,
   };
+}
+
+// ── Season recap ──────────────────────────────────────────────────────────────
+
+/** The pool-only extras a season recap needs, frozen at close (see
+ *  LeagueSeasonRecap). Everything else the recap shows is derived from the frozen
+ *  standings `entries`, so a legacy archive (no recap) still renders richly.
+ *  Never emits `undefined` fields — Firestore rejects them, and startNewSeason
+ *  writes this blob verbatim. */
+export function buildSeasonRecap(matches: PooledMatch[]): LeagueSeasonRecap {
+  if (!matches.length) return { version: 1 };
+  const s = poolSummary(matches);
+  const recap: LeagueSeasonRecap = {
+    version: 1,
+    heroesByUid: signatureHeroByUid(matches),
+    pool: {
+      totalMatches: s.totalMatches,
+      decisiveMatches: s.decisiveMatches,
+      players: s.players,
+      stores: s.stores,
+      heroes: s.heroes,
+      events: s.events,
+    },
+  };
+  const streak = longestWinStreaks(matches).find((x) => x.streak >= 3);
+  if (streak) recap.onFire = { uid: streak.memberUid, streak: streak.streak };
+  const top = heroMetaFromPool(matches).slice(0, 3);
+  if (top.length)
+    recap.topHeroes = top.map((h) => ({
+      hero: h.hero,
+      played: h.played,
+      wins: h.wins,
+      losses: h.losses,
+      winRate: h.winRate,
+    }));
+  return recap;
+}
+
+/** Season awards derivable from the frozen standings alone (no pool), so they
+ *  render on archived AND legacy seasons. Each is self-nulling under its threshold
+ *  so a thin season quietly collapses to just the champion. */
+export interface SeasonAwards {
+  champion: LeagueStandingEntry | null;
+  sharpest: { entry: LeagueStandingEntry; winRate: number } | null;
+  iron: { entry: LeagueStandingEntry; events: number } | null;
+  biggestNight: { entry: LeagueStandingEntry; points: number; name: string; date: string } | null;
+  roadWarrior: { entry: LeagueStandingEntry; stores: number } | null;
+}
+
+/** Partition standings so members who have played rank ahead of never-played
+ *  (0-gp) members, preserving each group's internal order. Mirrors the live
+ *  BroadcastStandings partition, so a frozen table's #1 always matches the recap
+ *  champion (deriveEntryAwards crowns the first PLAYED member). Needed because
+ *  compareStandings breaks a 0-point tie on fewest losses, and a 0-gp member has
+ *  0 losses — so in an all-winless season a never-played member can otherwise sort
+ *  to the top. No-op when either group is empty. */
+export function partitionPlayedFirst(entries: LeagueStandingEntry[]): LeagueStandingEntry[] {
+  const played = entries.filter((e) => (e.matches || 0) > 0);
+  const yetToPlay = entries.filter((e) => (e.matches || 0) === 0);
+  return played.length > 0 && yetToPlay.length > 0 ? [...played, ...yetToPlay] : entries;
+}
+
+export function deriveEntryAwards(entries: LeagueStandingEntry[]): SeasonAwards {
+  const champion = entries.find((e) => e.matches > 0) || null;
+
+  // Sharpest — best win rate over decisive, gated to >= 6 decisive so a bye/short
+  // sample can't top it (mirrors the live StorylineCards' Sharpest).
+  let sharpest: SeasonAwards["sharpest"] = null;
+  for (const e of entries) {
+    const decisive = e.wins + e.losses + e.draws;
+    if (e.matches - e.byes < 6 || decisive === 0) continue;
+    const wr = Math.round((e.wins / decisive) * 100);
+    if (!sharpest || wr > sharpest.winRate) sharpest = { entry: e, winRate: wr };
+  }
+
+  // Iron player — most distinct events, min 2.
+  let iron: SeasonAwards["iron"] = null;
+  for (const e of entries) {
+    const ev = e.events ?? 0;
+    if (ev < 2) continue;
+    if (!iron || ev > iron.events) iron = { entry: e, events: ev };
+  }
+
+  // Biggest night — the single highest-scoring event across every player.
+  let biggestNight: SeasonAwards["biggestNight"] = null;
+  for (const e of entries) {
+    for (const b of e.breakdown || []) {
+      if (!biggestNight || b.points > biggestNight.points)
+        biggestNight = { entry: e, points: b.points, name: b.name || b.date || "Event", date: b.date };
+    }
+  }
+  if (biggestNight && biggestNight.points <= 0) biggestNight = null;
+
+  // Road warrior — most stores visited, min 2 (self-nulls in single-store leagues).
+  let roadWarrior: SeasonAwards["roadWarrior"] = null;
+  for (const e of entries) {
+    if ((e.storesPlayed || 0) < 2) continue;
+    if (!roadWarrior || e.storesPlayed > roadWarrior.stores) roadWarrior = { entry: e, stores: e.storesPlayed };
+  }
+
+  return { champion, sharpest, iron, biggestNight, roadWarrior };
 }
