@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
 import type { League } from "@/types";
-import { pointsProgression, type PooledMatch, type ProgressionRow } from "@/lib/leagues-insights";
+import { pointsProgression, type PooledMatch, type ProgressionRow, type PointsProgressionResult } from "@/lib/leagues-insights";
 
 const CHART = { border: "#2a2a30", muted: "#888899" };
 // [0] = fab-gold so the leader is always gold; wraps modulo for > palette length.
@@ -21,13 +21,20 @@ const LINE_PALETTE = [
 export function PointsProgression({
   matches,
   league,
+  data,
   viewerUid,
 }: {
-  matches: PooledMatch[];
-  league: League;
+  matches?: PooledMatch[];
+  league?: League;
+  /** Precomputed progression (e.g. the season recap's entries-derived race).
+   *  When given, `matches`/`league` are ignored. */
+  data?: PointsProgressionResult;
   viewerUid: string | null;
 }) {
-  const { rows, series, eventDates } = useMemo(() => pointsProgression(matches, league), [matches, league]);
+  const { rows, series, eventDates } = useMemo(
+    () => data ?? pointsProgression(matches ?? [], league!),
+    [data, matches, league],
+  );
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [hoverUid, setHoverUid] = useState<string | null>(null);
 

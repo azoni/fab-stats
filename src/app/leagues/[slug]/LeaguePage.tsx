@@ -34,6 +34,8 @@ import {
   deriveFilterOptions,
   applyFilters,
   poolSummary,
+  buildSeasonRecap,
+  partitionPlayedFirst,
   type LeagueMatchPool,
   type LeagueFilters,
 } from "@/lib/leagues-insights";
@@ -42,6 +44,9 @@ import {
   LeagueControlBar,
   BroadcastStandings,
   StorylineCards,
+  SeasonReminderBanner,
+  SeasonRecap,
+  seasonClosePhase,
   KpiStrip,
   HeroMetaBars,
   MatchupGrid,
@@ -264,6 +269,12 @@ export default function LeaguePage() {
     if (filtersActive && pool) return standingsFromPool(filteredMatches, pool.league);
     return standings || [];
   }, [filtersActive, pool, filteredMatches, standings]);
+
+  // Pool-only recap extras (signature heroes, top heroes, longest streak, headline
+  // counts) built from the full in-window pool. Feeds the live recap preview when a
+  // season is closing, and is archived verbatim by "New season" so past recaps stay
+  // rich. Full pool (not the filtered set) — the preview is suppressed under filters.
+  const liveRecap = useMemo(() => (pool ? buildSeasonRecap(namedMatches) : undefined), [pool, namedMatches]);
 
   // Auto-refresh the standings snapshot when it's stale, so imported matches show
   // up without anyone clicking "Refresh". Standings are otherwise a manual, on-click
@@ -580,11 +591,28 @@ export default function LeaguePage() {
         <NewSeasonModal
           league={league}
           stores={storeRows.map((r) => ({ slug: r.slug, name: r.name }))}
+          recap={liveRecap}
           onClose={() => setShowNewSeason(false)}
           onDone={() => {
             setShowNewSeason(false);
             reloadSeasons();
           }}
+        />
+      )}
+
+      {/* Closing-window reminder to import events (final week / ended), or a draft
+          prompt for managers. Only over the current season, never a past one. */}
+      {viewingSeasonId === null && (
+        <SeasonReminderBanner
+          league={league}
+          canManage={canManage}
+          isMember={isMember}
+          onRefresh={handleRecompute}
+          onViewRecap={() => {
+            setViewingSeasonId(null);
+            setLeagueTab("standings");
+          }}
+          onEdit={() => setEditing(true)}
         />
       )}
 
@@ -603,6 +631,11 @@ export default function LeaguePage() {
 
       {leagueTab === "standings" && (() => {
         const viewingSeason = viewingSeasonId ? seasons.find((s) => s.id === viewingSeasonId) : null;
+        const today = new Date().toISOString().slice(0, 10);
+        const { finalWeek, ended } = seasonClosePhase(league, today);
+        // Celebrate the live standings once the season is closing — but never under a
+        // filter (a store/format cut must not crown a partial-season champion).
+        const showLiveRecap = (finalWeek || ended) && !filtersActive && displayStandings.length > 0;
         return (
         <section className="mt-5 space-y-4">
           <div className="flex items-center justify-between gap-2">
@@ -652,10 +685,24 @@ export default function LeaguePage() {
 
           {viewingSeason ? (
             <>
-              <p className="text-[11px] text-fab-dim">
-                Final standings — {viewingSeason.name} ({viewingSeason.startDate} → {viewingSeason.endDate}).
-              </p>
-              <StandingsTable standings={viewingSeason.entries} league={league} />
+              <SeasonRecap
+                entries={viewingSeason.entries}
+                recap={viewingSeason.recap}
+                meta={{
+                  name: viewingSeason.name,
+                  seasonNumber: viewingSeason.seasonNumber,
+                  startDate: viewingSeason.startDate,
+                  endDate: viewingSeason.endDate,
+                  players: viewingSeason.memberCountAtClose,
+                }}
+                viewerUid={user?.uid}
+              />
+              <div className="space-y-2">
+                <p className="text-[11px] text-fab-dim">
+                  Full standings — {viewingSeason.name} ({viewingSeason.startDate} → {viewingSeason.endDate}).
+                </p>
+                <StandingsTable standings={viewingSeason.entries} league={league} />
+              </div>
             </>
           ) : (
             <>
@@ -667,7 +714,22 @@ export default function LeaguePage() {
 
               {displayStandings.length > 0 ? (
                 <>
-                  <StorylineCards matches={filteredMatches} standings={displayStandings} />
+                  {showLiveRecap ? (
+                    <SeasonRecap
+                      entries={displayStandings}
+                      recap={liveRecap}
+                      meta={{
+                        name: league.seasonName || `Season ${league.seasonNumber || 1}`,
+                        startDate: league.startDate,
+                        endDate: league.endDate,
+                        players: members.length,
+                      }}
+                      viewerUid={user?.uid}
+                      inProgress={finalWeek && !ended}
+                    />
+                  ) : (
+                    <StorylineCards matches={filteredMatches} standings={displayStandings} />
+                  )}
                   <BroadcastStandings standings={displayStandings} signatureHeroes={signatureHeroes} form={form} />
                 </>
               ) : filtersActive ? (
@@ -822,6 +884,9 @@ function StandingsTable({
     );
   }
   const showByes = standings.some((e) => (e.byes || 0) > 0);
+  // Played members first (matches BroadcastStandings + the recap champion), so a
+  // never-played 0-gp member can't be labelled #1 above members who competed.
+  const ordered = partitionPlayedFirst(standings);
   return (
     <div className="overflow-hidden rounded-lg border border-fab-border/70 bg-fab-bg/45">
       <div className="flex items-center justify-between gap-2 border-b border-fab-border/40 bg-fab-bg/30 px-3 py-2 text-[10px] text-fab-dim">
@@ -852,7 +917,7 @@ function StandingsTable({
           </tr>
         </thead>
         <tbody>
-          {standings.map((e, i) => (
+          {ordered.map((e, i) => (
             <tr
               key={e.uid}
               className={`border-t border-fab-border/40 ${i < 3 ? "bg-fab-gold/[0.04]" : ""}`}

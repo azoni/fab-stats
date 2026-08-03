@@ -7,18 +7,22 @@
  */
 import { useState } from "react";
 import { toast } from "sonner";
-import type { League, LeagueSession } from "@/types";
+import type { League, LeagueSession, LeagueSeasonRecap } from "@/types";
 import { startNewSeason } from "@/lib/leagues-scoring";
 import { LeagueScheduleBuilder } from "./LeagueScheduleBuilder";
 
 export function NewSeasonModal({
   league,
   stores,
+  recap,
   onClose,
   onDone,
 }: {
   league: League;
   stores: { slug: string; name: string }[];
+  /** Recap snapshot of the CLOSING season, built by the page from its live pool.
+   *  Archived alongside the frozen standings so past recaps stay rich. */
+  recap?: LeagueSeasonRecap;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -49,6 +53,7 @@ export function NewSeasonModal({
         startDate,
         endDate,
         sessions: sessions.length ? sessions : undefined,
+        recap,
       });
       toast.success(`Season ${n} started — previous standings archived.`);
       onDone();

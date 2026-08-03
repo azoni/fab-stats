@@ -5,7 +5,7 @@ import { slugifyStoreName } from "./store-directory";
 import { getStoreAliases, buildAliasIndex, expandSlugSet, resolveCanonicalSlug, type StoreAliasIndex } from "./store-aliases";
 import { getMatchesInDateRange } from "./firestore-storage";
 import { getEventType } from "./stats";
-import { MatchResult, type League, type LeagueScoringRules, type LeagueStandingEntry, type LeagueEventBreakdown, type LeagueSession, type MatchRecord } from "@/types";
+import { MatchResult, type League, type LeagueScoringRules, type LeagueStandingEntry, type LeagueEventBreakdown, type LeagueSession, type LeagueSeasonRecap, type MatchRecord } from "@/types";
 
 /** Build the set of allowed "slug|date" keys from a league's scheduled sessions,
  *  alias-expanding each session's store the same way `storeSlugSet` is expanded. */
@@ -301,6 +301,10 @@ export async function startNewSeason(
     sessions?: LeagueSession[];
     storeSlugs?: string[];
     scoringRules?: LeagueScoringRules;
+    /** Pool-only recap extras, computed client-side from the already-loaded match
+     *  pool and passed in as an opaque blob. Kept out of this module so it never
+     *  imports leagues-insights (which imports heavily from here → a cycle). */
+    recap?: LeagueSeasonRecap;
   },
 ): Promise<number> {
   const league = await getLeague(leagueId);
@@ -319,6 +323,8 @@ export async function startNewSeason(
     entries,
     memberCountAtClose: league.memberCount,
     archivedAt: new Date().toISOString(),
+    // Only write recap when present — Firestore rejects an explicit `undefined`.
+    ...(next.recap ? { recap: next.recap } : {}),
   });
 
   // 2) Roll into the new season (updateLeague derives storeSlugs/window from
