@@ -45,10 +45,14 @@ export function LeagueScheduleBuilder({
   sessions,
   onChange,
   stores,
+  hideIntro = false,
 }: {
   sessions: LeagueSession[];
   onChange: (sessions: LeagueSession[]) => void;
   stores: StoreOption[];
+  /** Suppress the built-in "Optional…" blurb when the caller supplies its own
+   *  framing (e.g. the season modal's mode toggle already explains it). */
+  hideIntro?: boolean;
 }) {
   const nameBySlug = useMemo(() => {
     const m: Record<string, string> = {};
@@ -92,12 +96,14 @@ export function LeagueScheduleBuilder({
 
   return (
     <div className="space-y-3">
-      <div>
-        <p className="text-xs text-fab-dim">
-          Optional. Add specific dates per store and matches count only on those days. Leave empty to
-          count any match at a league store within the date range.
-        </p>
-      </div>
+      {!hideIntro && (
+        <div>
+          <p className="text-xs text-fab-dim">
+            Optional. Add specific dates per store and matches count only on those days. Leave empty to
+            count any match at a league store within the date range.
+          </p>
+        </div>
+      )}
 
       {disabled ? (
         <p className="text-xs text-fab-muted italic">Add at least one store above to schedule dates.</p>
