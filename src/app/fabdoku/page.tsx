@@ -57,6 +57,7 @@ import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
+import { useGameFx } from "@/components/games/fx";
 import type { GameState, FaBdokuStats, UniquenessData, PickData } from "@/lib/fabdoku/types";
 
 function buildGrid(state: GameState): ("correct" | "wrong" | "empty")[][] {
@@ -90,6 +91,14 @@ export default function FaBdokuPage() {
   const [showYesterdayShare, setShowYesterdayShare] = useState(false);
   const [isReplay, setIsReplay] = useState(false);
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
+  // Celebrate only a win earned this session (the reload path never sets this).
+  const [celebrate, setCelebrate] = useState(false);
+  // The cell filled by the latest pick — gates the placement pop/shake so it
+  // never replays when filled cells remount on reload. placeSeq re-keys the cell
+  // so replacing the same cell twice still animates.
+  const [lastPlaced, setLastPlaced] = useState<[number, number] | null>(null);
+  const [placeSeq, setPlaceSeq] = useState(0);
+  const { play, haptic } = useGameFx();
   const sharedDatesRef = useRef(new Set<string>());
 
   // Fire markShared + feed event (deduped per date so multiple clicks don't spam)
@@ -203,9 +212,11 @@ export default function FaBdokuPage() {
   const handleCellClick = useCallback(
     (row: number, col: number) => {
       if (!gameState || gameState.completed) return;
+      play("click");
+      haptic("light");
       setSelectedCell([row, col]);
     },
-    [gameState]
+    [gameState, play, haptic]
   );
 
   const handleHeroSelect = useCallback(
@@ -242,6 +253,22 @@ export default function FaBdokuPage() {
       setGameState(newState);
       saveGameState(newState);
       setSelectedCell(null);
+      setLastPlaced([row, col]);
+      setPlaceSeq((s) => s + 1);
+
+      // Placement feedback — on the finishing pick the win/lose fx below owns the
+      // sound, so the per-placement chirp is skipped to avoid stacking.
+      if (!isCompleted) {
+        play(isCorrect ? "correct" : "wrong");
+        haptic(isCorrect ? "success" : "error");
+      } else if (isWon) {
+        setCelebrate(true);
+        play("win");
+        haptic("success");
+      } else {
+        play("lose");
+        haptic("error");
+      }
 
       // Save to Firestore on completion
       if (isCompleted) {
@@ -296,7 +323,7 @@ export default function FaBdokuPage() {
         }
       }
     },
-    [gameState, selectedCell, puzzle, user?.uid, profile, dateStr, refreshUniqueness, isReplay]
+    [gameState, selectedCell, puzzle, user?.uid, profile, dateStr, refreshUniqueness, isReplay, play, haptic]
   );
 
   // Card mode renders a separate component entirely
@@ -528,6 +555,8 @@ export default function FaBdokuPage() {
         disabled={gameState.completed}
         onCellClick={handleCellClick}
         cellPcts={gameState.completed && uniqueness ? uniqueness.cellPcts : undefined}
+        lastPlaced={lastPlaced}
+        placeSeq={placeSeq}
       />
 
       {/* Result panel (shown when game is over) */}
@@ -537,6 +566,7 @@ export default function FaBdokuPage() {
           stats={stats}
           uniqueness={uniqueness}
           onShared={() => triggerShared(gameState, dateStr, uniqueness)}
+          celebrate={celebrate}
         />
       )}
 
@@ -558,6 +588,8 @@ export default function FaBdokuPage() {
                 setShowResult(false);
                 setUniqueness(null);
                 setIsReplay(true);
+                setCelebrate(false);
+                setLastPlaced(null);
               }}
               className="px-4 py-2 text-xs font-medium rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/50 transition-colors"
             >

@@ -72,6 +72,10 @@ interface CardFaBdokuBoardProps {
   onCellClick: (row: number, col: number) => void;
   cellPcts?: number[][];
   selectedCell?: [number, number] | null;
+  /** The cell filled by the latest pick (placement pop/shake; reload-safe). */
+  lastPlaced?: [number, number] | null;
+  /** Bumped per placement so replacing the SAME cell re-triggers its animation. */
+  placeSeq?: number;
 }
 
 export function CardFaBdokuBoard({
@@ -82,6 +86,8 @@ export function CardFaBdokuBoard({
   onCellClick,
   cellPcts,
   selectedCell,
+  lastPlaced,
+  placeSeq = 0,
 }: CardFaBdokuBoardProps) {
   return (
     <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full max-w-[400px] mx-auto">
@@ -97,9 +103,10 @@ export function CardFaBdokuBoard({
 
           {cols.map((_, ci) => {
             const cell = cells[ri][ci];
+            const justPlaced = lastPlaced?.[0] === ri && lastPlaced?.[1] === ci;
             return (
               <CardCell
-                key={`${ri}-${ci}`}
+                key={justPlaced ? `${ri}-${ci}:${placeSeq}` : `${ri}-${ci}`}
                 cardId={cell.cardId}
                 correct={cell.correct}
                 locked={cell.locked}
@@ -107,6 +114,8 @@ export function CardFaBdokuBoard({
                 onClick={() => onCellClick(ri, ci)}
                 pct={cellPcts?.[ri]?.[ci]}
                 selected={selectedCell?.[0] === ri && selectedCell?.[1] === ci}
+                justPlaced={justPlaced}
+                revealDelayMs={(ri * cols.length + ci) * 80}
               />
             );
           })}

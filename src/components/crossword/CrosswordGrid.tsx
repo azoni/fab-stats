@@ -16,6 +16,17 @@ interface CrosswordGridProps {
   onTab: (shift: boolean) => void;
   showErrors?: boolean;
   checkedCells?: Set<string>;
+  /** Cells of words solved by the latest keystroke — gold pulse. */
+  justSolvedCells?: Set<string>;
+  /** Cells just filled by Reveal Word, keyed to their letter index — flip cascade. */
+  revealCells?: Map<string, number> | null;
+  /** Bumped per Check press so repeat checks retrigger the wrong-cell shake. */
+  checkSeq?: number;
+  /** Puzzle just completed this session — a diagonal gold wave sweeps the grid. */
+  celebrateWave?: boolean;
+  /** "r,c" of the cell the player just typed into — only its letter springs in
+   *  (letters remount on reload and on checkedCells clears; those must stay still). */
+  lastTypedKey?: string | null;
 }
 
 export function CrosswordGrid({
@@ -30,6 +41,11 @@ export function CrosswordGrid({
   onTab,
   showErrors,
   checkedCells,
+  justSolvedCells,
+  revealCells,
+  checkSeq = 0,
+  celebrateWave = false,
+  lastTypedKey = null,
 }: CrosswordGridProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -155,13 +171,23 @@ export function CrosswordGrid({
               return false;
             });
 
+            const isJustSolved = justSolvedCells?.has(key);
+            const revealIdx = revealCells?.get(key);
+            // The wave sweeps diagonally from the top-left on completion.
+            const waveDelay = celebrateWave && !isBlack ? (r + c) * 35 : undefined;
+
             return (
               <div
-                key={key}
+                // checkSeq in the key remounts wrongly-checked cells so the shake
+                // retriggers on repeat Check presses.
+                key={`${key}:${isCheckedWrong ? checkSeq : 0}`}
                 onClick={() => !isBlack && onCellClick(r, c)}
                 className={`relative aspect-square flex items-center justify-center cursor-pointer select-none ${bgClass} ${
                   isActive ? "ring-2 ring-fab-gold ring-inset z-10" : ""
-                } ${isBlack ? "cursor-default" : ""}`}
+                } ${isBlack ? "cursor-default" : ""} ${isJustSolved ? "game-match-pop" : ""} ${
+                  isCheckedWrong ? "game-shake" : ""
+                } ${waveDelay !== undefined ? "game-flip-in" : ""}`}
+                style={waveDelay !== undefined ? { animationDelay: `${waveDelay}ms` } : undefined}
               >
                 {/* Clue number */}
                 {number !== null && (
@@ -169,12 +195,18 @@ export function CrosswordGrid({
                     {number}
                   </span>
                 )}
-                {/* Letter */}
+                {/* Letter — only the JUST-typed letter springs in (reload/remounted
+                    letters stay still); revealed words flip in one by one, and get
+                    no fallback animation when the reveal window expires. */}
                 {!isBlack && letter && (
                   <span
+                    key={letter}
                     className={`text-sm sm:text-base font-bold leading-none ${
                       revealed ? "text-fab-muted italic" : isSolved ? "text-fab-win" : "text-fab-text"
+                    } ${
+                      revealIdx !== undefined ? "game-flip-in" : !revealed && key === lastTypedKey ? "game-pop" : ""
                     }`}
+                    style={revealIdx !== undefined ? { animationDelay: `${revealIdx * 45}ms` } : undefined}
                   >
                     {letter}
                   </span>

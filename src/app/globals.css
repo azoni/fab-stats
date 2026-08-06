@@ -1167,6 +1167,15 @@ table thead tr {
 }
 .game-rise { animation: game-rise 0.4s ease-out both; }
 
+/* Flip in, THEN gold-pulse — for elements that need both (stacking two single-
+   animation classes on one element would let the later stylesheet rule win).
+   Set --fx-delay instead of animation-delay so the sequencing survives staggering. */
+.game-flip-in-gold {
+  animation:
+    game-flip-in 0.5s ease-out var(--fx-delay, 0s) both,
+    game-match-pop 0.6s ease-out calc(var(--fx-delay, 0s) + 0.55s);
+}
+
 /* Celebration confetti — a single finite burst (WinBurst sets --dx/--fall/--spin/
    --delay/--dur per piece). */
 @keyframes game-confetti {
@@ -1178,6 +1187,7 @@ table thead tr {
 
 @media (prefers-reduced-motion: reduce) {
   .game-flip-in,
+  .game-flip-in-gold,
   .game-pop,
   .game-match-pop,
   .game-shake,

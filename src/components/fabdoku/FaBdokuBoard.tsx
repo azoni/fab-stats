@@ -70,6 +70,10 @@ interface FaBdokuBoardProps {
   cellPcts?: number[][];
   /** Highlighted cell for recap selection */
   selectedCell?: [number, number] | null;
+  /** The cell filled by the latest pick (placement pop/shake; reload-safe). */
+  lastPlaced?: [number, number] | null;
+  /** Bumped per placement so replacing the SAME cell re-triggers its animation. */
+  placeSeq?: number;
 }
 
 export function FaBdokuBoard({
@@ -80,6 +84,8 @@ export function FaBdokuBoard({
   onCellClick,
   cellPcts,
   selectedCell,
+  lastPlaced,
+  placeSeq = 0,
 }: FaBdokuBoardProps) {
   return (
     <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full max-w-[400px] mx-auto">
@@ -100,9 +106,12 @@ export function FaBdokuBoard({
           {/* Cells */}
           {cols.map((_, ci) => {
             const cell = cells[ri][ci];
+            const justPlaced = lastPlaced?.[0] === ri && lastPlaced?.[1] === ci;
             return (
               <FaBdokuCell
-                key={`${ri}-${ci}`}
+                // seq in the key remounts the just-placed cell, so replacing the
+                // same cell twice still replays its pop/shake.
+                key={justPlaced ? `${ri}-${ci}:${placeSeq}` : `${ri}-${ci}`}
                 heroName={cell.heroName}
                 correct={cell.correct}
                 locked={cell.locked}
@@ -110,6 +119,8 @@ export function FaBdokuBoard({
                 onClick={() => onCellClick(ri, ci)}
                 pct={cellPcts?.[ri]?.[ci]}
                 selected={selectedCell?.[0] === ri && selectedCell?.[1] === ci}
+                justPlaced={justPlaced}
+                revealDelayMs={(ri * cols.length + ci) * 80}
               />
             );
           })}

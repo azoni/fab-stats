@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getCardById } from "@/lib/cards";
+import { CountUp } from "@/components/games/fx";
 
 function PlusIcon({ className }: { className?: string }) {
   return (
@@ -49,6 +50,10 @@ interface CardCellProps {
   onClick: () => void;
   pct?: number;
   selected?: boolean;
+  /** True only for the cell filled by the LATEST pick (see FaBdokuCell). */
+  justPlaced?: boolean;
+  /** Stagger for the post-game uniqueness reveal cascade. */
+  revealDelayMs?: number;
 }
 
 export function CardCell({
@@ -59,6 +64,8 @@ export function CardCell({
   onClick,
   pct,
   selected,
+  justPlaced = false,
+  revealDelayMs = 0,
 }: CardCellProps) {
   const card = cardId ? getCardById(cardId) : null;
   const [imgError, setImgError] = useState(false);
@@ -93,7 +100,7 @@ export function CardCell({
       onKeyDown={canReplace ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(); } : undefined}
       className={`relative aspect-square rounded-lg overflow-hidden border-2 ${borderColor} transition-all ${
         canReplace ? "cursor-pointer hover:brightness-110 hover:ring-2 hover:ring-fab-gold/40" : ""
-      }`}
+      } ${justPlaced ? (correct ? "game-pop" : "game-shake") : ""}`}
     >
       {showImg ? (
         <img
@@ -125,14 +132,23 @@ export function CardCell({
       {card?.pitch && (
         <div className={`absolute top-0.5 left-0.5 sm:top-1 sm:left-1 w-3 h-3 rounded-full ${PITCH_DOT[card.pitch]} ring-1 ring-black/30`} />
       )}
-      {/* Uniqueness % center overlay */}
+      {/* Uniqueness % center overlay — staggered cascade (see FaBdokuCell) */}
       {pct !== undefined && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+        <div
+          className={`absolute inset-0 flex items-center justify-center bg-black/70 ${
+            pct <= 5 ? "game-flip-in-gold" : "game-flip-in"
+          }`}
+          style={
+            pct <= 5
+              ? ({ ["--fx-delay" as string]: `${revealDelayMs}ms` } as React.CSSProperties)
+              : { animationDelay: `${revealDelayMs}ms` }
+          }
+        >
           <span
             className={`text-xl sm:text-2xl font-black ${getPctColor(pct)}`}
             style={{ textShadow: "0 0 8px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)" }}
           >
-            {pct}%
+            <CountUp value={pct} suffix="%" duration={600 + revealDelayMs} />
           </span>
         </div>
       )}

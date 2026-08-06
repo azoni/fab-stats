@@ -14,8 +14,9 @@ import {
   saveGameState,
   cleanupOldStates,
 } from "@/lib/crossword/game-state";
-import { countCrosswordSolvedWords, crosswordWordKey } from "@/lib/crossword/solved-words";
+import { countCrosswordSolvedWords, crosswordWordKey, isCrosswordWordSolved } from "@/lib/crossword/solved-words";
 import { saveResult, loadStats, markShared } from "@/lib/crossword/firestore";
+import { useGameFx } from "@/components/games/fx";
 import { createCrosswordFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
@@ -76,6 +77,20 @@ export default function CrosswordPage() {
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
+  // Celebrate only a completion earned this session (the load effect never sets it).
+  const [celebrate, setCelebrate] = useState(false);
+  const { play, haptic } = useGameFx();
+  // Transient FX state: cells of words solved by the latest keystroke (gold pulse),
+  // cells just filled by Reveal Word (flip cascade), and a counter that retriggers
+  // the check-shake when Check is pressed again.
+  const [justSolvedCells, setJustSolvedCells] = useState<Set<string>>(new Set());
+  const [revealCells, setRevealCells] = useState<Map<string, number> | null>(null);
+  const [checkSeq, setCheckSeq] = useState(0);
+  // Only the just-typed cell's letter springs in (reload/remounted letters stay still).
+  const [lastTypedKey, setLastTypedKey] = useState<string | null>(null);
+  // Sequence tokens so overlapping solve/reveal FX windows don't truncate each other.
+  const solvedFxSeq = useRef(0);
+  const revealFxSeq = useRef(0);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -185,6 +200,12 @@ export default function CrosswordPage() {
       if (completionSaved.current) return;
       completionSaved.current = true;
       setShowResult(true);
+      // Fresh completion only — the load effect shows a saved result silently.
+      if (gs.won) {
+        setCelebrate(true);
+        play("win");
+        haptic("success");
+      }
 
       if (user?.uid) {
         const result = {
@@ -225,7 +246,7 @@ export default function CrosswordPage() {
         ).catch((err) => console.error("Crossword feed event failed:", err));
       }
     },
-    [user?.uid, profile, puzzle, stats?.gamesPlayed]
+    [user?.uid, profile, puzzle, stats?.gamesPlayed, play, haptic]
   );
 
   const handleLetterInput = useCallback(
@@ -260,6 +281,34 @@ export default function CrosswordPage() {
       setGameState(newState);
       saveGameState(newState);
       setCheckedCells(new Set()); // Clear checks on new input
+      setLastTypedKey(`${r},${c}`);
+
+      // Word-solve moment: diff via isCrosswordWordSolved (handles legacy numeric
+      // IDs in old saves). On full completion completeGame owns the win chord.
+      const newlySolved = puzzle.words.filter(
+        (w) => isCrosswordWordSolved(newSolved, w) && !isCrosswordWordSolved(gameState.solvedWords, w)
+      );
+      if (!allCorrect) {
+        if (newlySolved.length > 0) {
+          play("correct");
+          haptic("success");
+          const keys = new Set<string>();
+          for (const w of newlySolved) {
+            const wdr = w.direction === "down" ? 1 : 0;
+            const wdc = w.direction === "across" ? 1 : 0;
+            for (let i = 0; i < w.word.length; i++) keys.add(`${w.row + wdr * i},${w.col + wdc * i}`);
+          }
+          setJustSolvedCells(keys);
+          // Token guard: a second word solved inside the window must not have its
+          // pulse truncated by the first word's clear timer.
+          const token = ++solvedFxSeq.current;
+          setTimeout(() => {
+            if (solvedFxSeq.current === token) setJustSolvedCells(new Set());
+          }, 700);
+        } else {
+          play("click");
+        }
+      }
 
       if (allCorrect) {
         completeGame(newState);
@@ -274,7 +323,7 @@ export default function CrosswordPage() {
         }
       }
     },
-    [gameState, activeCell, activeDirection, puzzle, completeGame]
+    [gameState, activeCell, activeDirection, puzzle, completeGame, play, haptic]
   );
 
   const handleBackspace = useCallback(() => {
@@ -378,10 +427,17 @@ export default function CrosswordPage() {
       }
     }
     setCheckedCells(wrong);
+    if (wrong.size > 0) {
+      play("wrong");
+      haptic("error");
+      setCheckSeq((s) => s + 1); // retriggers the shake on repeat Checks
+    } else {
+      play("correct"); // all clear so far
+    }
     const newState = { ...gameState, checksUsed: gameState.checksUsed + 1 };
     setGameState(newState);
     saveGameState(newState);
-  }, [gameState, puzzle]);
+  }, [gameState, puzzle, play, haptic]);
 
   const handleRevealWord = useCallback(() => {
     if (!gameState || gameState.completed || !activeCell) return;
@@ -419,9 +475,25 @@ export default function CrosswordPage() {
 
     setGameState(newState);
     saveGameState(newState);
+    // Reveal overwrites any letters Check flagged — clear the stale red marks.
+    setCheckedCells(new Set());
+
+    // Reveal cascade: the word's letters flip in one by one. When the reveal
+    // finishes the puzzle, completeGame plays the win chord instead — don't stack.
+    if (!allCorrect) {
+      play("reveal");
+      haptic("flip");
+    }
+    const flipMap = new Map<string, number>();
+    for (let i = 0; i < w.word.length; i++) flipMap.set(`${w.row + dr * i},${w.col + dc * i}`, i);
+    setRevealCells(flipMap);
+    const token = ++revealFxSeq.current;
+    setTimeout(() => {
+      if (revealFxSeq.current === token) setRevealCells(null);
+    }, 900);
 
     if (allCorrect) completeGame(newState);
-  }, [gameState, activeCell, activeDirection, puzzle, completeGame]);
+  }, [gameState, activeCell, activeDirection, puzzle, completeGame, play, haptic]);
 
   if (!gameState) {
     return (
@@ -478,6 +550,11 @@ export default function CrosswordPage() {
         onTab={handleTab}
         showErrors={gameState.completed && !gameState.won}
         checkedCells={checkedCells}
+        justSolvedCells={justSolvedCells}
+        revealCells={revealCells}
+        checkSeq={checkSeq}
+        celebrateWave={celebrate}
+        lastTypedKey={lastTypedKey}
       />
 
       {/* Action buttons */}
@@ -515,6 +592,7 @@ export default function CrosswordPage() {
           puzzle={puzzle}
           stats={stats}
           onShare={() => setShowShare(true)}
+          celebrate={celebrate}
         />
       )}
 
@@ -546,6 +624,10 @@ export default function CrosswordPage() {
               setShowShare(false);
               setActiveCell(null);
               setCheckedCells(new Set());
+              setCelebrate(false);
+              setJustSolvedCells(new Set());
+              setRevealCells(null);
+              setLastTypedKey(null);
               completionSaved.current = false;
             }}
             className="px-4 py-2 text-xs font-medium rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/50 transition-colors"

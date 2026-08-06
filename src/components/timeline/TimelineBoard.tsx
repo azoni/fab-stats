@@ -2,14 +2,19 @@
 import { useState } from "react";
 import type { TimelineItem, TimelinePlacement } from "@/lib/timeline/types";
 import { ITEMS_PER_GAME } from "@/lib/timeline/puzzle-generator";
+import { useGameFx } from "@/components/games/fx";
 
-function LivesDisplay({ lives }: { lives: number }) {
+function LivesDisplay({ lives, losingLife = false }: { lives: number; losingLife?: boolean }) {
   return (
     <div className="flex gap-1 justify-center mb-3">
       {Array.from({ length: 3 }).map((_, i) => (
         <span
           key={i}
-          className={`text-sm transition-all ${i < lives ? "text-fab-loss opacity-100" : "text-fab-border opacity-30"}`}
+          className={`text-sm transition-all ${i < lives ? "text-fab-loss opacity-100" : "text-fab-border opacity-30"} ${
+            // The heart about to be spent shakes during the wrong-placement feedback
+            // (the lives prop only drops when the 1200ms feedback commits).
+            losingLife && i === lives - 1 ? "game-shake" : ""
+          }`}
         >
           {i < lives ? "\u2764" : "\u2764"}
         </span>
@@ -62,6 +67,10 @@ export function TimelineBoard({
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastPlacement, setLastPlacement] = useState<TimelinePlacement | null>(null);
+  // The row that just slotted into the timeline (post-commit) — it flips in with
+  // its real date, so the commit moment is visible instead of silent.
+  const [lastPlacedId, setLastPlacedId] = useState<number | null>(null);
+  const { play, haptic } = useGameFx();
 
   // Build the placed items sorted by their actual date
   const placedItems = placements.map((p) => {
@@ -78,17 +87,18 @@ export function TimelineBoard({
         <ProgressDots placements={placements} currentItem={currentItem} />
         <LivesDisplay lives={lives} />
 
-        {/* Show final timeline */}
+        {/* Show final timeline — cascades in once when the game ends */}
         {placedItems.length > 0 && (
           <div className="space-y-1 mt-3">
-            {placedItems.map((item) => (
+            {placedItems.map((item, i) => (
               <div
                 key={item.id}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-sm ${
+                className={`game-rise flex items-center gap-3 px-3 py-2 rounded-lg border text-sm ${
                   item.correct
                     ? "border-fab-win/30 bg-fab-win/5"
                     : "border-fab-loss/30 bg-fab-loss/5"
                 }`}
+                style={{ animationDelay: `${i * 70}ms` }}
               >
                 <span className="text-[10px] text-fab-dim font-mono shrink-0">{item.date}</span>
                 <span className="text-fab-text">{item.label}</span>
@@ -122,30 +132,41 @@ export function TimelineBoard({
       correct: isCorrect,
     };
 
+    play(isCorrect ? "correct" : "wrong");
+    haptic(isCorrect ? "success" : "error");
     setLastPlacement(placement);
     setShowFeedback(true);
 
+    const placedId = currentItemData.id;
     setTimeout(() => {
       onPlace(position);
       setShowFeedback(false);
       setLastPlacement(null);
+      // Mark the committed row so it flips into the timeline with its date.
+      setLastPlacedId(placedId);
+      setTimeout(() => setLastPlacedId(null), 800);
     }, 1200);
   }
 
   return (
     <div>
       <ProgressDots placements={placements} currentItem={currentItem} />
-      <LivesDisplay lives={lives} />
+      <LivesDisplay lives={lives} losingLife={showFeedback && lastPlacement !== null && !lastPlacement.correct} />
 
-      {/* Current item to place */}
+      {/* Current item to place — each new event flips in; feedback beats land on the card */}
       <div className="mb-4 text-center">
         <p className="text-[10px] text-fab-dim">Item {currentItem + 1}/{ITEMS_PER_GAME}</p>
-        <div className="mt-2 px-4 py-3 bg-fab-gold/10 border border-fab-gold/30 rounded-lg">
+        <div
+          key={currentItemData.id}
+          className={`game-flip-in mt-2 px-4 py-3 bg-fab-gold/10 border border-fab-gold/30 rounded-lg ${
+            showFeedback && lastPlacement ? (lastPlacement.correct ? "game-match-pop" : "game-shake") : ""
+          }`}
+        >
           <p className="text-sm font-medium text-fab-gold">{currentItemData.label}</p>
           <p className="text-[10px] text-fab-dim mt-1 uppercase tracking-wider">{currentItemData.category}</p>
         </div>
         {showFeedback && lastPlacement && (
-          <p className={`text-xs font-bold mt-2 ${lastPlacement.correct ? "text-fab-win" : "text-fab-loss"}`}>
+          <p className={`game-pop text-xs font-bold mt-2 ${lastPlacement.correct ? "text-fab-win" : "text-fab-loss"}`}>
             {lastPlacement.correct ? "Correct!" : `Wrong! It was ${currentItemData.date}`}
           </p>
         )}
@@ -158,15 +179,24 @@ export function TimelineBoard({
         ) : (
           <>
             <InsertSlot index={0} onClick={() => handlePlace(0)} disabled={showFeedback} />
-            {placedItems.map((item, i) => (
+            {placedItems.map((item, i) => {
+              const justPlaced = item.id === lastPlacedId;
+              return (
               <div key={item.id}>
-                <div className="flex items-center gap-3 px-3 py-2 rounded-lg border border-fab-border bg-fab-surface text-sm">
+                <div
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-sm ${
+                    justPlaced
+                      ? `game-flip-in ${item.correct ? "border-fab-win/50 bg-fab-win/5" : "border-fab-loss/50 bg-fab-loss/5"}`
+                      : "border-fab-border bg-fab-surface"
+                  }`}
+                >
                   <span className="text-[10px] text-fab-dim font-mono shrink-0">{item.date}</span>
                   <span className="text-fab-text">{item.label}</span>
                 </div>
                 <InsertSlot index={i + 1} onClick={() => handlePlace(i + 1)} disabled={showFeedback} />
               </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>

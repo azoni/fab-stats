@@ -28,7 +28,7 @@ npm run format:check      # Check formatting without writing
 
 - **Always use UTC for game dates.** `getTodayDateStr()` from `src/lib/fabdoku/puzzle-generator.ts` is canonical. Use `getUTCFullYear()`, `getUTCMonth()`, `getUTCDate()` — never local-time variants for game logic.
 - **Run `npx tsc --noEmit` after every change.** It catches most bugs in ~5 seconds.
-- **Use the ref pattern for callbacks in useEffect.** The deploy pipeline treats `react-hooks/exhaustive-deps` warnings as errors. If a callback is used inside a useEffect, access it via a ref:
+- **Use the ref pattern for callbacks in useEffect.** Keep `react-hooks/exhaustive-deps` clean — `npm run lint` flags violations (Next 16 no longer lints during `next build`, and CI runs only tsc, so lint drift ships silently unless you run it). If a callback is used inside a useEffect, access it via a ref:
   ```tsx
   const fnRef = useRef(fn);
   fnRef.current = fn;

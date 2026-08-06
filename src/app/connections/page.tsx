@@ -13,6 +13,7 @@ import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
+import { useGameFx } from "@/components/games/fx";
 import type { ConnectionsGameState, ConnectionsStats, ConnectionsGuess } from "@/lib/connections/types";
 
 function getTodayDateStr(): string {
@@ -32,6 +33,9 @@ export default function ConnectionsPage() {
   });
   const [stats, setStats] = useState<ConnectionsStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
+  // Celebrate only the win that happens this session, never a reload of a done game.
+  const [celebrate, setCelebrate] = useState(false);
+  const { play, haptic } = useGameFx();
   const [showShare, setShowShare] = useState(false);
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
@@ -90,6 +94,14 @@ export default function ConnectionsPage() {
 
     if (completed) {
       setShowResult(true);
+      if (won) {
+        setCelebrate(true);
+        play("win");
+        haptic("success");
+      } else {
+        play("lose");
+        haptic("error");
+      }
 
       // Build solve order (difficulty of each solved group in order)
       const solveOrder = newSolvedGroups.map((gi) => puzzle.groups[gi].difficulty);
@@ -129,7 +141,7 @@ export default function ConnectionsPage() {
         }
       }
     }
-  }, [gameState, puzzle, dateStr, user, profile]);
+  }, [gameState, puzzle, dateStr, user, profile, stats, play, haptic]);
 
   function triggerShared() {
     if (sharedDatesRef.current.has(dateStr)) return;
@@ -183,6 +195,7 @@ export default function ConnectionsPage() {
             stats={stats}
             dateStr={dateStr}
             onShare={() => setShowShare(true)}
+            celebrate={celebrate}
           />
         </div>
       )}

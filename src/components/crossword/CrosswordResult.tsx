@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { countCrosswordSolvedWords } from "@/lib/crossword/solved-words";
+import { WinBurst, CountUp } from "@/components/games/fx";
 import type { CrosswordGameState, CrosswordPuzzle, CrosswordStats } from "@/lib/crossword/types";
 
 interface CrosswordResultProps {
@@ -9,6 +10,7 @@ interface CrosswordResultProps {
   puzzle: CrosswordPuzzle;
   stats: CrosswordStats | null;
   onShare: () => void;
+  celebrate?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -17,7 +19,7 @@ function formatTime(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function CrosswordResult({ gameState, puzzle, stats, onShare }: CrosswordResultProps) {
+export function CrosswordResult({ gameState, puzzle, stats, onShare, celebrate = false }: CrosswordResultProps) {
   const [countdown, setCountdown] = useState("");
 
   const totalWords = puzzle.words.length;
@@ -40,19 +42,26 @@ export function CrosswordResult({ gameState, puzzle, stats, onShare }: Crossword
     return () => clearInterval(interval);
   }, []);
 
+  // No checks, no reveals — a clean solve.
+  const cleanSolve = gameState.won && gameState.checksUsed + gameState.revealsUsed === 0;
+
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-xl p-5 mt-4 max-w-[400px] mx-auto">
-      <div className="text-center mb-4">
+    <div className="relative overflow-hidden bg-fab-surface border border-fab-border rounded-xl p-5 mt-4 max-w-[400px] mx-auto">
+      {gameState.won && celebrate && <WinBurst count={cleanSolve ? 40 : 26} />}
+      <div className="relative text-center mb-4">
         {gameState.won ? (
           <>
-            <div className="w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center mx-auto mb-2">
+            <div className={`w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center mx-auto mb-2 ${cleanSolve ? "game-win-glow" : ""}`}>
               <svg className="w-6 h-6 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" />
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-fab-text">Crossword Complete!</h3>
+            <h3 className={`text-lg font-bold text-fab-text ${celebrate ? "game-pop" : ""}`}>
+              {cleanSolve ? "Clean Solve!" : "Crossword Complete!"}
+            </h3>
             <p className="text-sm text-fab-muted mt-0.5">
               Solved in {formatTime(gameState.elapsedSeconds)}
+              {cleanSolve ? " — no hints" : ""}
             </p>
           </>
         ) : (
@@ -96,17 +105,17 @@ export function CrosswordResult({ gameState, puzzle, stats, onShare }: Crossword
 
       {/* Streak info */}
       {stats && (
-        <div className="flex items-center justify-center gap-6 mb-4 border-t border-fab-border pt-3">
+        <div className="relative flex items-center justify-center gap-6 mb-4 border-t border-fab-border pt-3">
           <div className="text-center">
-            <span className="text-lg font-bold text-fab-text">{stats.currentStreak}</span>
+            <span className="text-lg font-bold text-fab-text"><CountUp value={stats.currentStreak} /></span>
             <p className="text-[10px] text-fab-dim">Streak</p>
           </div>
           <div className="text-center">
-            <span className="text-lg font-bold text-fab-text">{stats.maxStreak}</span>
+            <span className="text-lg font-bold text-fab-text"><CountUp value={stats.maxStreak} /></span>
             <p className="text-[10px] text-fab-dim">Best</p>
           </div>
           <div className="text-center">
-            <span className="text-lg font-bold text-fab-text">{stats.gamesPlayed}</span>
+            <span className="text-lg font-bold text-fab-text"><CountUp value={stats.gamesPlayed} /></span>
             <p className="text-[10px] text-fab-dim">Played</p>
           </div>
           {stats.bestSolveTime && (

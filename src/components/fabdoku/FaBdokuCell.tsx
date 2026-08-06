@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
+import { CountUp } from "@/components/games/fx";
 
 function PlusIcon({ className }: { className?: string }) {
   return (
@@ -37,6 +38,11 @@ interface FaBdokuCellProps {
   pct?: number;
   /** Highlight ring for recap cell selection */
   selected?: boolean;
+  /** True only for the cell filled by the LATEST pick (placement pop/shake).
+   *  Must be gated by the caller — filled cells remount on reload too. */
+  justPlaced?: boolean;
+  /** Stagger for the post-game uniqueness reveal cascade. */
+  revealDelayMs?: number;
 }
 
 function getPctColor(pct: number): string {
@@ -55,6 +61,8 @@ export function FaBdokuCell({
   onClick,
   pct,
   selected,
+  justPlaced = false,
+  revealDelayMs = 0,
 }: FaBdokuCellProps) {
   const hero = heroName ? getHeroByName(heroName) : null;
   const [imgError, setImgError] = useState(false);
@@ -91,7 +99,7 @@ export function FaBdokuCell({
       onKeyDown={canReplace ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(); } : undefined}
       className={`relative aspect-square rounded-lg overflow-hidden border-2 ${borderColor} transition-all ${
         canReplace ? "cursor-pointer hover:brightness-110 hover:ring-2 hover:ring-fab-gold/40" : ""
-      }`}
+      } ${justPlaced ? (correct ? "game-pop" : "game-shake") : ""}`}
     >
       {showImg ? (
         <img
@@ -126,14 +134,26 @@ export function FaBdokuCell({
           <XIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
         )}
       </div>
-      {/* Uniqueness % center overlay */}
+      {/* Uniqueness % center overlay — the game's signature payoff, revealed as a
+          staggered cascade. Gold pct<=5 cells flip in, then pulse (the combined
+          class exists because stacking two animation classes lets the later
+          stylesheet rule swallow the first). */}
       {pct !== undefined && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+        <div
+          className={`absolute inset-0 flex items-center justify-center bg-black/70 ${
+            pct <= 5 ? "game-flip-in-gold" : "game-flip-in"
+          }`}
+          style={
+            pct <= 5
+              ? ({ ["--fx-delay" as string]: `${revealDelayMs}ms` } as React.CSSProperties)
+              : { animationDelay: `${revealDelayMs}ms` }
+          }
+        >
           <span
             className={`text-xl sm:text-2xl font-black ${getPctColor(pct)}`}
             style={{ textShadow: "0 0 8px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)" }}
           >
-            {pct}%
+            <CountUp value={pct} suffix="%" duration={600 + revealDelayMs} />
           </span>
         </div>
       )}
