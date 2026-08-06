@@ -7,6 +7,10 @@
   # Profile cosmetics economy (coins, shop, gacha, cosmetics). Set to "false" to
   # hide the whole system again (the /shop route + nav link + coin earning).
   NEXT_PUBLIC_FEATURE_COSMETICS = "true"
+  # The Understack (persistent dungeon crawler at /delve). LIVE but UNLISTED —
+  # no nav/hub entry, robots noindex; reachable only by direct URL for testing.
+  # The hub card + announcement come when it's ready for players.
+  NEXT_PUBLIC_FEATURE_DELVE = "true"
 
 [functions]
   included_files = ["node_modules/@resvg/resvg-js-*/**", "netlify/functions/fonts/*"]
