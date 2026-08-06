@@ -12,6 +12,7 @@ import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
+import { useGameFx } from "@/components/games/fx";
 import type { TriviaGameState, TriviaStats, TriviaAnswer } from "@/lib/trivia/types";
 import type { TriviaQuestion } from "@/lib/trivia/question-bank";
 
@@ -31,6 +32,8 @@ export default function TriviaPage() {
   });
   const [stats, setStats] = useState<TriviaStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
+  const [celebrate, setCelebrate] = useState(false);
+  const { play, haptic } = useGameFx();
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
@@ -69,6 +72,14 @@ export default function TriviaPage() {
 
     if (completed) {
       setShowResult(true);
+      if (won) {
+        setCelebrate(true);
+        play("win");
+        haptic("success");
+      } else {
+        play("lose");
+        haptic("error");
+      }
 
       if (user && !completionSaved.current) {
         completionSaved.current = true;
@@ -97,7 +108,7 @@ export default function TriviaPage() {
         }
       }
     }
-  }, [gameState, questions, dateStr, user, profile]);
+  }, [gameState, questions, dateStr, user, profile, play, haptic]);
 
   function triggerShared() {
     if (sharedDatesRef.current.has(dateStr)) return;
@@ -140,6 +151,7 @@ export default function TriviaPage() {
             dateStr={dateStr}
             onShared={triggerShared}
             answers={gameState.answers}
+            celebrate={celebrate}
           />
         </div>
       )}

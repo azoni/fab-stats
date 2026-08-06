@@ -4,6 +4,7 @@ import type { HeroGuess } from "@/lib/heroguesser/types";
 import type { HeroInfo } from "@/types";
 import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
 import { getPoolHero } from "@/lib/heroguesser/puzzle-generator";
+import { useGameFx } from "@/components/games/fx";
 
 const CLUE_BG: Record<string, string> = {
   correct: "bg-fab-win/25 text-fab-win",
@@ -60,6 +61,12 @@ export function HeroGuesserBoard({
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { play, haptic } = useGameFx();
+  // Only the newest row flips in (rows already on screen at load stay put).
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+  }, []);
 
   const guessedNames = new Set(guesses.map((g) => g.heroName));
   const filtered = search.length >= 1
@@ -82,6 +89,8 @@ export function HeroGuesserBoard({
   }, []);
 
   function selectHero(name: string) {
+    play("flip");
+    haptic("flip");
     onGuess(name);
     setSearch("");
     setShowDropdown(false);
@@ -170,22 +179,34 @@ export function HeroGuesserBoard({
 
       {/* Guesses */}
       <div className="space-y-1">
-        {guesses.map((guess, i) => (
+        {guesses.map((guess, i) => {
+          // Cascade-flip only the row that was just added (Wordle-style reveal).
+          const isLatest = mountedRef.current && i === guesses.length - 1;
+          return (
           <div key={i} className="grid grid-cols-[1fr_repeat(6,minmax(0,1fr))] gap-1">
             <div className="flex items-center gap-1.5 min-w-0">
-              <img src={getHeroPortraitUrl(guess.heroName) || getHeroByName(guess.heroName)?.imageUrl} alt="" className="w-6 h-6 rounded object-cover shrink-0" />
+              <img
+                src={getHeroPortraitUrl(guess.heroName) || getHeroByName(guess.heroName)?.imageUrl}
+                alt=""
+                className={`w-7 h-7 rounded-md object-cover object-top shrink-0 border border-fab-border/60 ${isLatest ? "game-pop" : ""}`}
+              />
               <span className="text-[10px] text-fab-text font-medium truncate">{guess.heroName}</span>
             </div>
-            {COLUMNS.map((col) => {
+            {COLUMNS.map((col, colIdx) => {
               const result = guess.clues[col.key];
               return (
-                <div key={col.key} className={`flex items-center justify-center rounded px-1 py-1.5 ${CLUE_BG[result]}`}>
+                <div
+                  key={col.key}
+                  className={`flex items-center justify-center rounded px-1 py-1.5 ${CLUE_BG[result]} ${isLatest ? "game-flip-in" : ""}`}
+                  style={isLatest ? { animationDelay: `${colIdx * 0.09}s` } : undefined}
+                >
                   <span className="text-[9px] font-medium text-center leading-tight">{getDisplayValue(guess, col.key)}</span>
                 </div>
               );
             })}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

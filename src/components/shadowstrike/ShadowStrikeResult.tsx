@@ -2,6 +2,7 @@
 import { NextPuzzleCountdown } from "@/components/games/NextPuzzleCountdown";
 import { useRef, useState } from "react";
 import { copyCardImage } from "@/lib/share-image";
+import { WinBurst, CountUp } from "@/components/games/fx";
 import { TOTAL_PAIRS } from "@/lib/shadowstrike/puzzle-generator";
 import type { ShadowStrikeStats } from "@/lib/shadowstrike/types";
 
@@ -47,6 +48,7 @@ export function ShadowStrikeResult({
   stats,
   dateStr,
   onShared,
+  celebrate = false,
 }: {
   won: boolean;
   flips: number;
@@ -55,6 +57,7 @@ export function ShadowStrikeResult({
   stats: ShadowStrikeStats | null;
   dateStr: string;
   onShared?: () => void;
+  celebrate?: boolean;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "shared">("idle");
@@ -77,10 +80,13 @@ export function ShadowStrikeResult({
     }
   }
 
+  const winSuffix: Record<string, string> = { "Win %": "%" };
+
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-4 space-y-3">
-      <div className="text-center">
-        <p className={`text-lg font-bold ${won ? "text-fab-win" : "text-fab-loss"}`}>
+    <div className="relative overflow-hidden bg-fab-surface border border-fab-border rounded-lg p-4 space-y-3">
+      {won && celebrate && <WinBurst />}
+      <div className="relative text-center">
+        <p className={`font-black ${won ? "text-fab-win text-2xl" : "text-fab-loss text-lg"} ${won && celebrate ? "game-pop" : ""}`}>
           {won ? "Shadow Master!" : "Keep Training"}
         </p>
         <p className="text-sm text-fab-muted">
@@ -89,7 +95,7 @@ export function ShadowStrikeResult({
       </div>
 
       {stats && (
-        <div className="grid grid-cols-4 gap-2">
+        <div className="relative grid grid-cols-4 gap-2">
           {[
             { label: "Played", value: stats.gamesPlayed },
             { label: "Win %", value: stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0 },
@@ -97,7 +103,7 @@ export function ShadowStrikeResult({
             { label: "Best", value: stats.maxStreak },
           ].map((s) => (
             <div key={s.label} className="text-center">
-              <p className="text-lg font-bold text-fab-text">{s.value}</p>
+              <p className="text-lg font-bold text-fab-text"><CountUp value={s.value} suffix={winSuffix[s.label] || ""} /></p>
               <p className="text-[10px] text-fab-dim">{s.label}</p>
             </div>
           ))}

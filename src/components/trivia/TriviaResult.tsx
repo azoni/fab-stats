@@ -2,6 +2,7 @@
 import { NextPuzzleCountdown } from "@/components/games/NextPuzzleCountdown";
 import { useRef, useState } from "react";
 import { copyCardImage } from "@/lib/share-image";
+import { WinBurst, CountUp } from "@/components/games/fx";
 import { QUESTIONS_PER_GAME, WIN_THRESHOLD } from "@/lib/trivia/puzzle-generator";
 import type { TriviaStats, TriviaAnswer } from "@/lib/trivia/types";
 
@@ -38,6 +39,7 @@ export function TriviaResult({
   dateStr,
   answers,
   onShared,
+  celebrate = false,
 }: {
   won: boolean;
   score: number;
@@ -45,6 +47,7 @@ export function TriviaResult({
   dateStr: string;
   answers: TriviaAnswer[];
   onShared?: () => void;
+  celebrate?: boolean;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [shareStatus, setShareStatus] = useState<"idle" | "shared">("idle");
@@ -65,10 +68,13 @@ export function TriviaResult({
     }
   }
 
+  const pctSuffix: Record<string, string> = { "Win %": "%" };
+
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-4 space-y-3">
-      <div className="text-center">
-        <p className={`text-lg font-bold ${won ? "text-fab-win" : "text-fab-loss"}`}>
+    <div className="relative overflow-hidden bg-fab-surface border border-fab-border rounded-lg p-4 space-y-3">
+      {won && celebrate && <WinBurst />}
+      <div className="relative text-center">
+        <p className={`font-black ${won ? "text-fab-win text-2xl" : "text-fab-loss text-lg"} ${won && celebrate ? "game-pop" : ""}`}>
           {won ? "Nailed It!" : "Better Luck Tomorrow"}
         </p>
         <p className="text-sm text-fab-muted">
@@ -77,7 +83,7 @@ export function TriviaResult({
       </div>
 
       {stats && (
-        <div className="grid grid-cols-4 gap-2">
+        <div className="relative grid grid-cols-4 gap-2">
           {[
             { label: "Played", value: stats.gamesPlayed },
             { label: "Win %", value: stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0 },
@@ -85,7 +91,7 @@ export function TriviaResult({
             { label: "Best", value: stats.maxStreak },
           ].map((s) => (
             <div key={s.label} className="text-center">
-              <p className="text-lg font-bold text-fab-text">{s.value}</p>
+              <p className="text-lg font-bold text-fab-text"><CountUp value={s.value} suffix={pctSuffix[s.label] || ""} /></p>
               <p className="text-[10px] text-fab-dim">{s.label}</p>
             </div>
           ))}

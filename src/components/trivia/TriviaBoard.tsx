@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { TriviaQuestion } from "@/lib/trivia/question-bank";
 import type { TriviaAnswer } from "@/lib/trivia/types";
 import { QUESTIONS_PER_GAME } from "@/lib/trivia/puzzle-generator";
+import { useGameFx } from "@/components/games/fx";
 
 function ProgressDots({ answers, currentQuestion }: { answers: TriviaAnswer[]; currentQuestion: number }) {
   return (
@@ -34,6 +35,7 @@ export function TriviaBoard({
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastAnswer, setLastAnswer] = useState<TriviaAnswer | null>(null);
+  const { play, haptic } = useGameFx();
 
   const question = questions[currentQuestion];
   if (!question || completed) {
@@ -47,6 +49,8 @@ export function TriviaBoard({
   function handlePick(idx: number) {
     if (showFeedback) return;
     const correct = idx === question.correctIndex;
+    play(correct ? "correct" : "wrong");
+    haptic(correct ? "success" : "error");
     const answer: TriviaAnswer = { questionId: question.id, selectedIndex: idx, correct };
     setLastAnswer(answer);
     setShowFeedback(true);
@@ -72,12 +76,15 @@ export function TriviaBoard({
 
       <div className="space-y-2">
         {question.options.map((option, idx) => {
-          let btnClass = "border-fab-border bg-fab-surface hover:border-fab-gold/30 hover:bg-fab-gold/5 cursor-pointer";
+          let btnClass = "border-fab-border bg-fab-surface hover:border-fab-gold/30 hover:bg-fab-gold/5 cursor-pointer active:scale-[0.99]";
+          let anim = "";
           if (showFeedback) {
             if (idx === question.correctIndex) {
-              btnClass = "border-fab-win/50 bg-fab-win/10";
+              btnClass = "border-fab-win/60 bg-fab-win/15";
+              anim = "game-pop"; // the right answer springs forward
             } else if (idx === lastAnswer?.selectedIndex && !lastAnswer.correct) {
-              btnClass = "border-fab-loss/50 bg-fab-loss/10";
+              btnClass = "border-fab-loss/60 bg-fab-loss/15";
+              anim = "game-shake"; // a wrong pick shakes
             } else {
               btnClass = "border-fab-border bg-fab-surface/50 opacity-50";
             }
@@ -88,7 +95,7 @@ export function TriviaBoard({
               key={idx}
               onClick={() => handlePick(idx)}
               disabled={showFeedback}
-              className={`w-full text-left px-4 py-3 rounded-lg border text-sm text-fab-text transition-all ${btnClass}`}
+              className={`w-full text-left px-4 py-3 rounded-lg border text-sm text-fab-text transition-all ${btnClass} ${anim}`}
             >
               <span className="text-fab-dim mr-2 font-mono text-xs">{String.fromCharCode(65 + idx)}</span>
               {option}

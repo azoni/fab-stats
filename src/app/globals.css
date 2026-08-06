@@ -1114,6 +1114,106 @@ table thead tr {
   .recap-confetti-piece { animation: none; opacity: 0.5; }
 }
 
+/* ── Daily games: shared FX layer ──
+   One motion vocabulary every game plugs into — flip reveals, placement pops,
+   match/celebration bursts, shakes, reveal pings, win glow, entrance rise.
+   All reduced-motion safe (collapsed at the bottom). */
+@keyframes game-flip-in {
+  0%   { transform: perspective(520px) rotateX(-92deg); opacity: 0; }
+  55%  { transform: perspective(520px) rotateX(14deg); opacity: 1; }
+  100% { transform: perspective(520px) rotateX(0deg); opacity: 1; }
+}
+.game-flip-in { animation: game-flip-in 0.5s ease-out both; transform-origin: center; }
+
+@keyframes game-pop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.game-pop { animation: game-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@keyframes game-match-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.16); box-shadow: 0 0 18px 4px rgba(245, 179, 57, 0.55); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 179, 57, 0); }
+}
+.game-match-pop { animation: game-match-pop 0.55s ease-out; }
+
+@keyframes game-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+.game-shake { animation: game-shake 0.42s ease-in-out; }
+
+@keyframes game-win-glow {
+  0%, 100% { box-shadow: 0 0 14px 2px rgba(245, 179, 57, 0.35); }
+  50%      { box-shadow: 0 0 30px 9px rgba(245, 179, 57, 0.6), 0 0 52px 18px rgba(56, 211, 177, 0.18); }
+}
+.game-win-glow { animation: game-win-glow 2.2s ease-in-out infinite; }
+
+@keyframes game-ping {
+  0%   { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.game-ping { animation: game-ping 0.6s ease-out forwards; }
+
+@keyframes game-rise {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.game-rise { animation: game-rise 0.4s ease-out both; }
+
+/* Celebration confetti — a single finite burst (WinBurst sets --dx/--fall/--spin/
+   --delay/--dur per piece). */
+@keyframes game-confetti {
+  0%   { transform: translate3d(0, -6px, 0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translate3d(var(--dx, 0), var(--fall, 240px), 0) rotate(var(--spin, 420deg)); opacity: 0; }
+}
+.game-confetti-piece { animation: game-confetti var(--dur, 1.5s) cubic-bezier(0.15, 0.6, 0.35, 1) var(--delay, 0s) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .game-flip-in,
+  .game-pop,
+  .game-match-pop,
+  .game-shake,
+  .game-ping,
+  .game-rise { animation: none !important; }
+  .game-win-glow { animation: none; box-shadow: 0 0 14px 2px rgba(245, 179, 57, 0.35); }
+  .game-confetti-piece { animation: none; opacity: 0; }
+}
+
+/* 3-D card flip — a two-faced tile that rotates to reveal its front (Shadow Strike
+   memory tiles; reusable by any flip game). Add `.is-up` to flip it. */
+.game-flip3d { perspective: 700px; }
+.game-flip3d-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.game-flip3d.is-up .game-flip3d-inner { transform: rotateY(180deg); }
+.game-flip3d-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.game-flip3d-front { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .game-flip3d-inner { transition: none; }
+}
+
 /* ── Global keyboard-focus baseline (WCAG 2.4.7) ──
    Focus styling previously existed only on inputs + ui/Button, so the sidebar
    nav, mobile tab bar, and the many inline <Link> buttons showed no visible
