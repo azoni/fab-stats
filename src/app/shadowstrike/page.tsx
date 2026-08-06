@@ -13,6 +13,7 @@ import { logActivity } from "@/lib/activity-log";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
+import { useGameFx } from "@/components/games/fx";
 import type { ShadowStrikeGameState, ShadowStrikeStats } from "@/lib/shadowstrike/types";
 
 function getTodayDateStr(): string {
@@ -31,6 +32,8 @@ export default function ShadowStrikePage() {
   });
   const [stats, setStats] = useState<ShadowStrikeStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
+  const [celebrate, setCelebrate] = useState(false);
+  const { play, haptic } = useGameFx();
 
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
@@ -48,6 +51,8 @@ export default function ShadowStrikePage() {
     if (gameState.revealedPositions.includes(position)) return;
     if (gameState.matchedCardIds.includes(puzzle.grid[position])) return;
 
+    play("flip");
+    haptic("flip");
     const now = Date.now();
 
     // Start timer on first flip
@@ -81,6 +86,20 @@ export default function ShadowStrikePage() {
         const newMatchedCardIds = [...gameState.matchedCardIds, card1];
         const completed = newMatchedCardIds.length >= TOTAL_PAIRS;
         const finalElapsed = completed ? currentElapsed : undefined;
+        const didWinNow = completed && (gameState.hintsUsed ?? 0) < HINT_FAIL_THRESHOLD;
+        if (completed) {
+          if (didWinNow) {
+            setCelebrate(true);
+            play("win");
+            haptic("success");
+          } else {
+            play("lose");
+            haptic("error");
+          }
+        } else {
+          play("correct");
+          haptic("success");
+        }
 
         const newState: ShadowStrikeGameState = {
           ...gameState,
@@ -132,6 +151,8 @@ export default function ShadowStrikePage() {
         }
       } else {
         // No match — show both briefly, then flip back
+        play("wrong");
+        haptic("error");
         const tempState: ShadowStrikeGameState = {
           ...gameState,
           flips: newFlips,
@@ -152,7 +173,7 @@ export default function ShadowStrikePage() {
         }, 800);
       }
     }
-  }, [gameState, puzzle, dateStr, user, profile]);
+  }, [gameState, puzzle, dateStr, user, profile, play, haptic]);
 
   const handleHint = useCallback(() => {
     if (gameState.completed || flipLockRef.current) return;
@@ -186,6 +207,15 @@ export default function ShadowStrikePage() {
     saveGameState(newState);
 
     if (completed) {
+      const didWinNow = newHintsUsed < HINT_FAIL_THRESHOLD;
+      if (didWinNow) {
+        setCelebrate(true);
+        play("win");
+        haptic("success");
+      } else {
+        play("lose");
+        haptic("error");
+      }
       setTimeout(() => setShowResult(true), 500);
 
       if (user && !completionSaved.current) {
@@ -219,7 +249,7 @@ export default function ShadowStrikePage() {
         }
       }
     }
-  }, [gameState, puzzle, dateStr, user, profile]);
+  }, [gameState, puzzle, dateStr, user, profile, play, haptic]);
 
   function triggerShared() {
     if (sharedDatesRef.current.has(dateStr)) return;
@@ -262,6 +292,7 @@ export default function ShadowStrikePage() {
             stats={stats}
             onShared={triggerShared}
             dateStr={dateStr}
+            celebrate={celebrate}
           />
         </div>
       )}

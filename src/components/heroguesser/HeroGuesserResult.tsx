@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import { copyCardImage } from "@/lib/share-image";
+import { WinBurst, CountUp } from "@/components/games/fx";
 import type { HeroGuesserStats, HeroGuess } from "@/lib/heroguesser/types";
 import type { HeroInfo } from "@/types";
 
@@ -64,6 +65,7 @@ export function HeroGuesserResult({
   dateStr,
   guesses,
   onShared,
+  celebrate = false,
 }: {
   won: boolean;
   guessCount: number;
@@ -73,6 +75,7 @@ export function HeroGuesserResult({
   dateStr: string;
   guesses: HeroGuess[];
   onShared?: () => void;
+  celebrate?: boolean;
 }) {
   const [countdown, setCountdown] = useState(getNextPuzzleCountdown());
   const cardRef = useRef<HTMLDivElement>(null);
@@ -102,13 +105,16 @@ export function HeroGuesserResult({
   const dist = stats?.guessDistribution ?? {};
   const maxDist = Math.max(1, ...Object.values(dist));
 
+  const winPct = stats && stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
+
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-4 space-y-4">
+    <div className="relative overflow-hidden bg-fab-surface border border-fab-border rounded-lg p-4 space-y-4">
+      {won && celebrate && <WinBurst />}
       {/* Header */}
-      <div className="text-center">
+      <div className="relative text-center">
         {won ? (
           <>
-            <p className="text-lg font-bold text-fab-win">Got it!</p>
+            <p className={`text-2xl font-black text-fab-win ${celebrate ? "game-pop" : ""}`}>Got it!</p>
             <p className="text-xs text-fab-muted">in {guessCount}/{maxGuesses} guesses</p>
           </>
         ) : (
@@ -120,8 +126,8 @@ export function HeroGuesserResult({
       </div>
 
       {/* Answer card */}
-      <div className="flex items-center gap-3 bg-fab-bg rounded-lg p-3">
-        <img src={answer.imageUrl} alt={answer.name} className="w-12 h-12 rounded-lg object-cover" />
+      <div className={`relative flex items-center gap-3 bg-fab-bg rounded-lg p-3 ${won ? "game-win-glow" : ""}`}>
+        <img src={answer.imageUrl} alt={answer.name} className="w-14 h-14 rounded-lg object-cover object-top border border-fab-border/60" />
         <div>
           <p className="text-sm font-semibold text-fab-text">{answer.name}</p>
           <p className="text-[10px] text-fab-muted">{answer.classes.join(", ")} · {answer.talents.length > 0 ? answer.talents.join(", ") : "No Talent"}</p>
@@ -131,21 +137,21 @@ export function HeroGuesserResult({
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-4 gap-2 text-center">
+        <div className="relative grid grid-cols-4 gap-2 text-center">
           <div>
-            <p className="text-sm font-bold text-fab-text">{stats.gamesPlayed}</p>
+            <p className="text-sm font-bold text-fab-text"><CountUp value={stats.gamesPlayed} /></p>
             <p className="text-[9px] text-fab-dim">Played</p>
           </div>
           <div>
-            <p className="text-sm font-bold text-fab-text">{stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0}%</p>
+            <p className="text-sm font-bold text-fab-text"><CountUp value={winPct} suffix="%" /></p>
             <p className="text-[9px] text-fab-dim">Win %</p>
           </div>
           <div>
-            <p className="text-sm font-bold text-fab-text">{stats.currentStreak}</p>
+            <p className="text-sm font-bold text-fab-text"><CountUp value={stats.currentStreak} /></p>
             <p className="text-[9px] text-fab-dim">Streak</p>
           </div>
           <div>
-            <p className="text-sm font-bold text-fab-text">{stats.maxStreak}</p>
+            <p className="text-sm font-bold text-fab-text"><CountUp value={stats.maxStreak} /></p>
             <p className="text-[9px] text-fab-dim">Best</p>
           </div>
         </div>

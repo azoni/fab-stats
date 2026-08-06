@@ -10,6 +10,7 @@ import { saveResult, loadStats, markShared } from "@/lib/heroguesser/firestore";
 import { createHeroGuesserFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { getHeroByName } from "@/lib/heroes";
+import { useGameFx } from "@/components/games/fx";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
@@ -32,6 +33,10 @@ export default function HeroGuesserPage() {
   });
   const [stats, setStats] = useState<HeroGuesserStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
+  // Celebrate only on the win that happens this session (not on a reload of a
+  // previously-solved puzzle), so confetti/sound don't replay on every visit.
+  const [celebrate, setCelebrate] = useState(false);
+  const { play, haptic } = useGameFx();
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
@@ -68,6 +73,14 @@ export default function HeroGuesserPage() {
 
     if (completed) {
       setShowResult(true);
+      if (won) {
+        setCelebrate(true);
+        play("win");
+        haptic("success");
+      } else {
+        play("lose");
+        haptic("error");
+      }
       // Save to Firestore
       if (user && !completionSaved.current) {
         completionSaved.current = true;
@@ -97,7 +110,7 @@ export default function HeroGuesserPage() {
         }
       }
     }
-  }, [gameState, answer, dateStr, user, profile]);
+  }, [gameState, answer, dateStr, user, profile, play, haptic]);
 
   function triggerShared() {
     if (sharedDatesRef.current.has(dateStr)) return;
@@ -149,6 +162,7 @@ export default function HeroGuesserPage() {
             dateStr={dateStr}
             onShared={triggerShared}
             guesses={gameState.guesses}
+            celebrate={celebrate}
           />
         </div>
       )}

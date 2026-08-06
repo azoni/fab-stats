@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { GAMES, VISIBLE_GAMES, GAME_CATEGORIES } from "@/lib/games";
+import { SoundToggle } from "./fx/SoundToggle";
 
 function getTodayDateStr(): string {
   const now = new Date();
@@ -105,6 +106,8 @@ export function GameNav({ current }: { current: string }) {
           </div>
         );
       })}
+
+      <SoundToggle className="ml-auto shrink-0" />
     </div>
   );
 }
