@@ -37,6 +37,7 @@ import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { createFaBdokuCardFeedEvent, createGuestFaBdokuCardFeedEvent } from "@/lib/feed";
+import { useGameFx } from "@/components/games/fx";
 import type { FaBdokuStats, UniquenessData, PickData, GameState, CellState } from "@/lib/fabdoku/types";
 
 function buildGrid(state: CardGameState): ("correct" | "wrong" | "empty")[][] {
@@ -78,6 +79,12 @@ export function CardFaBdokuGame() {
   const [showRecap, setShowRecap] = useState(false);
   const [showYesterdayShare, setShowYesterdayShare] = useState(false);
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
+  // Same reload-vs-fresh gating as the heroes-mode page (this component owns its
+  // own state machine): celebrate/lastPlaced are only ever set in the select handler.
+  const [celebrate, setCelebrate] = useState(false);
+  const [lastPlaced, setLastPlaced] = useState<[number, number] | null>(null);
+  const [placeSeq, setPlaceSeq] = useState(0);
+  const { play, haptic } = useGameFx();
   const sharedDatesRef = useRef(new Set<string>());
 
   const triggerShared = useCallback((gs: CardGameState, date: string, uq: UniquenessData | null) => {
@@ -166,9 +173,11 @@ export function CardFaBdokuGame() {
   const handleCellClick = useCallback(
     (row: number, col: number) => {
       if (!gameState || gameState.completed) return;
+      play("click");
+      haptic("light");
       setSelectedCell([row, col]);
     },
-    [gameState]
+    [gameState, play, haptic]
   );
 
   const handleCardSelect = useCallback(
@@ -203,6 +212,21 @@ export function CardFaBdokuGame() {
       setGameState(newState);
       saveCardGameState(newState);
       setSelectedCell(null);
+      setLastPlaced([row, col]);
+      setPlaceSeq((s) => s + 1);
+
+      // Placement feedback — the finishing pick gets the win/lose fx instead.
+      if (!isCompleted) {
+        play(isCorrect ? "correct" : "wrong");
+        haptic(isCorrect ? "success" : "error");
+      } else if (isWon) {
+        setCelebrate(true);
+        play("win");
+        haptic("success");
+      } else {
+        play("lose");
+        haptic("error");
+      }
 
       if (isCompleted) {
         if (user?.uid) {
@@ -245,7 +269,7 @@ export function CardFaBdokuGame() {
         }
       }
     },
-    [gameState, selectedCell, puzzle, user?.uid, dateStr, refreshUniqueness]
+    [gameState, selectedCell, puzzle, user?.uid, dateStr, refreshUniqueness, play, haptic]
   );
 
   if (!gameState) {
@@ -340,6 +364,8 @@ export function CardFaBdokuGame() {
         disabled={gameState.completed}
         onCellClick={handleCellClick}
         cellPcts={gameState.completed && uniqueness ? uniqueness.cellPcts : undefined}
+        lastPlaced={lastPlaced}
+        placeSeq={placeSeq}
       />
 
       {/* Result panel */}
@@ -349,6 +375,7 @@ export function CardFaBdokuGame() {
           stats={stats}
           uniqueness={uniqueness}
           onShared={() => triggerShared(gameState, dateStr, uniqueness)}
+          celebrate={celebrate}
         />
       )}
 

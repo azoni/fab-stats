@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { copyCardImage } from "@/lib/share-image";
+import { WinBurst, CountUp } from "@/components/games/fx";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 function TrophyIcon({ className }: { className?: string }) {
@@ -49,9 +50,12 @@ interface FaBdokuResultProps {
   stats: FaBdokuStats | null;
   uniqueness: UniquenessData | null;
   onShared?: () => void;
+  /** True only for a win earned this session — this component is shared by both
+   *  modes AND yesterday's-recap flows, all of which must stay still. */
+  celebrate?: boolean;
 }
 
-export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdokuResultProps) {
+export function FaBdokuResult({ gameState, stats, uniqueness, onShared, celebrate = false }: FaBdokuResultProps) {
   const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "shared">("idle");
   const [countdown, setCountdown] = useState("");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -113,19 +117,26 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdok
     }
   }
 
+  // Winning in exactly 9 guesses (no wasted replaces) is the skill ceiling.
+  const flawless = gameState.won && gameState.guessesUsed === totalCells;
+
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-xl p-5 mt-4 max-w-[400px] mx-auto">
+    <div className="relative overflow-hidden bg-fab-surface border border-fab-border rounded-xl p-5 mt-4 max-w-[400px] mx-auto">
+      {gameState.won && celebrate && <WinBurst count={flawless ? 40 : 26} />}
       {/* Header */}
-      <div className="text-center mb-4">
+      <div className="relative text-center mb-4">
         {gameState.won ? (
           <>
-            <div className="w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center mx-auto mb-2">
+            <div className={`w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center mx-auto mb-2 ${flawless ? "game-win-glow" : ""}`}>
               <TrophyIcon className="w-6 h-6 text-fab-gold" />
             </div>
-            <h3 className="text-lg font-bold text-fab-text">Puzzle Complete!</h3>
+            <h3 className={`text-lg font-bold text-fab-text ${celebrate ? "game-pop" : ""}`}>
+              {flawless ? "Flawless!" : "Puzzle Complete!"}
+            </h3>
             <p className="text-sm text-fab-muted mt-0.5">
               {correctCount}/{totalCells} correct in{" "}
               {gameState.guessesUsed} guesses
+              {flawless ? " — no wasted picks" : ""}
             </p>
           </>
         ) : (
@@ -154,7 +165,7 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdok
           </div>
           <div className="flex items-baseline gap-2 justify-center">
             <span className="text-2xl font-bold text-fab-gold font-mono">
-              {uniqueness.score}
+              <CountUp value={uniqueness.score} duration={celebrate ? 1100 : 0} />
             </span>
             {uniqueness.bestPossible > 0 && (
               <span className="text-xs text-fab-dim">
@@ -198,34 +209,35 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdok
 
       {/* Streak info */}
       {stats && (
-        <div className="flex items-center justify-center gap-6 mb-4">
+        <div className="relative flex items-center justify-center gap-6 mb-4">
           <div className="text-center">
             <div className="flex items-center gap-1 justify-center">
               <FlameIcon className="w-3.5 h-3.5 text-fab-gold" />
               <span className="text-lg font-bold text-fab-text">
-                {stats.currentStreak}
+                <CountUp value={stats.currentStreak} duration={celebrate ? 700 : 0} />
               </span>
             </div>
             <p className="text-[10px] text-fab-dim">Streak</p>
           </div>
           <div className="text-center">
             <span className="text-lg font-bold text-fab-text">
-              {stats.maxStreak}
+              <CountUp value={stats.maxStreak} duration={celebrate ? 700 : 0} />
             </span>
             <p className="text-[10px] text-fab-dim">Best</p>
           </div>
           <div className="text-center">
             <span className="text-lg font-bold text-fab-text">
-              {stats.gamesPlayed}
+              <CountUp value={stats.gamesPlayed} duration={celebrate ? 700 : 0} />
             </span>
             <p className="text-[10px] text-fab-dim">Played</p>
           </div>
           <div className="text-center">
             <span className="text-lg font-bold text-fab-text">
-              {stats.gamesPlayed > 0
-                ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
-                : 0}
-              %
+              <CountUp
+                value={stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0}
+                suffix="%"
+                duration={celebrate ? 700 : 0}
+              />
             </span>
             <p className="text-[10px] text-fab-dim">Win %</p>
           </div>

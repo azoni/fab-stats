@@ -13,6 +13,7 @@ import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
+import { useGameFx } from "@/components/games/fx";
 import type { TimelineGameState, TimelineStats, TimelinePlacement } from "@/lib/timeline/types";
 import type { TimelineItem } from "@/lib/timeline/types";
 
@@ -32,6 +33,9 @@ export default function TimelinePage() {
   });
   const [stats, setStats] = useState<TimelineStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
+  // Celebrate only the win earned this session, never a reload of a done game.
+  const [celebrate, setCelebrate] = useState(false);
+  const { play, haptic } = useGameFx();
   const [showShare, setShowShare] = useState(false);
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
@@ -96,6 +100,14 @@ export default function TimelinePage() {
 
     if (completed) {
       setShowResult(true);
+      if (won) {
+        setCelebrate(true);
+        play("win");
+        haptic("success");
+      } else {
+        play("lose");
+        haptic("error");
+      }
 
       const correctCount = newPlacements.filter((p) => p.correct).length;
 
@@ -127,7 +139,7 @@ export default function TimelinePage() {
         }
       }
     }
-  }, [gameState, items, dateStr, user, profile]);
+  }, [gameState, items, dateStr, user, profile, play, haptic]);
 
   function triggerShared() {
     if (sharedDatesRef.current.has(dateStr)) return;
@@ -173,6 +185,7 @@ export default function TimelinePage() {
             stats={stats}
             dateStr={dateStr}
             onShare={() => setShowShare(true)}
+            celebrate={celebrate}
           />
         </div>
       )}

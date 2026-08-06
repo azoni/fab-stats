@@ -13,6 +13,7 @@ import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import { getCommunityHeroMatchups, getMonthsForPreset } from "@/lib/hero-matchups";
+import { useGameFx } from "@/components/games/fx";
 import type { MatchupManiaGameState, MatchupManiaStats, MatchupRound } from "@/lib/matchupmania/types";
 import type { CommunityMatchupCell } from "@/lib/hero-matchups";
 
@@ -20,6 +21,9 @@ function getTodayDateStr(): string {
   const now = new Date();
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
 }
+
+/** How long a picked round stays on screen showing the real win rates. */
+const REVEAL_MS = 1300;
 
 export default function MatchupManiaPage() {
   const { user, profile } = useAuth();
@@ -33,10 +37,23 @@ export default function MatchupManiaPage() {
   const [matchupData, setMatchupData] = useState<CommunityMatchupCell[] | null>(null);
   const [rounds, setRounds] = useState<MatchupRound[]>(gameState.rounds);
   const [showResult, setShowResult] = useState(gameState.completed);
+  // The reveal hold: while non-null, the just-picked round stays on screen with its
+  // win rates showing, even though the persisted state has already advanced (so a
+  // reload mid-hold safely lands on the next round).
+  const [displayIndex, setDisplayIndex] = useState<number | null>(null);
+  // Celebrate only a win earned this session, never a reload of a finished game.
+  const [celebrate, setCelebrate] = useState(false);
+  const { play, haptic } = useGameFx();
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
+  // Reveal-hold timer — cleared on unmount so a queued flip/win sound can't fire
+  // after the player navigates away.
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+  }, []);
 
   useEffect(() => { cleanupOldStates(); }, []);
 
@@ -73,6 +90,9 @@ export default function MatchupManiaPage() {
     const winner = round.hero1WinRate >= round.hero2WinRate ? round.hero1 : round.hero2;
     const correct = heroName === winner;
 
+    play(correct ? "correct" : "wrong");
+    haptic(correct ? "success" : "error");
+
     const updatedRound: MatchupRound = { ...round, picked: heroName, correct };
     const updatedRounds = [...rounds];
     updatedRounds[gameState.currentRound] = updatedRound;
@@ -92,13 +112,31 @@ export default function MatchupManiaPage() {
       score: newScore,
     };
 
+    // Persist the ADVANCED state immediately (a reload mid-reveal must not
+    // resurrect a pickable, already-answered round) — only the DISPLAY lags.
     setGameState(newState);
     saveGameState(newState);
+    setDisplayIndex(gameState.currentRound);
+    revealTimerRef.current = setTimeout(() => {
+      setDisplayIndex(null);
+      if (!completed) {
+        // Next round slides in.
+        play("flip");
+        haptic("flip");
+      } else {
+        setShowResult(true);
+        if (won) {
+          setCelebrate(true);
+          play("win");
+          haptic("success");
+        } else {
+          play("lose");
+          haptic("error");
+        }
+      }
+    }, REVEAL_MS);
 
     if (completed) {
-      // Delay showing result to let the last answer animate
-      setTimeout(() => setShowResult(true), 800);
-
       if (user && !completionSaved.current) {
         completionSaved.current = true;
         const result = {
@@ -126,7 +164,7 @@ export default function MatchupManiaPage() {
         }
       }
     }
-  }, [gameState, rounds, dateStr, user, profile]);
+  }, [gameState, rounds, dateStr, user, profile, play, haptic]);
 
   function triggerShared() {
     if (sharedDatesRef.current.has(dateStr)) return;
@@ -140,7 +178,17 @@ export default function MatchupManiaPage() {
     }
   }
 
-  const currentRound = rounds[gameState.currentRound];
+  // Render from the display index (holds on the just-revealed round), not the
+  // persisted round pointer — this is what makes the win-rate reveal visible.
+  const displayedIdx = displayIndex ?? gameState.currentRound;
+  const displayedRound = rounds[displayedIdx];
+  const showCard = !!displayedRound && (!gameState.completed || displayIndex !== null);
+  // Hot streak: consecutive correct picks ending at the newest resolved round.
+  let streak = 0;
+  for (let i = displayIndex ?? gameState.currentRound - 1; i >= 0; i--) {
+    if (rounds[i]?.correct) streak++;
+    else break;
+  }
 
   return (
     <div className="max-w-lg mx-auto py-4 px-4">
@@ -162,21 +210,27 @@ export default function MatchupManiaPage() {
         <>
           {/* Round progress */}
           <div className="mb-4">
-            <RoundProgress rounds={rounds} currentRound={gameState.currentRound} totalRounds={TOTAL_ROUNDS} />
+            <RoundProgress
+              rounds={rounds}
+              currentRound={gameState.currentRound}
+              totalRounds={TOTAL_ROUNDS}
+              justResolved={displayIndex}
+            />
             <p className="text-center text-[10px] text-fab-dim mt-1">
-              Round {Math.min(gameState.currentRound + 1, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
+              Round {Math.min(displayedIdx + 1, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
               {" · "}Score: {gameState.score}
+              {streak >= 3 && showCard && (
+                <span key={streak} className="game-pop ml-1.5 inline-block rounded-full bg-orange-500/15 px-1.5 font-bold text-orange-300">
+                  🔥 ×{streak}
+                </span>
+              )}
             </p>
           </div>
 
-          {/* Current round */}
-          {!gameState.completed && currentRound && (
-            <MatchupCard round={currentRound} onPick={handlePick} />
-          )}
-
-          {/* Show completed rounds review */}
-          {gameState.completed && !showResult && (
-            <div className="text-center py-4 text-fab-dim text-sm">Calculating results...</div>
+          {/* Current round — keyed by index so each new matchup plays its entrance;
+              held on the revealed round for REVEAL_MS after a pick. */}
+          {showCard && (
+            <MatchupCard key={displayedIdx} round={displayedRound} onPick={handlePick} />
           )}
 
           {showResult && (
@@ -188,6 +242,7 @@ export default function MatchupManiaPage() {
                 dateStr={dateStr}
                 onShared={triggerShared}
                 rounds={rounds}
+                celebrate={celebrate}
               />
             </div>
           )}

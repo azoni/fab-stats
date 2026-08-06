@@ -2,6 +2,7 @@
 import { NextPuzzleCountdown } from "@/components/games/NextPuzzleCountdown";
 import { useRef, useState } from "react";
 import { copyCardImage } from "@/lib/share-image";
+import { WinBurst, CountUp } from "@/components/games/fx";
 import { TOTAL_ROUNDS, WIN_THRESHOLD } from "@/lib/matchupmania/puzzle-generator";
 import type { MatchupManiaStats, MatchupRound } from "@/lib/matchupmania/types";
 
@@ -39,6 +40,7 @@ export function MatchupManiaResult({
   dateStr,
   rounds,
   onShared,
+  celebrate = false,
 }: {
   won: boolean;
   score: number;
@@ -46,6 +48,7 @@ export function MatchupManiaResult({
   dateStr: string;
   rounds: MatchupRound[];
   onShared?: () => void;
+  celebrate?: boolean;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [shareStatus, setShareStatus] = useState<"idle" | "shared">("idle");
@@ -66,12 +69,19 @@ export function MatchupManiaResult({
     }
   }
 
+  const perfect = won && score === TOTAL_ROUNDS;
+
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-4 space-y-3">
+    <div className="relative overflow-hidden bg-fab-surface border border-fab-border rounded-lg p-4 space-y-3">
+      {won && celebrate && <WinBurst count={perfect ? 40 : 26} />}
       {/* Header */}
-      <div className="text-center">
-        <p className={`text-lg font-bold ${won ? "text-fab-win" : "text-fab-loss"}`}>
-          {won ? "You Won!" : "Better Luck Tomorrow"}
+      <div className="relative text-center">
+        <p
+          className={`font-black ${won ? "text-fab-win text-2xl" : "text-fab-loss text-lg"} ${
+            won && celebrate ? "game-pop" : ""
+          } ${perfect ? "inline-block rounded-lg px-3 game-win-glow" : ""}`}
+        >
+          {perfect ? "Perfect Run!" : won ? "You Won!" : "Better Luck Tomorrow"}
         </p>
         <p className="text-sm text-fab-muted">
           {score}/{TOTAL_ROUNDS} correct {won ? "" : `(need ${WIN_THRESHOLD})`}
@@ -80,15 +90,19 @@ export function MatchupManiaResult({
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { label: "Played", value: stats.gamesPlayed },
-            { label: "Win %", value: stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0 },
-            { label: "Streak", value: stats.currentStreak },
-            { label: "Best", value: `${stats.bestScore}/${TOTAL_ROUNDS}` },
-          ].map((s) => (
+        <div className="relative grid grid-cols-4 gap-2">
+          {(
+            [
+              { label: "Played", value: stats.gamesPlayed },
+              { label: "Win %", value: stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0, suffix: "%" },
+              { label: "Streak", value: stats.currentStreak },
+              { label: "Best", text: `${stats.bestScore}/${TOTAL_ROUNDS}` },
+            ] as { label: string; value?: number; suffix?: string; text?: string }[]
+          ).map((s) => (
             <div key={s.label} className="text-center">
-              <p className="text-lg font-bold text-fab-text">{s.value}</p>
+              <p className="text-lg font-bold text-fab-text">
+                {s.text ?? <CountUp value={s.value ?? 0} suffix={s.suffix || ""} />}
+              </p>
               <p className="text-[10px] text-fab-dim">{s.label}</p>
             </div>
           ))}
