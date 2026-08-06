@@ -1055,6 +1055,49 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // ── The Understack (delve) — persistent RPG ──
+    // Owner-write with shape validators + bounds. Client-authoritative like the
+    // other games (solo, cosmetic stakes); the wallet stays the only economy.
+    function validDelveCharacter(data) {
+      return data.keys().hasOnly(['v', 'saveVersion', 'name', 'classId', 'level', 'xp',
+          'marks', 'materials', 'keys', 'equipped', 'daily', 'cosmetics',
+          'createdAt', 'updatedAt'])
+        && data.name is string && data.name.size() <= 24
+        && data.classId in ['sentinel', 'stalker', 'arcanist']
+        && data.level is int && data.level >= 1 && data.level <= 200
+        && data.xp is int && data.xp >= 0
+        && data.marks is int && data.marks >= 0 && data.marks <= 1000000000
+        && data.saveVersion is int && data.saveVersion >= 1;
+    }
+    function validDelveInventory(data) {
+      return data.keys().hasOnly(['v', 'saveVersion', 'items'])
+        && data.items is list && data.items.size() <= 400;
+    }
+    function validDelveRun(data) {
+      return data.seed is int
+        && data.floor is int && data.floor >= 1 && data.floor <= 1000
+        && data.satchel is list && data.satchel.size() <= 40;
+    }
+    match /users/{userId}/delve/{docId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null && request.auth.uid == userId
+        && docId in ['character', 'inventory', 'run']
+        && (docId != 'character' || validDelveCharacter(request.resource.data))
+        && (docId != 'inventory' || validDelveInventory(request.resource.data))
+        && (docId != 'run' || validDelveRun(request.resource.data));
+    }
+    match /users/{userId}/delve-stats/{docId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Lifetime counters only move forward.
+      allow update: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.totalRuns >= resource.data.totalRuns
+        && request.resource.data.deaths >= resource.data.deaths
+        && request.resource.data.bossKills >= resource.data.bossKills
+        && request.resource.data.deepestFloor >= resource.data.deepestFloor;
+    }
+
     // ── Sitemap Decklists (scraped from fabtcg.com, admin-only) ──
     match /sitemap-decklists/{docId} {
       allow read, write: if isAdmin();
