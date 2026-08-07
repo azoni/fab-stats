@@ -73,7 +73,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "vanish", classId: "stalker", name: "Vanish", unlockLevel: 4, cooldown: 3, mult: 0,
     resource: { gain: 1 }, special: "vanish",
-    description: "Dodge the next enemy action entirely. +1 Combo.",
+    description: "Slip between the shelves — the next blow aimed at you misses. +1 Combo.",
   },
   {
     id: "executioner", classId: "stalker", name: "Executioner's Draw", unlockLevel: 8, cooldown: 0, mult: 0,

@@ -8,15 +8,22 @@
 import { useMemo } from "react";
 import type { RunState, DelveAction, EnemyInstance, IntentStep } from "@/lib/delve/types";
 import { kitFor, abilityUsable, currentIntent, statusLabel, playerAtk } from "@/lib/delve/engine";
-import { mitigate, FLASK_HEAL_PCT } from "@/lib/delve/balance";
+import { mitigate, FLASK_HEAL_PCT, CHILL_DMG_REDUCTION, EXPOSE_DMG_BONUS } from "@/lib/delve/balance";
 import { CLASS_BY_ID, ENEMY_BY_ID } from "@/lib/delve/content";
 import { useGameFx } from "@/components/games/fx";
 import { EnemySprite } from "./sprites";
 import { Sword, Shield, Eye, Flag, Droplets, Zap, FlaskConical, Swords } from "lucide-react";
 
-function IntentBadge({ enemy, playerDef }: { enemy: EnemyInstance; playerDef: number }) {
+function IntentBadge({ enemy, playerDef, playerExposed }: { enemy: EnemyInstance; playerDef: number; playerExposed: boolean }) {
   const step: IntentStep = currentIntent(enemy);
-  const dmg = (mult: number) => mitigate(enemy.atk * mult, playerDef);
+  // Mirror dealToPlayer exactly (chill on the enemy, expose on the player,
+  // then mitigation) — this number is what the player blocks/flasks against.
+  const dmg = (mult: number) => {
+    let raw = enemy.atk * mult;
+    if (enemy.statuses.some((s) => s.id === "chill")) raw *= 1 - CHILL_DMG_REDUCTION;
+    if (playerExposed) raw *= 1 + EXPOSE_DMG_BONUS;
+    return mitigate(raw, playerDef);
+  };
   if (enemy.windup) {
     return (
       <span className="game-pop inline-flex items-center gap-1 rounded-full border border-rose-500/60 bg-rose-500/20 px-2 py-0.5 text-[11px] font-black text-rose-200">
@@ -92,7 +99,7 @@ export function CombatPanel({
   return (
     <div className="space-y-4">
       {/* Enemies */}
-      <div className={`flex items-end justify-center gap-4 ${c.enemies.length > 2 ? "gap-2" : ""}`}>
+      <div className={`flex items-end justify-center ${c.enemies.length > 2 ? "gap-2" : "gap-4"}`}>
         {c.enemies.map((enemy, i) => {
           const def = ENEMY_BY_ID.get(enemy.defId)!;
           const dead = enemy.hp <= 0;
@@ -114,7 +121,7 @@ export function CombatPanel({
                     : "border-fab-border/60 bg-fab-surface/50 hover:border-fab-gold/40"
               }`}
             >
-              {!dead && <IntentBadge enemy={enemy} playerDef={run.eff.def} />}
+              {!dead && <IntentBadge enemy={enemy} playerDef={run.eff.def} playerExposed={c.statuses.some((s) => s.id === "expose")} />}
               <span key={hit ? `${logSeq}-${i}` : `s-${i}`} className={hit ? (hit.crit ? "game-shake" : "") : ""}>
                 <EnemySprite sprite={def.sprite} palette={zone} size={c.enemies.length > 2 ? 72 : 92} defeated={dead} />
               </span>

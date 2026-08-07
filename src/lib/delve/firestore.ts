@@ -25,6 +25,10 @@ const runRef = (uid: string) => doc(db, "users", uid, "delve", "run");
 const statsRef = (uid: string) => doc(db, "users", uid, "delve-stats", "summary");
 
 export interface RemoteSave {
+  /** False when ANY read rejected (offline, auth blip). A null doc is only
+   *  trustworthy as "doesn't exist" when ok is true — callers must never
+   *  merge, push up, or offer character creation off a failed read. */
+  ok: boolean;
   character: DelveCharacter | null;
   inventory: DelveInventoryDoc | null;
   run: RunState | null;
@@ -32,13 +36,15 @@ export interface RemoteSave {
 }
 
 export async function loadRemote(uid: string): Promise<RemoteSave> {
-  const [c, i, r, s] = await Promise.all([
-    getDoc(charRef(uid)).catch(() => null),
-    getDoc(invRef(uid)).catch(() => null),
-    getDoc(runRef(uid)).catch(() => null),
-    getDoc(statsRef(uid)).catch(() => null),
+  const settled = await Promise.allSettled([
+    getDoc(charRef(uid)),
+    getDoc(invRef(uid)),
+    getDoc(runRef(uid)),
+    getDoc(statsRef(uid)),
   ]);
+  const [c, i, r, s] = settled.map((res) => (res.status === "fulfilled" ? res.value : null));
   return {
+    ok: settled.every((res) => res.status === "fulfilled"),
     character: c?.exists() ? (c.data() as DelveCharacter) : null,
     inventory: i?.exists() ? (i.data() as DelveInventoryDoc) : null,
     run: r?.exists() ? (r.data() as RunState) : null,

@@ -7,7 +7,7 @@
 import { MATERIALS, type Material } from "@/components/cosmetics/materials";
 import type { ItemRoll, Rarity } from "@/lib/delve/types";
 import { ITEM_BASE_BY_ID, AFFIX_BY_ID } from "@/lib/delve/content";
-import { statBudget, slotOf } from "@/lib/delve/balance";
+import { statBudget, slotOf, ENHANCE_PCT_PER_TIER } from "@/lib/delve/balance";
 
 export const RARITY_MATERIAL: Record<Rarity, Material> = {
   worn: "bronze",
@@ -45,7 +45,8 @@ export function ItemCard({
   const base = ITEM_BASE_BY_ID.get(item.id);
   const m = MATERIALS[RARITY_MATERIAL[item.rarity]];
   const slot = slotOf(item);
-  const budget = statBudget(slot, item.ilvl);
+  // Same math as effectiveStats — the label must move when the item is enhanced.
+  const budget = Math.round(statBudget(slot, item.ilvl) * (1 + (ENHANCE_PCT_PER_TIER * item.enhance) / 100));
   const primaryLabel = slot === "weapon" ? `+${budget} ATK` : slot === "relic" ? `+${Math.round(budget * 0.5)} ATK` : `+${slot === "armor" ? Math.round(budget * 1.5) : budget} HP`;
 
   if (compact) {

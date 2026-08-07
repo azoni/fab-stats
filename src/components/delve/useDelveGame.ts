@@ -23,11 +23,12 @@ import type {
 } from "@/lib/delve/types";
 import { applyAction } from "@/lib/delve/engine";
 import { newRun } from "@/lib/delve/generate";
-import { effectiveStats, slotOf, ENHANCE_CAP_V01, enhanceMarksCost, ENHANCE_MATERIALS, SALVAGE_YIELD, dailyScore, FLOORS_PER_RUN } from "@/lib/delve/balance";
+import { effectiveStats, slotOf, ENHANCE_CAP_V01, enhanceMarksCost, ENHANCE_MATERIALS, SALVAGE_YIELD, STASH_CAP, dailyScore, FLOORS_PER_RUN } from "@/lib/delve/balance";
 import { CLASS_BY_ID, AFFIX_BY_ID, DEFAULT_ZONE_ID } from "@/lib/delve/content";
 import {
   createCharacter,
   emptyStats,
+  mergeStatsMax,
   applyRunEnd,
   type RunEndSummary,
   LS_CHARACTER,
@@ -49,6 +50,9 @@ import {
 
 const LS_STASH = "delve-stash-v1";
 const LS_STATS = "delve-stats-v1";
+/** Who wrote the local save: a uid, or "guest". A different account's save is
+ *  cleared on load, never painted or absorbed (shared-browser protection). */
+const LS_OWNER = "delve-owner-v1";
 
 /** Daily Delve seed offset (game-isolation convention: each game gets its own). */
 const DAILY_SEED_OFFSET = 7_000_003;
@@ -58,7 +62,10 @@ interface StashDoc {
   items: ItemRoll[];
 }
 
-export type DelveView = "loading" | "create" | "camp" | "run" | "summary";
+const statsDiffer = (a: DelveStats, b: DelveStats) =>
+  (Object.keys(a) as (keyof DelveStats)[]).some((k) => a[k] !== b[k]);
+
+export type DelveView = "loading" | "create" | "camp" | "run" | "summary" | "unreachable";
 
 export function useDelveGame() {
   const { user } = useAuth();
@@ -76,16 +83,50 @@ export function useDelveGame() {
   const runRef = useRef<RunState | null>(null);
   runRef.current = run;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** True once the player has acted this session — the merge must then never
+   *  swap the run or stash out from under them. */
+  const interactedRef = useRef(false);
+  const [reloadNonce, setReloadNonce] = useState(0);
+
+  // Latest-value refs, declared BEFORE the load effect so its post-await
+  // continuation reads current state (e.g. a run that finished during the
+  // fetch already bumped saveVersion), not mount-time closures.
+  const characterRef = useRef(character);
+  characterRef.current = character;
+  const stashRef = useRef(stash);
+  stashRef.current = stash;
+  const statsRef = useRef(stats);
+  statsRef.current = stats;
+  const characterRefValue = () => characterRef.current!;
+  const stashRefValue = () => stashRef.current;
+  const statsRefValue = () => statsRef.current;
 
   // ── Load + merge protocol ──────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // 0) Ownership check. A save written by a DIFFERENT signed-in account
+      //    (shared browser) is cleared, never painted, absorbed, or pushed up —
+      //    that account's copy still lives in its own Firestore docs.
+      const currentOwner = user?.uid ?? "guest";
+      const localOwner = loadLocal<string>(LS_OWNER) ?? "guest";
+      let localChar = loadLocal<DelveCharacter>(LS_CHARACTER);
+      let localStash = loadLocal<StashDoc>(LS_STASH);
+      let localStats = loadLocal<DelveStats>(LS_STATS);
+      let localRun = loadLocal<RunState>(LS_RUN);
+      if (localChar && localOwner !== "guest" && localOwner !== currentOwner) {
+        for (const key of [LS_CHARACTER, LS_STASH, LS_STATS, LS_RUN, LS_OWNER]) clearLocal(key);
+        localChar = null;
+        localStash = null;
+        localStats = null;
+        localRun = null;
+        setCharacter(null);
+        setStash([]);
+        setStats(emptyStats());
+        setRun(null);
+      }
+
       // 1) Paint from localStorage instantly.
-      const localChar = loadLocal<DelveCharacter>(LS_CHARACTER);
-      const localStash = loadLocal<StashDoc>(LS_STASH);
-      const localStats = loadLocal<DelveStats>(LS_STATS);
-      const localRun = loadLocal<RunState>(LS_RUN);
       if (localChar) {
         const gained = refillKeys(localChar);
         if (gained > 0) setKeysGainedToast(gained);
@@ -109,30 +150,66 @@ export function useDelveGame() {
       }
       const remote = await loadRemote(user.uid);
       if (cancelled) return;
-      const localVersion = localChar?.saveVersion ?? 0;
+      if (!remote.ok) {
+        // A failed read is NOT absence. Merging here could clobber a newer
+        // remote save, and offering creation would overwrite an existing
+        // character on reconnect. Play on local if we have it; else retry.
+        if (!localChar) setView("unreachable");
+        return;
+      }
+      // Live state may have moved during the fetch (a run can finish and bump
+      // saveVersion) — compare against the refs, falling back to the paint.
+      const localVersion = characterRef.current?.saveVersion ?? localChar?.saveVersion ?? 0;
       const remoteVersion = remote.character?.saveVersion ?? 0;
+      // Stats are lifetime counters: field-wise max of every copy is always
+      // correct, heals divergent multi-device lineages, and keeps our writes
+      // inside the rules' forward-only guard.
+      const localBase = mergeStatsMax(localStats ?? emptyStats(), statsRef.current);
+      const mergedStats = remote.stats ? mergeStatsMax(localBase, remote.stats) : localBase;
+
       if (remote.character && remoteVersion > localVersion) {
         const merged = remote.character;
         const gained = refillKeys(merged);
         if (gained > 0) setKeysGainedToast(gained);
         setCharacter(merged);
         setStash(remote.inventory?.items ?? []);
-        setStats(remote.stats ?? emptyStats());
+        setStats(mergedStats);
+        saveLocal(LS_OWNER, user.uid);
         saveLocal(LS_CHARACTER, merged);
         saveLocal(LS_STASH, { saveVersion: merged.saveVersion, items: remote.inventory?.items ?? [] });
-        if (remote.stats) saveLocal(LS_STATS, remote.stats);
-        const remoteRun = remote.run;
-        if (remoteRun && !["victory", "dead", "withdrawn"].includes(remoteRun.phase)) {
-          setRun(remoteRun);
-          saveLocal(LS_RUN, remoteRun);
-          setView("run");
-        } else {
-          setView("camp");
+        saveLocal(LS_STATS, mergedStats);
+        // Never swap the run out from under a player who already acted.
+        if (!interactedRef.current) {
+          const remoteRun = remote.run;
+          if (remoteRun && !["victory", "dead", "withdrawn"].includes(remoteRun.phase)) {
+            setRun(remoteRun);
+            saveLocal(LS_RUN, remoteRun);
+            setView("run");
+          } else {
+            setView("camp");
+          }
         }
       } else if (localChar && remoteVersion < localVersion) {
         // Local is ahead (e.g. guest progress before sign-in) — push up.
-        persistAll(user.uid, localChar, localStash?.items ?? [], localStats ?? emptyStats());
-        if (localRun) saveRunRemote(user.uid, localRun);
+        setStats(mergedStats);
+        const pushStash = stashRef.current.length > 0 ? stashRef.current : localStash?.items ?? [];
+        persistAll(user.uid, characterRef.current ?? localChar, pushStash, mergedStats);
+        const activeRun =
+          runRef.current ??
+          (localRun && !["victory", "dead", "withdrawn"].includes(localRun.phase) ? localRun : null);
+        if (activeRun) saveRunRemote(user.uid, activeRun);
+      } else if (localChar && remote.character) {
+        // Versions equal — reconcile the satellite docs anyway: adopt the
+        // max-merged stats, and prefer the remote inventory when a torn local
+        // write left the stash stale (its stamp trails the character's).
+        setStats(mergedStats);
+        saveLocal(LS_STATS, mergedStats);
+        saveLocal(LS_OWNER, user.uid);
+        if (remote.stats && statsDiffer(mergedStats, remote.stats)) saveStatsRemote(user.uid, mergedStats);
+        if (remote.inventory && localStash?.saveVersion !== localChar.saveVersion && !interactedRef.current) {
+          setStash(remote.inventory.items ?? []);
+          saveLocal(LS_STASH, { saveVersion: localChar.saveVersion, items: remote.inventory.items ?? [] });
+        }
       } else if (!localChar && !remote.character) {
         setView("create");
       }
@@ -141,10 +218,11 @@ export function useDelveGame() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
+  }, [user?.uid, reloadNonce]);
 
   // ── Persistence helpers ────────────────────────────────────────────────────
   const persistAll = (uid: string | null, c: DelveCharacter, items: ItemRoll[], s: DelveStats) => {
+    saveLocal(LS_OWNER, uid ?? "guest");
     saveLocal(LS_CHARACTER, c);
     saveLocal(LS_STASH, { saveVersion: c.saveVersion, items });
     saveLocal(LS_STATS, s);
@@ -157,6 +235,7 @@ export function useDelveGame() {
   };
 
   const commitCharacter = useCallback((c: DelveCharacter, items: ItemRoll[], s: DelveStats) => {
+    interactedRef.current = true;
     c.saveVersion += 1;
     c.updatedAt = new Date().toISOString();
     setCharacter({ ...c });
@@ -246,6 +325,7 @@ export function useDelveGame() {
       // so a same-tick second dispatch chains off the new state.
       const prev = runRef.current;
       if (!prev) return;
+      interactedRef.current = true;
       const next = applyAction(prev, action);
 
       const terminal = ["victory", "dead", "withdrawn"].includes(next.phase);
@@ -296,17 +376,6 @@ export function useDelveGame() {
     [persistRun, play, haptic],
   );
 
-  // Latest-value accessors for the dispatch closure (avoids stale captures).
-  const characterRef = useRef(character);
-  characterRef.current = character;
-  const stashRef = useRef(stash);
-  stashRef.current = stash;
-  const statsRef = useRef(stats);
-  statsRef.current = stats;
-  const characterRefValue = () => characterRef.current!;
-  const stashRefValue = () => stashRef.current;
-  const statsRefValue = () => statsRef.current;
-
   const backToCamp = useCallback(() => {
     setSummary(null);
     setRun(null);
@@ -334,6 +403,8 @@ export function useDelveGame() {
   const unequip = useCallback(
     (slot: Slot) => {
       if (!character) return;
+      // A full shelf can't take the item back (STASH_CAP mirrors the rules cap).
+      if (stash.length >= STASH_CAP) return;
       const item = character.equipped[slot];
       if (!item) return;
       const c = { ...character, equipped: { ...character.equipped } };
@@ -397,6 +468,7 @@ export function useDelveGame() {
     dailyOpen,
     keysGainedToast,
     clearKeysToast: () => setKeysGainedToast(0),
+    retry: () => setReloadNonce((n) => n + 1),
     create,
     startRun,
     dispatch,

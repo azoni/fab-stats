@@ -191,7 +191,12 @@ export function CampHub({
 
           <div className="rounded-xl border border-fab-border bg-fab-surface p-4">
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-fab-dim">Stash · {stash.length}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-fab-dim">
+                Stash · {stash.length}
+                {stash.length >= 360 && (
+                  <span className="ml-1.5 normal-case tracking-normal text-amber-300">shelf almost full ({stash.length}/400) — salvage some gear</span>
+                )}
+              </p>
               <p className="text-[10px] text-fab-dim">
                 {(Object.keys(character.materials) as MaterialId[])
                   .filter((m) => character.materials[m] > 0)

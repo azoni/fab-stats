@@ -22,6 +22,9 @@ export const MIMIC_CHANCE_PCT = 20;
 /** Marks kept on death (satchel gear is lost, XP/materials kept). */
 export const DEATH_MARKS_KEPT_PCT = 60;
 export const SATCHEL_CAP = 40;
+/** Stash shelf size — MUST match validDelveInventory in firestore.rules
+ *  (items.size() <= 400); a bigger stash would be silently rejected on sync. */
+export const STASH_CAP = 400;
 
 // ── Enemy scaling ─────────────────────────────────────────────────────────────
 /** Enemy stat growth per player level above 1 (clamped to the zone range). */
