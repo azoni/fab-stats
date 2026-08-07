@@ -1071,6 +1071,7 @@ service cloud.firestore {
     }
     function validDelveInventory(data) {
       return data.keys().hasOnly(['v', 'saveVersion', 'items'])
+        && data.saveVersion is int && data.saveVersion >= 1
         && data.items is list && data.items.size() <= 400;
     }
     function validDelveRun(data) {
@@ -1081,10 +1082,22 @@ service cloud.firestore {
     match /users/{userId}/delve/{docId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow delete: if request.auth != null && request.auth.uid == userId;
-      allow create, update: if request.auth != null && request.auth.uid == userId
+      allow create: if request.auth != null && request.auth.uid == userId
         && docId in ['character', 'inventory', 'run']
         && (docId != 'character' || validDelveCharacter(request.resource.data))
         && (docId != 'inventory' || validDelveInventory(request.resource.data))
+        && (docId != 'run' || validDelveRun(request.resource.data));
+      // Character/inventory updates also require the save counter to move
+      // forward: a stale device (queued offline write) can never roll back a
+      // newer save. The client merge (useDelveGame) is the first line; this is
+      // the backstop. The run doc stays last-write-wins by design — it is
+      // short-lived and carries no version.
+      allow update: if request.auth != null && request.auth.uid == userId
+        && docId in ['character', 'inventory', 'run']
+        && (docId != 'character' || (validDelveCharacter(request.resource.data)
+            && request.resource.data.saveVersion >= resource.data.saveVersion))
+        && (docId != 'inventory' || (validDelveInventory(request.resource.data)
+            && request.resource.data.saveVersion >= resource.data.saveVersion))
         && (docId != 'run' || validDelveRun(request.resource.data));
     }
     match /users/{userId}/delve-stats/{docId} {

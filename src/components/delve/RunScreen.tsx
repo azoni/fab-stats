@@ -202,7 +202,22 @@ export function RunScreen({ run, dispatch }: { run: RunState; dispatch: (a: Delv
       <div>
         {progress}
         {run.nodeResolved ? (
-          <NodeShell title="Ember alcove" outcome={run.lastOutcome} onProceed={() => dispatch({ type: "proceed" })} />
+          <div className="mx-auto max-w-md">
+            <NodeShell title="Ember alcove" outcome={run.lastOutcome} onProceed={() => dispatch({ type: "proceed" })} />
+            {/* The engine allows withdrawing from a rest node resolved or not. */}
+            <button
+              type="button"
+              onClick={() => {
+                play("correct");
+                haptic("success");
+                dispatch({ type: "withdraw" });
+              }}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-fab-gold/40 px-4 py-2 text-xs font-bold text-fab-gold transition-all hover:bg-fab-gold/10 active:scale-[0.98]"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+              Withdraw instead — bank {run.satchel.length} item{run.satchel.length === 1 ? "" : "s"} and {run.marksFound} Marks
+            </button>
+          </div>
         ) : (
           <div className="mx-auto max-w-md">
             <p className="mb-3 text-center text-sm font-bold text-fab-text">An ember-warm alcove. The shelves hum quietly here.</p>

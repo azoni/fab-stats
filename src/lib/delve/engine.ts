@@ -169,6 +169,10 @@ function startCombat(run: RunState, rng: Rng, kind: "combat" | "elite" | "mimic"
     if (def.traits?.includes("swift")) {
       log(combat, { kind: "info", text: `${e.name} moves before you can react!` });
       resolveEnemyStep(run, rng, e);
+      if (run.hp <= 0) {
+        die(run);
+        return;
+      }
     }
   }
 }
@@ -266,10 +270,14 @@ function resolvePlayerAbility(run: RunState, rng: Rng, ability: AbilityDef, targ
     executeAbility(run, rng, ability, targetIndex);
   }
 
+  // Snapshot before the phase check: enemies summoned by a boss phase shift
+  // wait a full round (their intent must show before they act), matching the
+  // DoT-crossing path where the summon lands after the enemy loop.
+  const actors = [...c.enemies];
   if (checkCombatEnd(run, rng)) return;
 
   // Enemies act.
-  for (const enemy of c.enemies) {
+  for (const enemy of actors) {
     if (enemy.hp <= 0) continue;
     resolveEnemyStep(run, rng, enemy);
     if (run.hp <= 0) {
@@ -612,7 +620,8 @@ export function applyAction(prev: RunState, action: DelveAction): RunState {
       if (rng.chance(MIMIC_CHANCE_PCT)) {
         run.phase = "combat";
         startCombat(run, rng, "mimic", false);
-        run.combat!.log.unshift({ kind: "info", text: "The chest grows teeth. Of course it does." });
+        // combat is null if a swift opener already ended the run.
+        run.combat?.log.unshift({ kind: "info", text: "The chest grows teeth. Of course it does." });
       } else {
         const zone = ZONE_BY_ID.get(run.zoneId)!;
         if (rng.chance(60)) {
@@ -671,6 +680,9 @@ export function applyAction(prev: RunState, action: DelveAction): RunState {
     case "proceed": {
       if (run.phase === "treasure" || run.phase === "event" || run.phase === "rest") {
         if (!run.nodeResolved) break;
+        // The player already acknowledged this outcome on the node screen —
+        // clear it so the doors banner only carries combat/floor messages.
+        run.lastOutcome = null;
         advanceAfterNode(run, rng);
       } else if (run.phase === "antechamber") {
         if (!run.nodeResolved) break;

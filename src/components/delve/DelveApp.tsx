@@ -6,13 +6,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { DELVE_ENABLED } from "@/lib/delve/flags";
-import { CLASSES } from "@/lib/delve/content";
+import { CLASSES, ITEM_BASE_BY_ID } from "@/lib/delve/content";
 import type { ClassId } from "@/lib/delve/types";
 import { useGameFx, WinBurst, CountUp, SoundToggle } from "@/components/games/fx";
 import { useDelveGame } from "./useDelveGame";
 import { CampHub } from "./CampHub";
 import { RunScreen } from "./RunScreen";
-import { ItemCard } from "./ItemCard";
+import { ItemCard, RARITY_LABEL } from "./ItemCard";
 import { DelverSprite } from "./sprites";
 import { ArrowLeft, KeyRound } from "lucide-react";
 
@@ -64,6 +64,22 @@ function DelveGame() {
 
       {game.view === "loading" && (
         <div className="h-72 animate-pulse rounded-xl border border-fab-border bg-fab-surface" />
+      )}
+
+      {game.view === "unreachable" && (
+        <div className="mx-auto max-w-md rounded-xl border border-fab-border bg-fab-surface p-6 text-center">
+          <p className="text-lg font-black text-fab-text">The archive is unreachable</p>
+          <p className="mt-2 text-sm text-fab-muted">
+            We couldn&apos;t load your delver. Check your connection and try again — nothing was lost.
+          </p>
+          <button
+            type="button"
+            onClick={game.retry}
+            className="mt-4 rounded-lg bg-fab-gold px-5 py-2 text-sm font-black text-black transition-all hover:bg-fab-gold/85 active:scale-[0.98]"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {game.view === "create" && <CreateDelver onCreate={game.create} />}
@@ -226,7 +242,7 @@ function SummaryScreen({
           <ul className="mt-1 space-y-0.5">
             {summary.lostItems.map((item, i) => (
               <li key={i} className="text-[11px] text-fab-muted line-through">
-                {item.id} ({item.rarity})
+                {ITEM_BASE_BY_ID.get(item.id)?.name ?? item.id} ({RARITY_LABEL[item.rarity]})
               </li>
             ))}
           </ul>

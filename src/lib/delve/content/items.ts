@@ -29,7 +29,8 @@ export const AFFIXES: AffixDef[] = [
   { id: "brutal", name: "Brutal", stat: "atk", roll: [4, 12], slots: ["weapon", "relic"], pct: true },
   { id: "stalwart", name: "Stalwart", stat: "hp", roll: [5, 15], slots: ["armor", "helm"], pct: true },
   { id: "warded", name: "Warded", stat: "def", roll: [2, 8], slots: ["armor", "helm"], pct: false },
-  { id: "fleet", name: "Fleet", stat: "spd", roll: [1, 4], slots: ["charm", "relic"], pct: false },
+  // Armor needs 3 eligible affixes so ordained/mythic rolls can fill their budget.
+  { id: "fleet", name: "Fleet", stat: "spd", roll: [1, 4], slots: ["charm", "relic", "armor"], pct: false },
   { id: "leeching", name: "Leeching", stat: "lifesteal", roll: [3, 8], slots: ["weapon"], pct: true },
   { id: "gilded", name: "Gilded", stat: "marksFind", roll: [10, 25], slots: ["charm", "relic"], pct: true },
   { id: "scholarly", name: "Scholarly", stat: "xpFind", roll: [5, 12], slots: ["helm", "charm"], pct: true },

@@ -5,9 +5,9 @@
  * firestore.ts) is the cross-device source of truth. Higher saveVersion wins
  * on merge, so a lost trailing write self-heals on next load.
  */
-import type { DelveCharacter, DelveStats, RunState, ClassId, ItemRoll, MaterialId } from "./types";
+import type { DelveCharacter, DelveStats, RunState, ClassId, ItemRoll, MaterialId, Rarity } from "./types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
-import { xpToNext, LEVEL_CAP_V01, DEATH_MARKS_KEPT_PCT, KEYS_PER_DAY } from "./balance";
+import { xpToNext, LEVEL_CAP_V01, DEATH_MARKS_KEPT_PCT, KEYS_PER_DAY, STASH_CAP, SALVAGE_YIELD } from "./balance";
 
 export const LS_CHARACTER = "delve-character-v1";
 export const LS_RUN = "delve-run-v1";
@@ -48,6 +48,17 @@ export function emptyStats(): DelveStats {
     dailiesDone: 0,
     bestDailyScore: 0,
   };
+}
+
+/** Field-wise max of two stats docs. Every DelveStats field is a lifetime
+ *  counter or best-score, so max-merge is always correct — it heals divergent
+ *  multi-device lineages and keeps writes inside the rules' monotonic guard. */
+export function mergeStatsMax(a: DelveStats, b: DelveStats): DelveStats {
+  const out = emptyStats();
+  for (const k of Object.keys(out) as (keyof DelveStats)[]) {
+    out[k] = Math.max(a[k] ?? 0, b[k] ?? 0);
+  }
+  return out;
 }
 
 /** Level-ups from banked XP. Returns levels gained (for the celebration). */
@@ -99,6 +110,24 @@ export function applyRunEnd(
   }
   const levelsGained = applyXp(character, run.xpEarned);
   stash.push(...banked);
+  // The shelf holds STASH_CAP (the Firestore doc cap) — overflow melts to
+  // salvage, cheapest rarity first, so the synced inventory is never rejected.
+  if (stash.length > STASH_CAP) {
+    const order: Rarity[] = ["worn", "tempered", "ordained", "mythic"];
+    while (stash.length > STASH_CAP) {
+      let idx = 0;
+      for (const r of order) {
+        const i = stash.findIndex((it) => it.rarity === r);
+        if (i !== -1) {
+          idx = i;
+          break;
+        }
+      }
+      const [melted] = stash.splice(idx, 1);
+      const yields = SALVAGE_YIELD[melted.rarity];
+      for (const m of Object.keys(yields) as MaterialId[]) character.materials[m] += yields[m] ?? 0;
+    }
+  }
 
   stats.totalRuns += 1;
   stats.kills += run.kills;
@@ -112,12 +141,16 @@ export function applyRunEnd(
   else stats.withdrawals += 1;
 
   if (run.isDaily && dailyScore !== null) {
-    character.daily = { date: getTodayDateStr(), done: true, score: dailyScore };
+    // Credit the day whose seed was actually run — a daily started at 23:50 UTC
+    // and finished after midnight belongs to the day it started, and must not
+    // lock out the new day's puzzle. startedAt is ISO UTC, so slice = date.
+    const seedDate = run.startedAt.slice(0, 10) || getTodayDateStr();
+    character.daily = { date: seedDate, done: true, score: dailyScore };
     stats.dailiesDone += 1;
     stats.bestDailyScore = Math.max(stats.bestDailyScore, dailyScore);
-    // Hub streak integration — the Daily Delve counts as today's daily game.
+    // Hub streak integration — the Daily Delve counts as that day's daily game.
     try {
-      localStorage.setItem(lsDailyKey(getTodayDateStr()), JSON.stringify({ completed: true, score: dailyScore }));
+      localStorage.setItem(lsDailyKey(seedDate), JSON.stringify({ completed: true, score: dailyScore }));
     } catch {
       /* storage unavailable */
     }
