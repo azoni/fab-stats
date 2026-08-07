@@ -1087,10 +1087,11 @@ service cloud.firestore {
         && (docId != 'character' || validDelveCharacter(request.resource.data))
         && (docId != 'inventory' || validDelveInventory(request.resource.data))
         && (docId != 'run' || validDelveRun(request.resource.data));
-      // Updates also require the save counter to move forward: a stale device
-      // (failed read mistaken for absence, queued offline write) can never roll
-      // back a newer save. The client merge (useDelveGame) is the first line;
-      // this is the backstop.
+      // Character/inventory updates also require the save counter to move
+      // forward: a stale device (queued offline write) can never roll back a
+      // newer save. The client merge (useDelveGame) is the first line; this is
+      // the backstop. The run doc stays last-write-wins by design — it is
+      // short-lived and carries no version.
       allow update: if request.auth != null && request.auth.uid == userId
         && docId in ['character', 'inventory', 'run']
         && (docId != 'character' || (validDelveCharacter(request.resource.data)

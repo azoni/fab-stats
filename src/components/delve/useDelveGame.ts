@@ -104,6 +104,10 @@ export function useDelveGame() {
   // ── Load + merge protocol ──────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
+    // Each load pass (mount, identity change, retry) starts fresh: "interacted"
+    // means "acted since THIS pass began" — a previous identity's actions must
+    // not pin state (or gate setView) for the next one.
+    interactedRef.current = false;
     (async () => {
       // 0) Ownership check. A save written by a DIFFERENT signed-in account
       //    (shared browser) is cleared, never painted, absorbed, or pushed up —
@@ -167,7 +171,12 @@ export function useDelveGame() {
       const localBase = mergeStatsMax(localStats ?? emptyStats(), statsRef.current);
       const mergedStats = remote.stats ? mergeStatsMax(localBase, remote.stats) : localBase;
 
-      if (remote.character && remoteVersion > localVersion) {
+      // A saveVersion TIE between a guest-lineage local save and the account's
+      // remote save is two unrelated characters, not a synced pair — the
+      // account's own save wins (guest progress only adopts when strictly ahead).
+      const guestTie =
+        !!remote.character && localOwner === "guest" && !!localChar && remoteVersion === localVersion;
+      if (remote.character && (remoteVersion > localVersion || guestTie)) {
         const merged = remote.character;
         const gained = refillKeys(merged);
         if (gained > 0) setKeysGainedToast(gained);
@@ -179,6 +188,10 @@ export function useDelveGame() {
         saveLocal(LS_STASH, { saveVersion: merged.saveVersion, items: remote.inventory?.items ?? [] });
         saveLocal(LS_STATS, mergedStats);
         // Never swap the run out from under a player who already acted.
+        // Known accepted edge: if this pinned run was ALSO finished on another
+        // device (remote char newer, run doc gone), finishing it here pays out
+        // a second time — solo/cosmetic stakes, and the alternative is yanking
+        // an actively-playing run, which is worse.
         if (!interactedRef.current) {
           const remoteRun = remote.run;
           if (remoteRun && !["victory", "dead", "withdrawn"].includes(remoteRun.phase)) {
@@ -191,12 +204,22 @@ export function useDelveGame() {
         }
       } else if (localChar && remoteVersion < localVersion) {
         // Local is ahead (e.g. guest progress before sign-in) — push up.
+        // Once the player has acted this pass, the live refs are authoritative —
+        // including a null run (it ENDED; falling back to the load-time snapshot
+        // would resurrect an already-folded run as a replayable remote doc) and
+        // an emptied stash (falling back would duplicate an equipped/salvaged
+        // item). The snapshots only cover a ref not yet synced by first render.
         setStats(mergedStats);
-        const pushStash = stashRef.current.length > 0 ? stashRef.current : localStash?.items ?? [];
+        const pushStash = interactedRef.current
+          ? stashRef.current
+          : stashRef.current.length > 0
+            ? stashRef.current
+            : localStash?.items ?? [];
         persistAll(user.uid, characterRef.current ?? localChar, pushStash, mergedStats);
-        const activeRun =
-          runRef.current ??
-          (localRun && !["victory", "dead", "withdrawn"].includes(localRun.phase) ? localRun : null);
+        const activeRun = interactedRef.current
+          ? runRef.current
+          : runRef.current ??
+            (localRun && !["victory", "dead", "withdrawn"].includes(localRun.phase) ? localRun : null);
         if (activeRun) saveRunRemote(user.uid, activeRun);
       } else if (localChar && remote.character) {
         // Versions equal — reconcile the satellite docs anyway: adopt the
@@ -238,9 +261,14 @@ export function useDelveGame() {
     interactedRef.current = true;
     c.saveVersion += 1;
     c.updatedAt = new Date().toISOString();
-    setCharacter({ ...c });
-    setStash([...items]);
-    setStats({ ...s });
+    // Sync the refs eagerly (not just at render) so an in-flight load merge
+    // resolving between commit and re-render still reads committed state.
+    characterRef.current = { ...c };
+    stashRef.current = [...items];
+    statsRef.current = { ...s };
+    setCharacter(characterRef.current);
+    setStash(stashRef.current);
+    setStats(statsRef.current);
     persistAll(uidRef.current, c, items, s);
   }, []);
 
@@ -366,6 +394,9 @@ export function useDelveGame() {
         haptic("error");
       }
       setSummary(sum);
+      characterRef.current = c;
+      stashRef.current = items;
+      statsRef.current = s;
       setCharacter(c);
       setStash(items);
       setStats(s);
