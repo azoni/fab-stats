@@ -58,6 +58,7 @@ import {
   CARD_CLS,
   CARD_TITLE_CLS,
   EYEBROW_CLS,
+  type SeasonMedal,
 } from "./league-desk";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -165,6 +166,22 @@ export default function LeaguePage() {
   useEffect(() => {
     reloadSeasons();
   }, [reloadSeasons]);
+
+  // Past-season podium finishes per uid → medals by the name in the standings.
+  // Archived entries are frozen in standings order; members who never played
+  // that season can't medal (they can outrank played members on tie-breaks).
+  const medalsByUid = useMemo(() => {
+    const map: Record<string, SeasonMedal[]> = {};
+    const chronological = [...seasons].sort((a, b) => a.seasonNumber - b.seasonNumber);
+    for (const s of chronological) {
+      const podium = (s.entries || []).filter((e) => (e.matches || 0) > 0).slice(0, 3);
+      podium.forEach((e, idx) => {
+        (map[e.uid] ||= []).push({ place: (idx + 1) as SeasonMedal["place"], season: s.name });
+      });
+    }
+    for (const uid of Object.keys(map)) map[uid].sort((a, b) => a.place - b.place);
+    return map;
+  }, [seasons]);
 
   // Resolve store names from the directory
   useEffect(() => {
@@ -730,7 +747,7 @@ export default function LeaguePage() {
                   ) : (
                     <StorylineCards matches={filteredMatches} standings={displayStandings} />
                   )}
-                  <BroadcastStandings standings={displayStandings} signatureHeroes={signatureHeroes} form={form} />
+                  <BroadcastStandings standings={displayStandings} signatureHeroes={signatureHeroes} form={form} medals={medalsByUid} />
                 </>
               ) : filtersActive ? (
                 <p className="rounded-xl border border-fab-border bg-fab-surface p-4 text-sm text-fab-muted">

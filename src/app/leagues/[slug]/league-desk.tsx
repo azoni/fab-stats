@@ -16,6 +16,7 @@ import {
   Filter,
   Flame,
   MapPin,
+  Medal,
   PencilRuler,
   RefreshCw,
   Swords,
@@ -571,14 +572,42 @@ function FilterGroup({ label, children }: { label: string; children: ReactNode }
 
 // ── Broadcast standings table ─────────────────────────────────────────────────
 
+/** A podium finish in an archived season — rendered as a medal by the name. */
+export interface SeasonMedal {
+  place: 1 | 2 | 3;
+  season: string;
+}
+
+const MEDAL_STYLE: Record<SeasonMedal["place"], { cls: string; label: string }> = {
+  1: { cls: "text-fab-gold", label: "1st" },
+  2: { cls: "text-slate-300", label: "2nd" },
+  3: { cls: "text-amber-600", label: "3rd" },
+};
+
+function SeasonMedals({ medals }: { medals?: SeasonMedal[] }) {
+  if (!medals?.length) return null;
+  return (
+    <span className="flex shrink-0 items-center gap-0.5">
+      {medals.map((m, i) => (
+        <span key={i} title={`${MEDAL_STYLE[m.place].label} place — ${m.season}`} className="inline-flex">
+          <Medal className={`h-3.5 w-3.5 ${MEDAL_STYLE[m.place].cls}`} aria-label={`${MEDAL_STYLE[m.place].label} place, ${m.season}`} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export function BroadcastStandings({
   standings,
   signatureHeroes,
   form,
+  medals,
 }: {
   standings: LeagueStandingEntry[];
   signatureHeroes: Record<string, string>;
   form: Record<string, MatchResult[]>;
+  /** Past-season podium finishes per uid (absent → no medals column). */
+  medals?: Record<string, SeasonMedal[]>;
 }) {
   const showByes = standings.some((e) => (e.byes || 0) > 0);
   const leaderPts = standings[0]?.points || 0;
@@ -649,6 +678,7 @@ export function BroadcastStandings({
                         </Link>
                         <p className="truncate text-[10px] text-fab-dim">@{e.username}</p>
                       </div>
+                      <SeasonMedals medals={medals?.[e.uid]} />
                       {hasBreakdown && (
                         <ChevronDown className={`ml-auto h-3.5 w-3.5 shrink-0 text-fab-dim transition-transform ${open ? "rotate-180" : ""}`} />
                       )}
