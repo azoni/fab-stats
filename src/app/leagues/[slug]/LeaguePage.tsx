@@ -22,8 +22,13 @@ import {
   leagueRequiresApproval,
   listLeagueSeasons,
   setPrimaryLeague,
+  getPendingLeagueInvites,
+  getMyLeagueInvite,
+  acceptLeagueInvite,
+  declineLeagueInvite,
 } from "@/lib/leagues";
 import { NewSeasonModal } from "@/components/leagues/NewSeasonModal";
+import { LeagueInviteSearch } from "@/components/leagues/LeagueInviteSearch";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { uploadLeagueBanner, removeLeagueBanner, uploadLeagueIcon, removeLeagueIcon, bannerObjectPosition } from "@/lib/league-images";
@@ -67,6 +72,7 @@ import type {
   League,
   LeagueMember,
   LeagueJoinRequest,
+  LeagueInvite,
   LeagueScoringRules,
   LeagueSession,
   LeagueSeasonArchive,
@@ -98,6 +104,8 @@ export default function LeaguePage() {
   const [league, setLeague] = useState<League | null>(null);
   const [members, setMembers] = useState<LeagueMember[]>([]);
   const [joinRequests, setJoinRequests] = useState<LeagueJoinRequest[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<LeagueInvite[]>([]);
+  const [myInvite, setMyInvite] = useState<LeagueInvite | null>(null);
   const [myRequestPending, setMyRequestPending] = useState(false);
   const [directory, setDirectory] = useState<StoreDirectoryEntry[]>([]);
   const [standings, setStandings] = useState<LeagueStandingEntry[] | null>(null);
@@ -347,20 +355,36 @@ export default function LeaguePage() {
     return subscribeToJoinRequests(leagueId, setJoinRequests);
   }, [leagueId, canManage]);
 
-  // Non-member: do I already have a pending request?
+  // Non-member: do I already have a pending request, or a waiting invite?
   useEffect(() => {
     if (!user || !leagueId || isMember || isOrganizer) {
       setMyRequestPending(false);
+      setMyInvite(null);
       return;
     }
     let cancelled = false;
     hasPendingJoinRequest(leagueId, user.uid)
       .then((p) => !cancelled && setMyRequestPending(p))
       .catch(() => {});
+    getMyLeagueInvite(leagueId, user.uid)
+      .then((inv) => !cancelled && setMyInvite(inv))
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [user, leagueId, isMember, isOrganizer]);
+
+  // Managers: pending organizer-sent invites (one-shot; refreshed on action).
+  const reloadInvites = useCallback(() => {
+    if (!leagueId || !canManage) {
+      setPendingInvites([]);
+      return;
+    }
+    getPendingLeagueInvites(leagueId).then(setPendingInvites).catch(() => {});
+  }, [leagueId, canManage]);
+  useEffect(() => {
+    reloadInvites();
+  }, [reloadInvites]);
 
   async function handleRecompute() {
     if (!league) return;
@@ -402,6 +426,29 @@ export default function LeaguePage() {
       toast.success("Request cancelled.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to cancel request.");
+    }
+  }
+
+  async function handleAcceptInvite() {
+    if (!myInvite || !profile || !league) return;
+    try {
+      await acceptLeagueInvite(myInvite.id, profile);
+      setMyInvite(null);
+      setMyRequestPending(false);
+      toast.success(`Joined ${league.name}!`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to accept invite.");
+    }
+  }
+
+  async function handleDeclineInvite() {
+    if (!myInvite) return;
+    try {
+      await declineLeagueInvite(myInvite.id);
+      setMyInvite(null);
+      toast.success("Invite declined.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to decline invite.");
     }
   }
 
@@ -526,7 +573,30 @@ export default function LeaguePage() {
         leaderHero={standings?.[0] ? signatureHeroes[standings[0].uid] : undefined}
         actions={
           <>
-            {!isMember &&
+            {!isMember && myInvite && (
+              <div className="flex flex-col items-stretch gap-1.5">
+                <span className="rounded-md border border-fab-gold/40 bg-fab-gold/10 px-3 py-1.5 text-center text-sm font-bold text-fab-gold">
+                  {myInvite.inviterName} invited you to this league
+                </span>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleAcceptInvite}
+                    className="flex-1 rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeclineInvite}
+                    className="flex-1 rounded-md border border-fab-border bg-fab-bg/60 px-3 py-1.5 text-sm font-bold text-fab-dim hover:text-rose-300"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            )}
+            {!isMember && !myInvite &&
               (myRequestPending ? (
                 <div className="flex flex-col items-stretch gap-1">
                   <span className="rounded-md border border-fab-gold/40 bg-fab-gold/10 px-3 py-1.5 text-center text-sm font-bold text-fab-gold">
@@ -841,6 +911,15 @@ export default function LeaguePage() {
         <section className="mt-5 space-y-4">
           {canManage && (
             <JoinRequestsPanel requests={joinRequests} onApprove={handleApprove} onReject={handleRejectRequest} />
+          )}
+          {canManage && user && (
+            <LeagueInviteSearch
+              league={league}
+              inviter={{ uid: user.uid, displayName: profile?.displayName || "League manager" }}
+              members={members}
+              pendingInvites={pendingInvites}
+              onChanged={reloadInvites}
+            />
           )}
           <PlayerCards
             members={members}

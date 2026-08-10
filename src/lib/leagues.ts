@@ -23,7 +23,7 @@ import {
 import { db } from "./firebase";
 import { containsProfanity } from "./profanity-filter";
 import { getStoreAliases, buildAliasIndex, groupForSlug } from "./store-aliases";
-import type { League, LeagueMember, LeagueJoinRequest, LeagueScoringRules, LeagueSession, LeagueSeasonArchive, UserProfile } from "@/types";
+import type { League, LeagueMember, LeagueJoinRequest, LeagueInvite, LeagueScoringRules, LeagueSession, LeagueSeasonArchive, UserProfile } from "@/types";
 
 /** Archived past seasons for a league (leagues/{id}/seasons/{seasonId}). */
 export function leagueSeasonsCollection(leagueId: string) {
@@ -457,6 +457,125 @@ export async function approveJoinRequest(
 /** Organizer rejects, or a requester cancels, a pending join request. */
 export async function removeJoinRequest(leagueId: string, uid: string): Promise<void> {
   await deleteDoc(doc(leagueJoinRequestsCollection(leagueId), uid));
+}
+
+// ── Invites (organizer/admin → player; mirrors teamInvites) ──
+
+function leagueInvitesCollection() {
+  return collection(db, "leagueInvites");
+}
+
+/** Deterministic doc id — rules address the invite from the member-create gate. */
+export function leagueInviteId(leagueId: string, targetUid: string): string {
+  return `${leagueId}_${targetUid}`;
+}
+
+export async function sendLeagueInvite(
+  league: League,
+  inviter: { uid: string; displayName: string },
+  targetUid: string,
+  targetUsername?: string,
+): Promise<void> {
+  const inviteId = leagueInviteId(league.id, targetUid);
+
+  const existingMember = await getDoc(doc(leagueMembersCollection(league.id), targetUid));
+  if (existingMember.exists()) throw new Error("This player is already in the league.");
+
+  const existing = await getDoc(doc(leagueInvitesCollection(), inviteId));
+  if (existing.exists() && existing.data().status === "pending") {
+    throw new Error("An invite has already been sent to this player.");
+  }
+
+  const now = new Date().toISOString();
+  const inviteData: Record<string, unknown> = {
+    id: inviteId,
+    leagueId: league.id,
+    leagueName: league.name,
+    leagueSlug: league.slug,
+    inviterUid: inviter.uid,
+    inviterName: inviter.displayName,
+    targetUid,
+    status: "pending",
+    createdAt: now,
+  };
+  if (targetUsername) inviteData.targetUsername = targetUsername;
+
+  const notifData: Record<string, unknown> = {
+    type: "leagueInvite",
+    leagueInviteId: inviteId,
+    leagueId: league.id,
+    leagueName: league.name,
+    leagueSlug: league.slug,
+    leagueInviteFromUid: inviter.uid,
+    leagueInviteFromName: inviter.displayName,
+    createdAt: now,
+    read: false,
+  };
+  if (league.iconUrl) notifData.leagueIconUrl = league.iconUrl;
+
+  const batch = writeBatch(db);
+  batch.set(doc(leagueInvitesCollection(), inviteId), inviteData);
+  batch.set(doc(collection(db, "users", targetUid, "notifications")), notifData);
+  await batch.commit();
+}
+
+/** Accept: flips the invite, adds the member, and clears any join request the
+ *  player had also filed — one atomic batch (rules read the pre-batch invite). */
+export async function acceptLeagueInvite(inviteId: string, profile: UserProfile): Promise<void> {
+  const inviteSnap = await getDoc(doc(leagueInvitesCollection(), inviteId));
+  if (!inviteSnap.exists()) throw new Error("Invite not found.");
+  const invite = inviteSnap.data() as LeagueInvite;
+  if (invite.status !== "pending") throw new Error("This invite is no longer pending.");
+  if (invite.targetUid !== profile.uid) throw new Error("This invite is not for you.");
+
+  const memberSnap = await getDoc(doc(leagueMembersCollection(invite.leagueId), profile.uid));
+  if (memberSnap.exists()) {
+    await updateDoc(doc(leagueInvitesCollection(), inviteId), { status: "accepted" });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const memberData: Record<string, unknown> = {
+    uid: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    role: "player",
+    joinedAt: now,
+  };
+  if (profile.photoUrl) memberData.photoUrl = profile.photoUrl;
+
+  const batch = writeBatch(db);
+  batch.update(doc(leagueInvitesCollection(), inviteId), { status: "accepted" });
+  batch.set(doc(leagueMembersCollection(invite.leagueId), profile.uid), memberData);
+  batch.delete(doc(leagueJoinRequestsCollection(invite.leagueId), profile.uid));
+  batch.update(doc(db, "leagues", invite.leagueId), { memberCount: increment(1), updatedAt: now });
+  await batch.commit();
+}
+
+export async function declineLeagueInvite(inviteId: string): Promise<void> {
+  await updateDoc(doc(leagueInvitesCollection(), inviteId), { status: "declined" });
+}
+
+export async function cancelLeagueInvite(inviteId: string): Promise<void> {
+  await deleteDoc(doc(leagueInvitesCollection(), inviteId));
+}
+
+/** Pending invites for a league (the manager panel). */
+export async function getPendingLeagueInvites(leagueId: string): Promise<LeagueInvite[]> {
+  const snap = await getDocs(
+    query(leagueInvitesCollection(), where("leagueId", "==", leagueId), where("status", "==", "pending")),
+  );
+  return snap.docs
+    .map((d) => d.data() as LeagueInvite)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+/** The signed-in user's pending invite to this league, if any. */
+export async function getMyLeagueInvite(leagueId: string, uid: string): Promise<LeagueInvite | null> {
+  const snap = await getDoc(doc(leagueInvitesCollection(), leagueInviteId(leagueId, uid)));
+  if (!snap.exists()) return null;
+  const invite = snap.data() as LeagueInvite;
+  return invite.status === "pending" ? invite : null;
 }
 
 /** Whether the given user currently has a pending join request. */

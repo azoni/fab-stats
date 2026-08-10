@@ -159,6 +159,7 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
       };
     case "teamInvite":
     case "groupInvite":
+    case "leagueInvite":
       return {
         bg: "bg-amber-500/15",
         iconColor: "text-amber-400",
@@ -195,8 +196,8 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
 function NotifAvatar({ n }: { n: UserNotification }) {
   const { bg, iconColor, icon } = getNotifIcon(n.type);
 
-  if (n.type === "teamInvite" || n.type === "groupInvite") {
-    const iconUrl = n.type === "teamInvite" ? n.teamIconUrl : n.groupIconUrl;
+  if (n.type === "teamInvite" || n.type === "groupInvite" || n.type === "leagueInvite") {
+    const iconUrl = n.type === "teamInvite" ? n.teamIconUrl : n.type === "leagueInvite" ? n.leagueIconUrl : n.groupIconUrl;
     return iconUrl ? (
       <img src={iconUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-fab-border" />
     ) : (
@@ -246,7 +247,7 @@ export default function NotificationsPage() {
   }, [filter, groups, readGroups, unreadGroups]);
   const messageGroups = useMemo(() => groups.filter((g) => g.latest.type === "message").length, [groups]);
   const actionGroups = useMemo(
-    () => groups.filter((g) => ["friendRequest", "teamInvite", "groupInvite", "heroCorrection"].includes(g.latest.type)).length,
+    () => groups.filter((g) => ["friendRequest", "teamInvite", "groupInvite", "leagueInvite", "heroCorrection"].includes(g.latest.type)).length,
     [groups],
   );
 
@@ -363,7 +364,7 @@ export default function NotificationsPage() {
     } else if (n.type === "heroCorrection") {
       // Don't navigate — handled by inline Accept/Dismiss buttons
       await markAsRead(n.id);
-    } else if (n.type === "teamInvite" || n.type === "groupInvite") {
+    } else if (n.type === "teamInvite" || n.type === "groupInvite" || n.type === "leagueInvite") {
       // Don't navigate — handled by inline Accept/Decline buttons
       await markAsRead(n.id);
     } else if (n.type === "feedbackStatus") {
@@ -692,6 +693,54 @@ export default function NotificationsPage() {
                                   try {
                                     const { declineGroupInvite } = await import("@/lib/groups");
                                     await declineGroupInvite(n.groupInviteId);
+                                    handleGroupDelete(group);
+                                    toast.success("Invite declined.");
+                                  } catch (err) {
+                                    toast.error("Failed to decline invite.");
+                                  }
+                                }}
+                                className="px-3 py-1 rounded-md text-xs font-medium text-fab-dim hover:text-fab-text transition-colors"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          </>
+                        ) : n.type === "leagueInvite" ? (
+                          <>
+                            <p className="text-sm text-fab-text">
+                              <span className="font-semibold">{n.leagueInviteFromName}</span>{" "}
+                              invited you to join the league{" "}
+                              <Link
+                                href={`/leagues/${n.leagueSlug || ""}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-semibold text-amber-400 hover:text-amber-300 transition-colors"
+                              >{n.leagueName}</Link>
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!n.leagueInviteId || !profile) return;
+                                  try {
+                                    const { acceptLeagueInvite } = await import("@/lib/leagues");
+                                    await acceptLeagueInvite(n.leagueInviteId, profile);
+                                    handleGroupDelete(group);
+                                    toast.success(`Joined ${n.leagueName}!`);
+                                  } catch (err) {
+                                    toast.error(err instanceof Error ? err.message : "Failed to accept invite.");
+                                  }
+                                }}
+                                className="px-3 py-1 rounded-md text-xs font-medium bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!n.leagueInviteId) return;
+                                  try {
+                                    const { declineLeagueInvite } = await import("@/lib/leagues");
+                                    await declineLeagueInvite(n.leagueInviteId);
                                     handleGroupDelete(group);
                                     toast.success("Invite declined.");
                                   } catch (err) {
