@@ -589,7 +589,11 @@ export async function getLeague(leagueId: string): Promise<League | null> {
 }
 
 export async function getLeagueBySlug(slug: string): Promise<League | null> {
-  const nameSnap = await getDoc(doc(db, "leaguenames", slug));
+  // Shared links arrive mangled (capitalized by chat apps, trailing slashes or
+  // punctuation) — slugs are always lowercase, so normalize before the lookup.
+  const clean = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  if (!clean) return null;
+  const nameSnap = await getDoc(doc(db, "leaguenames", clean));
   if (!nameSnap.exists()) return null;
   const { leagueId } = nameSnap.data() as { leagueId: string };
   return getLeague(leagueId);

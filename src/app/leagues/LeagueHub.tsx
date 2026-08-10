@@ -517,8 +517,10 @@ export default function LeagueHub() {
             const todayIso = new Date().toISOString().slice(0, 10);
             const q = browseSearch.trim().toLowerCase();
             const filtered = leagues.filter((l) => {
-              // Status filter
-              if (browseFilter === "active" && !(l.status === "active" && l.startDate <= todayIso && l.endDate >= todayIso)) return false;
+              // Status filter. "Active" is status-based (started, not completed):
+              // a league between seasons has a lapsed window but is still live —
+              // hiding it stranded new players trying to find their league.
+              if (browseFilter === "active" && !(l.status === "active" && l.startDate <= todayIso)) return false;
               if (browseFilter === "upcoming" && !(l.status !== "completed" && l.startDate > todayIso)) return false;
               if (browseFilter === "completed" && !(l.status === "completed" || l.endDate < todayIso)) return false;
               // Search

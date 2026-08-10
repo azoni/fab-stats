@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   disbandLeague,
+  getAllLeagues,
   getLeagueBySlug,
   joinLeague,
   kickLeagueMember,
@@ -76,6 +77,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Image as ImageIcon,
+  Link2,
   RefreshCw,
   MoreVertical,
   Settings,
@@ -498,6 +500,7 @@ export default function LeaguePage() {
         <p className="text-fab-text">
           League not found. <Link href="/leagues" className="text-fab-gold underline">Back to leagues</Link>.
         </p>
+        <LeagueSuggestions requestedSlug={slug} />
       </div>
     );
   }
@@ -572,6 +575,20 @@ export default function LeaguePage() {
                 Leave league
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                const url = `https://www.fabstats.net/leagues/${league.slug || slug}`;
+                navigator.clipboard
+                  .writeText(url)
+                  .then(() => toast.success("League link copied."))
+                  .catch(() => toast.error(url));
+              }}
+              title="Copy this league's link to share it"
+              className="inline-flex items-center gap-1 rounded-md border border-fab-border bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-dim hover:text-fab-gold"
+            >
+              <Link2 className="h-3.5 w-3.5" /> Copy link
+            </button>
             {canEdit && (
               <button
                 type="button"
@@ -2027,5 +2044,65 @@ function EditField({
       </span>
       {children}
     </label>
+  );
+}
+
+/** Shown under "League not found": shared links often arrive mangled — guessed
+ *  from the league NAME instead of its slug, or capitalized by chat apps. Offer
+ *  the closest real leagues so a bad link still gets the player there. */
+function LeagueSuggestions({ requestedSlug }: { requestedSlug: string }) {
+  const [suggestions, setSuggestions] = useState<League[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getAllLeagues()
+      .then((all) => {
+        if (cancelled) return;
+        const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const want = norm(requestedSlug || "");
+        const score = (l: League) => {
+          let best = 0;
+          for (const c of [norm(l.slug || ""), norm(l.name || "")]) {
+            if (!c) continue;
+            if (c === want) best = Math.max(best, 100);
+            else if (want && (c.includes(want) || want.includes(c))) best = Math.max(best, 60);
+            else {
+              let p = 0;
+              while (p < Math.min(c.length, want.length) && c[p] === want[p]) p++;
+              if (p >= 4) best = Math.max(best, p);
+            }
+          }
+          return best;
+        };
+        setSuggestions(
+          all
+            .map((l) => ({ l, s: score(l) }))
+            .filter((x) => x.s > 0)
+            .sort((a, b) => b.s - a.s)
+            .slice(0, 3)
+            .map((x) => x.l),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedSlug]);
+  if (suggestions.length === 0) return null;
+  return (
+    <div className="mt-4 max-w-md rounded-xl border border-fab-border bg-fab-surface p-4">
+      <p className="text-xs font-bold uppercase tracking-wider text-fab-dim">Were you looking for one of these?</p>
+      <ul className="mt-2 space-y-1.5">
+        {suggestions.map((l) => (
+          <li key={l.id}>
+            <Link href={`/leagues/${l.slug}`} className="text-sm font-bold text-fab-gold hover:underline">
+              {l.name}
+            </Link>
+            <span className="ml-2 text-[11px] text-fab-dim">
+              {l.memberCount} {l.memberCount === 1 ? "player" : "players"}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
