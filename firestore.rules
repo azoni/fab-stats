@@ -1364,6 +1364,14 @@ service cloud.firestore {
         allow create: if request.auth != null
           && request.resource.data.role == "player"
           && (isLeagueManager(leagueId) || isAdmin());
+        // Self-join by accepting a league invite (doc id = leagueId_uid). The
+        // accept batch flips the invite to "accepted" in the same commit, so
+        // the pre-batch status read here is "pending".
+        allow create: if request.auth != null
+          && request.auth.uid == memberId
+          && request.resource.data.role == "player"
+          && get(/databases/$(database)/documents/leagueInvites/$(leagueId + '_' + memberId)).data.targetUid == request.auth.uid
+          && get(/databases/$(database)/documents/leagueInvites/$(leagueId + '_' + memberId)).data.status in ["pending", "accepted"];
         // Self-leave — but a co-admin must be demoted by the owner first, otherwise
         // they'd remain in adminUids as a non-member with lingering manager rights.
         allow delete: if request.auth != null && request.auth.uid == memberId
@@ -1429,6 +1437,34 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource.data.leagueId != null
         && (get(/databases/$(database)/documents/leagues/$(resource.data.leagueId)).data.organizerUid == request.auth.uid
+            || isAdmin());
+    }
+
+    // League invites (organizer/admin → player). Doc id = {leagueId}_{targetUid}
+    // so the members create rule can address the invite directly. Only league
+    // managers send; the target accepts/declines.
+    match /leagueInvites/{inviteId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.inviterUid == request.auth.uid
+        && request.resource.data.status == "pending"
+        && request.resource.data.targetUid is string
+        && inviteId == request.resource.data.leagueId + '_' + request.resource.data.targetUid
+        && (isLeagueManager(request.resource.data.leagueId) || isAdmin());
+      // Status is the only mutable field: target accepts/declines; a manager
+      // may re-send a declined invite back to pending.
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && (
+          (resource.data.targetUid == request.auth.uid
+            && request.resource.data.status in ['accepted', 'declined'])
+          || (request.resource.data.status == 'pending'
+            && (isLeagueManager(resource.data.leagueId) || isAdmin()))
+        );
+      allow delete: if request.auth != null
+        && (resource.data.inviterUid == request.auth.uid
+            || resource.data.targetUid == request.auth.uid
+            || isLeagueManager(resource.data.leagueId)
             || isAdmin());
     }
 

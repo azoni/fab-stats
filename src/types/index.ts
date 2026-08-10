@@ -461,6 +461,22 @@ export interface LeagueMember {
   joinedAt: string;
 }
 
+/** Organizer/admin-initiated league invite. Doc id = `${leagueId}_${targetUid}`
+ *  (leagueInvites collection) so rules can address it from the member-create
+ *  gate. Mirrors TeamInvite. */
+export interface LeagueInvite {
+  id: string;
+  leagueId: string;
+  leagueName: string;
+  leagueSlug: string;
+  inviterUid: string;
+  inviterName: string;
+  targetUid: string;
+  targetUsername?: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+}
+
 export interface LeagueJoinRequest {
   uid: string;
   username: string;
@@ -555,7 +571,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "feedComment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "reaction" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite";
+  type: "comment" | "feedComment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "reaction" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite" | "leagueInvite";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -617,6 +633,14 @@ export interface UserNotification {
   groupIconUrl?: string;
   groupInviteFromUid?: string;
   groupInviteFromName?: string;
+  // League invite fields
+  leagueInviteId?: string;
+  leagueId?: string;
+  leagueName?: string;
+  leagueSlug?: string;
+  leagueIconUrl?: string;
+  leagueInviteFromUid?: string;
+  leagueInviteFromName?: string;
   // Common
   createdAt: string;
   read: boolean;
