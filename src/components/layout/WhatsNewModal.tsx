@@ -6,12 +6,13 @@
  * first client render must agree (both closed).
  */
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Dialog } from "@/components/ui/dialog";
 import { trackSupportClick } from "@/lib/analytics";
 import { Trophy, EyeOff, Activity, Zap } from "lucide-react";
 
-const WHATS_NEW_VERSION = "2026-08";
+// "b": re-announce once — v1 dismissed itself when a link was clicked, so
+// early viewers lost the popup mid-read.
+const WHATS_NEW_VERSION = "2026-08b";
 const LS_KEY = "fab-whatsnew-seen";
 
 const DISCORD_URL = "https://discord.gg/WPP5aqCUHY";
@@ -41,12 +42,13 @@ export function WhatsNewModal() {
 
   if (!open) return null;
 
-  // Links inside the modal dismiss it on click — the modal is mounted in the
-  // root layout, so it would otherwise stay open over the destination page.
+  // Links open in a NEW TAB and leave the popup up — navigating in place would
+  // lose the popup mid-read (owner hit exactly that), and it only ever shows
+  // once per version.
   const go = (href: string, children: React.ReactNode) => (
-    <Link href={href} onClick={() => dismiss(false)} className="font-bold text-fab-gold hover:underline">
+    <a href={href} target="_blank" rel="noopener noreferrer" className="font-bold text-fab-gold hover:underline">
       {children}
-    </Link>
+    </a>
   );
 
   const rows: { icon: React.ReactNode; title: string; body: React.ReactNode }[] = [
@@ -129,9 +131,9 @@ export function WhatsNewModal() {
       </div>
 
       <div className="mt-3 flex items-center justify-between">
-        <Link href="/changelog" onClick={() => dismiss(false)} className="text-[11px] text-fab-dim hover:text-fab-gold">
+        <a href="/changelog" target="_blank" rel="noopener noreferrer" className="text-[11px] text-fab-dim hover:text-fab-gold">
           Full changelog
-        </Link>
+        </a>
         <button
           type="button"
           onClick={() => dismiss(false)}
