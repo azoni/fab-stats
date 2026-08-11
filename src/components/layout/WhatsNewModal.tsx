@@ -124,13 +124,7 @@ export function WhatsNewModal() {
   ];
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={dismiss}
-      title="What's new on FaB Stats"
-      description="The site has grown into something players use every day, and that's because of you."
-      className="max-w-xl"
-    >
+    <Dialog open={open} onOpenChange={dismiss} title="What's new on FaB Stats" className="max-w-xl">
       <div className="space-y-2">
         {rows.map((row) => (
           <div key={row.title} className="flex gap-3 rounded-lg border border-fab-border/60 bg-fab-bg/40 p-2.5">
@@ -147,8 +141,8 @@ export function WhatsNewModal() {
 
       <div className="mt-4 rounded-lg border border-fab-gold/30 bg-fab-gold/[0.06] p-3 text-center">
         <p className="text-xs leading-relaxed text-fab-muted">
-          Thank you to every player already in the Discord. A lot of what shipped above started as
-          a suggestion there — come tell us what you want to see next.
+          Thanks to all the players who continue to use FaB Stats. A lot of what shipped above
+          started as a Discord suggestion — join and share what you&apos;d like to see next.
         </p>
         <a
           href={DISCORD_URL}
