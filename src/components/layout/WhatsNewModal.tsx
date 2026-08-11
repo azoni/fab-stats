@@ -90,7 +90,12 @@ export function WhatsNewModal() {
       body: (
         <>
           The browser extension syncs faster: Quick Sync grabs just your newest GEM events, or
-          everything since a date you pick.
+          everything since a date you pick. Not using it yet?{" "}
+          {go(
+            "https://chromewebstore.google.com/detail/fab-stats-gem-exporter/kcaaaibikofempdbphoeeljdbjakhmjh",
+            "Get it on the Chrome Web Store",
+          )}{" "}
+          — importing your matches takes one click.
         </>
       ),
     },
