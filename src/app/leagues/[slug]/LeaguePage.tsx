@@ -731,6 +731,14 @@ export default function LeaguePage() {
         filtersActive={filtersActive}
         leagueActive={leagueActive}
         poolReady={!!pool}
+        seasons={seasons.map((s) => ({ id: s.id, label: `${s.name} (final)` }))}
+        viewingSeasonId={viewingSeasonId}
+        onSelectSeason={(id) => {
+          setViewingSeasonId(id);
+          // A past season renders inside the standings tab.
+          if (id) setLeagueTab("standings");
+        }}
+        currentSeasonLabel={`Current${league.seasonName ? ` — ${league.seasonName}` : (league.seasonNumber || 1) > 1 ? ` — Season ${league.seasonNumber}` : ""}`}
       />
 
       {leagueTab === "standings" && (() => {
@@ -747,20 +755,14 @@ export default function LeaguePage() {
               Standings{filtersActive && !viewingSeason && <span className="ml-1 text-xs font-normal text-fab-dim">(filtered)</span>}
             </h2>
             <div className="flex items-center gap-2 text-xs text-fab-dim">
-              {seasons.length > 0 && (
-                <select
-                  value={viewingSeasonId || "current"}
-                  onChange={(e) => setViewingSeasonId(e.target.value === "current" ? null : e.target.value)}
-                  title="View a past season's final standings"
-                  className="rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text focus:border-fab-gold focus:outline-none"
+              {viewingSeason && (
+                <button
+                  type="button"
+                  onClick={() => setViewingSeasonId(null)}
+                  className="rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text hover:text-fab-gold"
                 >
-                  <option value="current">
-                    Current{league.seasonName ? ` — ${league.seasonName}` : (league.seasonNumber || 1) > 1 ? ` — Season ${league.seasonNumber}` : ""}
-                  </option>
-                  {seasons.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} (final)</option>
-                  ))}
-                </select>
+                  Back to current season
+                </button>
               )}
               {!viewingSeason && standingsAt && !filtersActive && (
                 <span title="Standings recompute automatically when a member opens this page (at most once every 10 min). Refresh forces it now.">

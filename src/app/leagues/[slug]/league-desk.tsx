@@ -430,6 +430,10 @@ export function LeagueControlBar({
   filtersActive,
   leagueActive,
   poolReady,
+  seasons,
+  viewingSeasonId,
+  onSelectSeason,
+  currentSeasonLabel,
 }: {
   tab: "standings" | "meta" | "players" | "trend";
   setTab: (t: "standings" | "meta" | "players" | "trend") => void;
@@ -441,6 +445,11 @@ export function LeagueControlBar({
   filtersActive: boolean;
   leagueActive: boolean;
   poolReady: boolean;
+  /** Archived seasons for the tab-bar season picker (absent/empty → hidden). */
+  seasons?: { id: string; label: string }[];
+  viewingSeasonId?: string | null;
+  onSelectSeason?: (id: string | null) => void;
+  currentSeasonLabel?: string;
 }) {
   const toggle = (key: "stores" | "formats" | "eventTypes", value: string) => {
     const cur = new Set(filters[key] || []);
@@ -488,6 +497,37 @@ export function LeagueControlBar({
               </button>
             );
           })}
+          {!!seasons?.length && onSelectSeason && (
+            // Season picker, dressed as a tab: a transparent native <select>
+            // stretched over the chip keeps the OS dropdown UX. Count = archived
+            // seasons + the current one. Gold while viewing a past season.
+            <span
+              className={`group relative inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-bold transition-all duration-200 ${
+                viewingSeasonId
+                  ? "bg-fab-surface text-fab-gold shadow-sm ring-1 ring-inset ring-fab-gold/25"
+                  : "text-fab-dim hover:bg-fab-surface/60 hover:text-fab-text"
+              }`}
+            >
+              <CalendarClock className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={2.5} />
+              <span className="hidden sm:inline">Seasons</span>
+              <span className={`ml-0.5 rounded px-1 text-[11px] font-black tabular-nums ${viewingSeasonId ? "bg-fab-gold/20 text-fab-gold" : "bg-fab-border/50 text-fab-muted"}`}>
+                {seasons.length + 1}
+              </span>
+              <ChevronDown className="h-3 w-3 opacity-70" />
+              <select
+                value={viewingSeasonId || "current"}
+                onChange={(e) => onSelectSeason(e.target.value === "current" ? null : e.target.value)}
+                title="View a past season's final standings"
+                aria-label="Season"
+                className="absolute inset-0 cursor-pointer opacity-0"
+              >
+                <option value="current">{currentSeasonLabel || "Current season"}</option>
+                {seasons.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </span>
+          )}
         </div>
 
         {poolReady && (
