@@ -177,6 +177,22 @@ export default function LeaguePage() {
     reloadSeasons();
   }, [reloadSeasons]);
 
+  // Deep link: ?season=latest opens the newest archived season's recap (the
+  // what's-new popup links here). Applied once, after the archives load.
+  const seasonParamApplied = useRef(false);
+  useEffect(() => {
+    if (seasonParamApplied.current || seasons.length === 0) return;
+    try {
+      if (new URLSearchParams(window.location.search).get("season") === "latest") {
+        seasonParamApplied.current = true;
+        setViewingSeasonId(seasons[0].id);
+        setLeagueTab("standings");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [seasons]);
+
   // Past-season podium finishes per uid → medals by the name in the standings.
   // Archived entries are frozen in standings order; members who never played
   // that season can't medal (they can outrank played members on tie-breaks).

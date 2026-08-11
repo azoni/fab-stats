@@ -12,6 +12,7 @@ import { GuestBanner } from "@/components/auth/GuestBanner";
 import { SiteBanner } from "@/components/layout/SiteBanner";
 import { ProfileBackgroundController } from "@/components/layout/ProfileBackgroundController";
 import { SupportFab } from "@/components/support/SupportFab";
+import { WhatsNewModal } from "@/components/layout/WhatsNewModal";
 import { SonnerProvider } from "@/components/ui/sonner-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageVisitTracker } from "@/components/PageVisitTracker";
@@ -190,6 +191,7 @@ export default function RootLayout({
             </p>
           </footer>
           <SupportFab />
+          <WhatsNewModal />
           <MobileTabBar />
           <PageVisitTracker />
           <AutoSyncRecompute />
