@@ -514,16 +514,23 @@ export function LeagueControlBar({
                 {seasons.length + 1}
               </span>
               <ChevronDown className="h-3 w-3 opacity-70" />
+              {/* color-scheme:dark makes the NATIVE dropdown popup render dark;
+                  without it the OS paints a white list under the page's dim gray
+                  text — unreadable. Option colors are the explicit fallback. */}
               <select
                 value={viewingSeasonId || "current"}
                 onChange={(e) => onSelectSeason(e.target.value === "current" ? null : e.target.value)}
                 title="View a past season's final standings"
                 aria-label="Season"
-                className="absolute inset-0 cursor-pointer opacity-0"
+                className="absolute inset-0 cursor-pointer opacity-0 [color-scheme:dark]"
               >
-                <option value="current">{currentSeasonLabel || "Current season"}</option>
+                <option value="current" className="bg-fab-surface text-fab-text">
+                  {currentSeasonLabel || "Current season"}
+                </option>
                 {seasons.map((s) => (
-                  <option key={s.id} value={s.id}>{s.label}</option>
+                  <option key={s.id} value={s.id} className="bg-fab-surface text-fab-text">
+                    {s.label}
+                  </option>
                 ))}
               </select>
             </span>
