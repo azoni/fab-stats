@@ -8,11 +8,11 @@
 import { useEffect, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { trackSupportClick } from "@/lib/analytics";
-import { Trophy, EyeOff, Activity, Zap } from "lucide-react";
+import { Trophy, EyeOff, Activity, Zap, Grid3x3, Share2 } from "lucide-react";
 
-// "b": re-announce once — v1 dismissed itself when a link was clicked, so
-// early viewers lost the popup mid-read.
-const WHATS_NEW_VERSION = "2026-08b";
+// "c": the milestone edition — matchup matrix + share rows and the fuller
+// thank-you CTA. Everyone sees this version once.
+const WHATS_NEW_VERSION = "2026-08c";
 const LS_KEY = "fab-whatsnew-seen";
 
 const DISCORD_URL = "https://discord.gg/WPP5aqCUHY";
@@ -65,6 +65,17 @@ export function WhatsNewModal() {
       ),
     },
     {
+      icon: <Grid3x3 className="h-4 w-4" />,
+      title: "Community matchup matrix",
+      body: (
+        <>
+          The {go("/matchups", "matchup matrix")} shows hero-vs-hero win rates built from
+          everyone&apos;s imported matches. It fills in as you log your hero data, so every import
+          makes it better.
+        </>
+      ),
+    },
+    {
       icon: <EyeOff className="h-4 w-4" />,
       title: "Hide opponent names",
       body: (
@@ -99,13 +110,30 @@ export function WhatsNewModal() {
         </>
       ),
     },
+    {
+      icon: <Share2 className="h-4 w-4" />,
+      title: "Tell a friend",
+      body: (
+        <>
+          If you enjoy FaB Stats, share it with your playgroup — screenshots of your stats, tier
+          lists, matchup grids, whatever lands. Every new player importing matches makes the
+          community data better for everyone.
+        </>
+      ),
+    },
   ];
 
   return (
-    <Dialog open={open} onOpenChange={dismiss} title="What's new on FaB Stats" className="max-w-lg">
-      <div className="space-y-3">
+    <Dialog
+      open={open}
+      onOpenChange={dismiss}
+      title="What's new on FaB Stats"
+      description="The site has grown into something players use every day, and that's because of you."
+      className="max-w-xl"
+    >
+      <div className="space-y-2">
         {rows.map((row) => (
-          <div key={row.title} className="flex gap-3 rounded-lg border border-fab-border/60 bg-fab-bg/40 p-3">
+          <div key={row.title} className="flex gap-3 rounded-lg border border-fab-border/60 bg-fab-bg/40 p-2.5">
             <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md bg-fab-gold/10 text-fab-gold">
               {row.icon}
             </span>
@@ -118,8 +146,9 @@ export function WhatsNewModal() {
       </div>
 
       <div className="mt-4 rounded-lg border border-fab-gold/30 bg-fab-gold/[0.06] p-3 text-center">
-        <p className="text-xs text-fab-muted">
-          Help grow the community and weigh in on what gets built next.
+        <p className="text-xs leading-relaxed text-fab-muted">
+          Thank you to every player already in the Discord. A lot of what shipped above started as
+          a suggestion there — come tell us what you want to see next.
         </p>
         <a
           href={DISCORD_URL}
