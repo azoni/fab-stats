@@ -33,6 +33,22 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "August 2026",
+    id: "august-2026",
+    changes: [
+      { type: "new", text: "Leagues: community-run leagues with standings computed from the matches you already import. Browse or create at /leagues; organizers set per-store schedules and scoring." },
+      { type: "new", text: "League seasons: organizers can close a season and start fresh — the finished season is archived with a full recap, and podium finishers wear gold, silver, and bronze medals by their names." },
+      { type: "new", text: "League invites: organizers and co-admins can invite players by username; invites arrive as a notification with one-click accept." },
+      { type: "new", text: "Hide opponent names: a toggle on the Matches and Events pages masks every opponent — made for streams and event recap videos." },
+      { type: "new", text: "Decklist links on placements: attach your decklist when logging a top-8 finish (or add it later from the event card) and it shows on your placement in the activity feed." },
+      { type: "improved", text: "Activity feed: comments with counts, emoji reactions, Community/Friends scopes, and type filters." },
+      { type: "new", text: "Shadow Strike joined the daily games — find all 8 matching ninja pairs in a 4×4 memory grid." },
+      { type: "improved", text: "Daily games got a polish pass: animations, celebrations, and opt-in sound across the board." },
+      { type: "new", text: "Tier List Maker: build FaB tier lists and share them as images, at /tierlist." },
+      { type: "improved", text: "Browser extension 2.4: Quick Sync pulls just your newest GEM events — or everything since a date you pick — instead of a full export every time." },
+    ],
+  },
+  {
     date: "July 2026",
     id: "july-2026",
     changes: [
