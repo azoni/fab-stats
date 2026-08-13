@@ -1,7 +1,8 @@
 import { mulberry32, dateToSeed } from "@/lib/games/seeded-random";
 // Frozen pool: the daily defender is chosen by indexing this list, so it must not shift
-// when the card package adds heroes. See lib/games/frozen-pool.ts.
-import { frozenHeroes as allHeroes } from "@/lib/games/frozen-pool";
+// when the card package adds heroes. Date-gated — new heroes only defend from the
+// cutover onward. See lib/games/frozen-pool.ts.
+import { frozenHeroesFor } from "@/lib/games/frozen-pool";
 import { getTaunt, type TauntEvent } from "./taunts";
 
 const SEED_OFFSET = 3_000_003;
@@ -22,7 +23,7 @@ export function generateDailyBrawl(dateStr: string): DailyBrawl {
   const rng = mulberry32(seed);
 
   // Pick a non-Brute, non-young hero as defender
-  const nonBrute = allHeroes.filter((h) => !h.classes.includes("Brute") && !h.young && h.imageUrl);
+  const nonBrute = frozenHeroesFor(dateStr).filter((h) => !h.classes.includes("Brute") && !h.young && h.imageUrl);
   const defender = nonBrute[Math.floor(rng() * nonBrute.length)];
 
   // Difficulty: 40% Easy, 35% Medium, 25% Hard
