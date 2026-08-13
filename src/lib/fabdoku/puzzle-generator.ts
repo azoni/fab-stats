@@ -1,7 +1,7 @@
 // Frozen pool: FaBdoku cell validity + answers derive from this hero list, so it must not
-// shift when the card package adds heroes (that would rewrite past puzzles). See
-// lib/games/frozen-pool.ts.
-import { frozenHeroes as allHeroes } from "@/lib/games/frozen-pool";
+// shift when the card package adds heroes (that would rewrite past puzzles). Date-gated —
+// new heroes only enter grids from the cutover onward. See lib/games/frozen-pool.ts.
+import { frozenHeroesFor } from "@/lib/games/frozen-pool";
 import type { HeroInfo } from "@/types";
 import {
   CLASS_CATEGORIES,
@@ -49,12 +49,13 @@ const GROUP_MAP: Record<CategoryGroup, CategoryDef[]> = {
 /** Every cell must have at least this many valid heroes for good gameplay. */
 const MIN_HEROES_PER_CELL = 3;
 
-/** Return heroes matching both row and column category predicates. */
+/** Return heroes from the date's pool matching both row and column predicates. */
 function getValidHeroes(
   row: CategoryDef,
-  col: CategoryDef
+  col: CategoryDef,
+  pool: HeroInfo[]
 ): HeroInfo[] {
-  return allHeroes.filter((h) => row.test(h) && col.test(h));
+  return pool.filter((h) => row.test(h) && col.test(h));
 }
 
 /**
@@ -98,7 +99,8 @@ function tryBuildGrid(
   rowPool: CategoryDef[],
   colPool: CategoryDef[],
   rng: () => number,
-  date: string
+  date: string,
+  heroes: HeroInfo[]
 ): DailyPuzzle | null {
   const shuffledRows = seededShuffle(rowPool, rng);
   const shuffledCols = seededShuffle(colPool, rng);
@@ -119,12 +121,12 @@ function tryBuildGrid(
       for (let r = 0; r < 3; r++) {
         validAnswers[r] = [];
         for (let c = 0; c < 3; c++) {
-          const heroes = getValidHeroes(rows[r], cols[c]);
-          if (heroes.length < MIN_HEROES_PER_CELL) {
+          const cellHeroes = getValidHeroes(rows[r], cols[c], heroes);
+          if (cellHeroes.length < MIN_HEROES_PER_CELL) {
             allValid = false;
             break;
           }
-          validAnswers[r][c] = heroes.map((h) => h.name);
+          validAnswers[r][c] = cellHeroes.map((h) => h.name);
         }
         if (!allValid) break;
       }
@@ -174,6 +176,7 @@ export function generateDailyPuzzle(dateStr: string): DailyPuzzle {
 
   const seed = dateToSeed(dateStr);
   const rng = mulberry32(seed);
+  const heroes = frozenHeroesFor(dateStr);
 
   // Determine yesterday's axis pair so we can avoid repeating it
   const yesterdayKey = getAxisPairKey(prevDateStr(dateStr));
@@ -188,7 +191,7 @@ export function generateDailyPuzzle(dateStr: string): DailyPuzzle {
     if (rowPool.length < 3 || colPool.length < 3) continue;
     if (`${rowGroup}-${colGroup}` === yesterdayKey) continue;
 
-    const puzzle = tryBuildGrid(rowPool, colPool, rng, dateStr);
+    const puzzle = tryBuildGrid(rowPool, colPool, rng, dateStr, heroes);
     if (puzzle) {
       puzzleCache.set(dateStr, puzzle);
       return puzzle;
@@ -203,7 +206,7 @@ export function generateDailyPuzzle(dateStr: string): DailyPuzzle {
     const colPool = GROUP_MAP[colGroup];
     if (rowPool.length < 3 || colPool.length < 3) continue;
 
-    const puzzle = tryBuildGrid(rowPool, colPool, rng2, dateStr);
+    const puzzle = tryBuildGrid(rowPool, colPool, rng2, dateStr, heroes);
     if (puzzle) {
       puzzleCache.set(dateStr, puzzle);
       return puzzle;
@@ -224,7 +227,7 @@ export function generateDailyPuzzle(dateStr: string): DailyPuzzle {
   for (let r = 0; r < 3; r++) {
     validAnswers[r] = [];
     for (let c = 0; c < 3; c++) {
-      validAnswers[r][c] = getValidHeroes(rows[r], cols[c]).map((h) => h.name);
+      validAnswers[r][c] = getValidHeroes(rows[r], cols[c], heroes).map((h) => h.name);
     }
   }
 

@@ -1,7 +1,7 @@
 // Frozen pool: card FaBdoku cell validity + answers derive from this card list, so it must
-// not shift when the card package adds sets (that would rewrite past puzzles). See
-// lib/games/frozen-pool.ts.
-import { frozenCards as allCards } from "@/lib/games/frozen-pool";
+// not shift when the card package adds sets (that would rewrite past puzzles). Date-gated —
+// new cards only enter grids from the cutover onward. See lib/games/frozen-pool.ts.
+import { frozenCardsFor } from "@/lib/games/frozen-pool";
 import type { CardInfo } from "@/types";
 import {
   CARD_AXIS_PAIRS,
@@ -21,15 +21,16 @@ export interface CardDailyPuzzle {
 /** Offset from hero seed so card puzzles are always different. */
 const SEED_OFFSET = 1_000_003;
 
-function getValidCards(row: CardCategoryDef, col: CardCategoryDef): CardInfo[] {
-  return allCards.filter((c) => row.test(c) && col.test(c));
+function getValidCards(row: CardCategoryDef, col: CardCategoryDef, pool: CardInfo[]): CardInfo[] {
+  return pool.filter((c) => row.test(c) && col.test(c));
 }
 
 function tryBuildGrid(
   rowPool: CardCategoryDef[],
   colPool: CardCategoryDef[],
   rng: () => number,
-  date: string
+  date: string,
+  cardPool: CardInfo[]
 ): CardDailyPuzzle | null {
   const shuffledRows = seededShuffle(rowPool, rng);
   const shuffledCols = seededShuffle(colPool, rng);
@@ -48,7 +49,7 @@ function tryBuildGrid(
       for (let r = 0; r < 3; r++) {
         validAnswers[r] = [];
         for (let c = 0; c < 3; c++) {
-          const cards = getValidCards(rows[r], cols[c]);
+          const cards = getValidCards(rows[r], cols[c], cardPool);
           if (cards.length === 0) {
             allValid = false;
             break;
@@ -95,6 +96,7 @@ export function generateDailyCardPuzzle(dateStr: string): CardDailyPuzzle {
 
   const seed = (dateToSeed(dateStr) + SEED_OFFSET) | 0;
   const rng = mulberry32(seed);
+  const cardPool = frozenCardsFor(dateStr);
 
   const yesterdayKey = getAxisPairKey(prevDateStr(dateStr));
   const pairs = seededShuffle(CARD_AXIS_PAIRS, rng);
@@ -106,7 +108,7 @@ export function generateDailyCardPuzzle(dateStr: string): CardDailyPuzzle {
     if (rowPool.length < 3 || colPool.length < 3) continue;
     if (`${rowGroup}-${colGroup}` === yesterdayKey) continue;
 
-    const puzzle = tryBuildGrid(rowPool, colPool, rng, dateStr);
+    const puzzle = tryBuildGrid(rowPool, colPool, rng, dateStr, cardPool);
     if (puzzle) {
       puzzleCache.set(dateStr, puzzle);
       return puzzle;
@@ -121,7 +123,7 @@ export function generateDailyCardPuzzle(dateStr: string): CardDailyPuzzle {
     const colPool = CARD_GROUP_MAP[colGroup];
     if (rowPool.length < 3 || colPool.length < 3) continue;
 
-    const puzzle = tryBuildGrid(rowPool, colPool, rng2, dateStr);
+    const puzzle = tryBuildGrid(rowPool, colPool, rng2, dateStr, cardPool);
     if (puzzle) {
       puzzleCache.set(dateStr, puzzle);
       return puzzle;
@@ -140,7 +142,7 @@ export function generateDailyCardPuzzle(dateStr: string): CardDailyPuzzle {
   for (let r = 0; r < 3; r++) {
     validAnswers[r] = [];
     for (let c = 0; c < 3; c++) {
-      validAnswers[r][c] = getValidCards(rows[r], cols[c]).map((card) => card.cardIdentifier);
+      validAnswers[r][c] = getValidCards(rows[r], cols[c], cardPool).map((card) => card.cardIdentifier);
     }
   }
 

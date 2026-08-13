@@ -80,6 +80,16 @@ npm run format:check      # Check formatting without writing
 - Domain: All URLs must use `www.fabstats.net` (bare domain 301-redirects)
 - `netlify.toml` must include `node_modules/@resvg/resvg-js-*/**` and fonts in `included_files`
 
+## Frozen Daily-Game Pools — card package bumps
+
+FaBdoku (hero + card modes), HeroGuesser, and BruteBrawl pick daily answers by indexing pools derived from the card list, so pool size/order are hidden inputs to every seed. Pools are frozen, **date-gated** snapshots in `src/lib/games/frozen-pool.ts`: the v3 era (package 3.6.232) serves dates before `POOL_V4_CUTOVER`, v4 (4.0.62) after. Bumping `@flesh-and-blood/cards` without this dance silently rewrites historical puzzles:
+
+1. `npx tsx scripts/verify-frozen-pool.ts capture fixtures.json` — BEFORE the bump
+2. Bump, then generate a NEW era snapshot (see `scripts/gen-frozen-pool-v4.ts`) and add it in `frozen-pool.ts` with a FUTURE UTC cutover date. Never edit an existing snapshot.
+3. `npx tsx scripts/verify-frozen-pool.ts compare fixtures.json` — every pre-cutover date must be byte-identical.
+
+Also on every bump: review `LL_OVERRIDES`/`FORMAT_ADD_OVERRIDES` in `src/lib/heroes.ts` (a stale replace-override clobbers corrected upstream data), and NEVER re-run `scripts/generate-word-bank.js` (it reshuffles every historical crossword).
+
 ## Game Data Isolation
 
 Each game has isolated: Firestore collections, localStorage prefixes, feed event types, activity actions, achievements, and profile badges. When adding a new game mode, create ALL layers.
