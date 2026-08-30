@@ -248,6 +248,9 @@ const LL_HISTORICAL_FORMATS = new Set<string>([
   "Classic Constructed",
   "Blitz",
   "Silver Age",
+  // Golden Age is an eternal community format — heroes never rotate out, so
+  // Living Legend heroes are always pickable there.
+  "Golden Age",
 ]);
 
 /** Filter heroes by game format. Returns all heroes if format has no mapping

@@ -44,7 +44,7 @@ function getBestBorder(entry: LeaderboardEntry) {
   if (!entry.top8Heroes || entry.top8Heroes.length === 0) return { border: null, underline: null };
   // Sort by best placement
   const RANK: Record<string, number> = { champion: 4, finalist: 3, top4: 2, top8: 1 };
-  const TIER: Record<string, number> = { Worlds: 6, "Pro Tour": 5, Nationals: 4, "The Calling": 3, "Battle Hardened": 2, ProQuest: 1, "Road to Nationals": 1, Skirmish: 0 };
+  const TIER: Record<string, number> = { Worlds: 7, "Path to Pro Tour": 6, "Pro Tour": 6, Nationals: 5, "The Calling": 4, "Battle Hardened": 3, Battlegrounds: 2, Showdown: 2, ProQuest: 1, "Road to Nationals": 1, Skirmish: 0 };
   const sorted = [...entry.top8Heroes].sort((a, b) => {
     const rankDiff = (RANK[b.placementType] ?? 0) - (RANK[a.placementType] ?? 0);
     if (rankDiff !== 0) return rankDiff;

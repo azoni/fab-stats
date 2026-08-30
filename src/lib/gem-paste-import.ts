@@ -58,6 +58,7 @@ export function guessFormat(text: string): GameFormat {
   if (lower.includes("clash")) return GameFormat.Clash;
   if (lower.includes("ultimate pit fight") || lower.includes("upf")) return GameFormat.UltimatePitFight;
   if (lower.includes("living legend")) return GameFormat.LivingLegend;
+  if (lower.includes("golden age")) return GameFormat.GoldenAge;
   return GameFormat.Other;
 }
 
@@ -100,12 +101,12 @@ export function guessEventType(lines: string[]): string {
 
 /** Check if a line looks like an event title (contains event-type keywords) */
 function isEventNameLike(line: string): boolean {
-  return /armory|proquest|pro quest|pre.?release|skirmish|calling|battle hardened|nationals?|road to|clash|showdown|tournament|championship|qualifier|league|on demand|sealed|draft|constructed|weekly|ira|welcome to rathe|round robin/i.test(line);
+  return /armory|proquest|pro quest|pre.?release|skirmish|calling|battle hardened|battleground|nationals?|road to|clash|showdown|tournament|championship|qualifier|league|on demand|sealed|draft|constructed|weekly|ira|welcome to rathe|round robin/i.test(line);
 }
 
 /** Check if a line looks like event metadata rather than a venue name */
 export function isMetadataLine(line: string): boolean {
-  return /^(Classic Constructed|Blitz|Sealed|Draft|Clash|Ultimate Pit Fight|Rated|Not Rated|Unrated|XP Modifier|Competitive|Casual|Record|Rating)/i.test(line);
+  return /^(Classic Constructed|Blitz|Sealed|Draft|Clash|Ultimate Pit Fight|Silver Age|Golden Age|Living Legend|Rated|Not Rated|Unrated|XP Modifier|Competitive|Casual|Record|Rating)/i.test(line);
 }
 
 /** Check if a line is definitely not a venue (days of the week, prize descriptions, etc.) */

@@ -552,9 +552,10 @@ export default function DocsPage() {
                 </thead>
                 <tbody className="divide-y divide-fab-border">
                   {[
-                    ["Worlds", 10], ["Pro Tour", 9], ["The Calling", 8], ["Nationals", 7],
-                    ["Battle Hardened", 6], ["Road to Nationals", 5], ["ProQuest", 4],
-                    ["Championship", 3], ["Skirmish", 2], ["On Demand", 1],
+                    ["Worlds", 12], ["Path to Pro Tour", 11], ["Pro Tour", 10], ["The Calling", 9],
+                    ["Nationals", 8], ["Battle Hardened", 7], ["Battlegrounds", 6], ["Showdown", 5],
+                    ["Road to Nationals", 4], ["ProQuest", 3], ["Championship", 3],
+                    ["Super Armory", 2], ["Skirmish", 2], ["On Demand", 1],
                   ].map(([name, tier]) => (
                     <tr key={name as string} className="text-fab-muted">
                       <td className="px-3 py-1.5">{name}</td>
@@ -749,7 +750,7 @@ export default function DocsPage() {
               Formats are detected automatically from your GEM event data. FaB Stats tracks:
             </p>
             <div className="flex flex-wrap gap-2">
-              {["Blitz", "Classic Constructed", "Draft", "Sealed", "Clash", "Ultimate Pit Fight", "Other"].map((f) => (
+              {["Blitz", "Classic Constructed", "Silver Age", "Golden Age", "Living Legend", "Draft", "Sealed", "Clash", "Ultimate Pit Fight", "Other"].map((f) => (
                 <span key={f} className="px-2.5 py-1 rounded-full text-xs font-medium bg-fab-surface border border-fab-border text-fab-text">
                   {f}
                 </span>

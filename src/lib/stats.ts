@@ -22,6 +22,7 @@ export const FORMAT_SHORT: Record<string, string> = {
   "Clash": "Clash",
   "Ultimate Pit Fight": "UPF",
   "Silver Age": "SA",
+  "Golden Age": "GA",
   "Other": "Other",
 };
 
@@ -440,7 +441,7 @@ function sanitizeVenue(raw: string): string | null {
   // Score lines
   if (/^\d+\s*-\s*\d+(\s*-\s*\d+)?$/.test(trimmed)) return null;
   // Metadata lines mistakenly stored as venue
-  if (/^(Classic Constructed|Blitz|Sealed|Draft|Clash|Rated|Not Rated|Unrated|Competitive|Casual)$/i.test(lower)) return null;
+  if (/^(Classic Constructed|Blitz|Sealed|Draft|Clash|Silver Age|Golden Age|Living Legend|Rated|Not Rated|Unrated|Competitive|Casual)$/i.test(lower)) return null;
   // Player count lines
   if (/^\d+\s*(players?|participants?)$/i.test(lower)) return null;
   return trimmed;

@@ -3,13 +3,16 @@ import { refineEventType, guessEventTypeFromNotes } from "./stats";
 
 export const EVENT_TYPES = [
   "Armory",
+  "Super Armory",
   "Skirmish",
   "ProQuest",
+  "Showdown",
   "Battlegrounds",
   "Road to Nationals",
   "Battle Hardened",
   "The Calling",
   "Nationals",
+  "Path to Pro Tour",
   "Pro Tour",
   "Worlds",
   "Pre-Release",
@@ -21,13 +24,17 @@ export const EVENT_TYPES = [
 
 export type EventType = (typeof EVENT_TYPES)[number];
 
-/** Major event types (prestige >= 6) — users cannot upgrade into these. */
+/** Major event types — users cannot upgrade into these. MUST cover every type
+ *  the playoff logic treats as major (isMajorType in stats.ts), or an override
+ *  becomes a self-serve major top-8. */
 const MAJOR_EVENT_TYPES = new Set<string>([
   "Worlds",
   "Pro Tour",
+  "Path to Pro Tour",
   "The Calling",
   "Nationals",
   "Battle Hardened",
+  "Battlegrounds",
 ]);
 
 export function isMajorEventType(eventType: string): boolean {

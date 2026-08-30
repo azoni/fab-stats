@@ -8,6 +8,7 @@ import { getAdminDb } from "./firebase-admin.ts";
 const MAJOR_EVENT_TYPES = new Set([
   "The Calling",
   "Battle Hardened",
+  "Battlegrounds",
   "Pro Tour",
   "Nationals",
   "Worlds",
@@ -17,6 +18,7 @@ function inferEventType(name: string): string {
   const lower = name.toLowerCase();
   if (lower.includes("calling")) return "The Calling";
   if (lower.includes("battle hardened")) return "Battle Hardened";
+  if (lower.includes("battleground")) return "Battlegrounds";
   if (lower.includes("pro tour")) return "Pro Tour";
   if (lower.includes("world championship") || lower.includes("worlds")) return "Worlds";
   if (lower.includes("road to nationals")) return "Road to Nationals";

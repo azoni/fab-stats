@@ -19,6 +19,7 @@ type Tab = "browse" | "my" | "about" | "create";
 const FORMAT_OPTIONS = [
   "Classic Constructed",
   "Silver Age",
+  "Golden Age",
   "Blitz",
   "Sealed",
   "Draft",
@@ -32,6 +33,7 @@ const EVENT_TYPE_OPTIONS = [
   "Skirmish",
   "Road to Nationals",
   "ProQuest",
+  "Battlegrounds",
   "Battle Hardened",
   "The Calling",
   "Nationals",

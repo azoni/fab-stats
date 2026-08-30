@@ -71,6 +71,7 @@ export enum GameFormat {
   Clash = "Clash",
   UltimatePitFight = "Ultimate Pit Fight",
   LivingLegend = "Living Legend",
+  GoldenAge = "Golden Age",
   Other = "Other",
 }
 
