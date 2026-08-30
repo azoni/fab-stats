@@ -6,9 +6,10 @@ import { searchUsernames } from "@/lib/firestore-storage";
 import { adminGetUserEvents, adminOverrideEventType, adminResyncLeaderboard, type AdminEventSummary } from "@/lib/admin";
 
 const EVENT_TYPES = [
-  "Other", "Armory", "Pre-Release", "On Demand", "Skirmish",
-  "Road to Nationals", "ProQuest", "Battle Hardened", "The Calling",
-  "Nationals", "Pro Tour", "Worlds", "Championship",
+  "Other", "Armory", "Super Armory", "Pre-Release", "On Demand", "Practice",
+  "Skirmish", "Road to Nationals", "ProQuest", "Showdown", "Battlegrounds",
+  "Battle Hardened", "The Calling", "Nationals", "Path to Pro Tour",
+  "Pro Tour", "Worlds", "Championship",
 ];
 
 export function EventTypeManager() {

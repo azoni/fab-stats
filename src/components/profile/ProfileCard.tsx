@@ -209,11 +209,15 @@ const FINISH_LABELS: Record<string, string> = {
 
 const EVENT_ABBR: Record<string, string> = {
   Skirmish: "SK",
+  "Super Armory": "SA",
   "Road to Nationals": "RTN",
   ProQuest: "PQ",
+  Showdown: "SD",
+  Battlegrounds: "BG",
   "Battle Hardened": "BH",
   "The Calling": "TC",
   Nationals: "NAT",
+  "Path to Pro Tour": "PPT",
   "Pro Tour": "PT",
   Worlds: "WLD",
   Championship: "CH",
@@ -222,8 +226,9 @@ const EVENT_ABBR: Record<string, string> = {
 
 // Event tier order (highest first) for trophy grouping
 const EVENT_TIER_ORDER: string[] = [
-  "Worlds", "Pro Tour", "Nationals", "The Calling", "Battle Hardened",
-  "Road to Nationals", "ProQuest", "Championship", "Skirmish", "Other",
+  "Worlds", "Path to Pro Tour", "Pro Tour", "Nationals", "The Calling", "Battle Hardened",
+  "Battlegrounds", "Showdown", "Road to Nationals", "ProQuest", "Championship",
+  "Super Armory", "Skirmish", "Other",
 ];
 
 export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: CardTheme }) {

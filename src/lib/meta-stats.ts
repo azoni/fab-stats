@@ -396,8 +396,9 @@ export function computeTop8ByEvent(
 // ── Event Weekend Detection ──
 
 const COMPETITIVE_EVENT_TYPES = new Set([
-  "Skirmish", "ProQuest", "Battle Hardened", "Road to Nationals",
-  "The Calling", "Nationals", "Pro Tour", "Worlds",
+  "Skirmish", "ProQuest", "Showdown", "Battlegrounds", "Battle Hardened",
+  "Road to Nationals", "The Calling", "Nationals", "Path to Pro Tour",
+  "Pro Tour", "Worlds",
 ]);
 
 /** Auto-detect the most active competitive event type this week from top 8 data */

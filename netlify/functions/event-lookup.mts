@@ -45,6 +45,7 @@ function inferEventType(name: string): string {
   const lower = name.toLowerCase();
   if (lower.includes("calling")) return "The Calling";
   if (lower.includes("battle hardened")) return "Battle Hardened";
+  if (lower.includes("battleground")) return "Battlegrounds";
   if (lower.includes("pro tour")) return "Pro Tour";
   if (lower.includes("road to nationals")) return "Road to Nationals";
   if (lower.includes("nationals")) return "Nationals";
@@ -52,7 +53,7 @@ function inferEventType(name: string): string {
   if (lower.includes("skirmish")) return "Skirmish";
   if (lower.includes("armory")) return "Armory";
   if (lower.includes("worlds")) return "Worlds";
-  if (lower.includes("showdown")) return "Skirmish";
+  if (lower.includes("showdown")) return "Showdown";
   return "";
 }
 

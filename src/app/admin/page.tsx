@@ -32,6 +32,7 @@ const FEATURED_EVENT_TYPES = [
   "Skirmish",
   "ProQuest",
   "Road to Nationals",
+  "Battlegrounds",
   "Battle Hardened",
   "The Calling",
   "Nationals",

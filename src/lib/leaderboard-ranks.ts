@@ -367,17 +367,21 @@ export function rankBorderColor(rank: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null | und
 // ── Event-tier card borders (matching PlayerProfile cardBorder logic) ──
 
 const EVENT_TIER_RANK: Record<string, number> = {
-  "Battle Hardened": 1,
-  "The Calling": 2,
-  Nationals: 3,
-  "Pro Tour": 4,
-  Worlds: 5,
+  Battlegrounds: 1,
+  "Battle Hardened": 2,
+  "The Calling": 3,
+  Nationals: 4,
+  "Path to Pro Tour": 5,
+  "Pro Tour": 6,
+  Worlds: 7,
 };
 
 const EVENT_TIER_STYLE: Record<string, { border: string; shadow: string }> = {
+  Battlegrounds: { border: "#34d399", shadow: "0 0 8px rgba(52,211,153,0.25)" },
   "Battle Hardened": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)" },
   "The Calling": { border: "#60a5fa", shadow: "0 0 8px rgba(96,165,250,0.3)" },
   Nationals: { border: "#f87171", shadow: "0 0 10px rgba(248,113,113,0.3)" },
+  "Path to Pro Tour": { border: "#8b5cf6", shadow: "0 0 12px rgba(139,92,246,0.35)" },
   "Pro Tour": { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.35)" },
   Worlds: { border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.15)" },
 };

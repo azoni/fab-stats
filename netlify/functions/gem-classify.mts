@@ -85,8 +85,8 @@ Rules:
 - name: The tournament name (e.g. "PTI Sunday", "Armory Night CC", "Battle Hardened Sydney"). NOT the event type description.
 - date: Return as YYYY-MM-DD. Parse from full month names ("September 17, 2023") or abbreviated ("Sep. 16, 2023").
 - venue: The store/location name (e.g. "FaB Foundry", "Good Games Melbourne"). NOT the city.
-- eventType: One of: Armory, Skirmish, ProQuest, Road to Nationals, Battle Hardened, The Calling, Nationals, Pro Tour, Worlds, Championship, Pre-Release, On Demand, Other
-- format: One of: Classic Constructed, Blitz, Draft, Sealed, Clash, Ultimate Pit Fight, Silver Age, Other
+- eventType: One of: Armory, Super Armory, Skirmish, ProQuest, Showdown, Battlegrounds, Road to Nationals, Battle Hardened, The Calling, Nationals, Path to Pro Tour, Pro Tour, Worlds, Championship, Pre-Release, On Demand, Practice, Other
+- format: One of: Classic Constructed, Blitz, Draft, Sealed, Clash, Ultimate Pit Fight, Silver Age, Golden Age, Living Legend, Other
 - rated: true if rated, false if "Not rated" or unspecified
 
 Return a JSON array with one object per event. Only return the JSON array, no other text.`;

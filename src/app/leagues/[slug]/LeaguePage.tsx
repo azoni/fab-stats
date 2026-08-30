@@ -1661,6 +1661,7 @@ function OrganizerEditor({
   const FORMAT_OPTIONS = [
     "Classic Constructed",
     "Silver Age",
+    "Golden Age",
     "Blitz",
     "Sealed",
     "Draft",
@@ -1673,6 +1674,7 @@ function OrganizerEditor({
     "Skirmish",
     "Road to Nationals",
     "ProQuest",
+    "Battlegrounds",
     "Battle Hardened",
     "The Calling",
     "Nationals",

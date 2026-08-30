@@ -163,15 +163,20 @@ export function computeHeroStats(matches: MatchRecord[]): HeroStats[] {
 
 // ── Event Classification ──
 
+// Keep in sync with COMPETITIVE_EVENT_TYPES in src/lib/stats.ts.
 const COMPETITIVE_EVENT_TYPES: [RegExp, string][] = [
+  [/super armory|super armorys/i, "Super Armory"],
   [/skirmish/i, "Skirmish"],
-  [/road to national|\brtn\b/i, "Road to Nationals"],
+  [/road to national|road to nacional|camino a(l)? nacional|\brtn\b/i, "Road to Nationals"],
   [/proquest|pro quest|\bpq\b/i, "ProQuest"],
+  [/showdown/i, "Showdown"],
+  [/battleground/i, "Battlegrounds"],
   [/battle hardened|\bbh\b/i, "Battle Hardened"],
   [/\bcalling\b/i, "The Calling"],
-  [/\bnational/i, "Nationals"],
+  [/\bnational|\bnacional|\bnacionais|\bnazionale/i, "Nationals"],
   [/pro tour/i, "Pro Tour"],
   [/worlds|world championship/i, "Worlds"],
+  [/path to.*(pro tour)|convention.*5k|\bldxp\b/i, "Path to Pro Tour"],
 ];
 
 function classifyCompetitiveEvent(text: string): string | null {
