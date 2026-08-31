@@ -33,7 +33,7 @@ import { getSandboxMatches, importSandboxMatches, clearSandboxMatches, isSandbox
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { GemAutoSync } from "@/components/import/GemAutoSync";
 import { PageHero } from "@/components/ui/PageHero";
-import { ClipboardPaste, FileText, MousePointerClick, Sparkles, UploadCloud } from "lucide-react";
+import { UploadCloud } from "lucide-react";
 
 const BOOKMARKLET_HREF = `javascript:void((async function(){var els=document.querySelectorAll('a,button,summary,span,div,[role=button]');var n=0;for(var i=0;i<els.length;i++){var t=(els[i].textContent||'').trim();if(t.match(/View Results/i)&&t.length<30){els[i].click();n++;await new Promise(function(r){setTimeout(r,600)})}}alert('Expanded '+n+' events. Press Ctrl+A, Ctrl+C to copy.')})())`;
 
@@ -1763,8 +1763,6 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           </a>
         )}
         metrics={[
-          { label: "Best Path", value: "Extension", sub: "auto hero detection" },
-          { label: "Fallback", value: "Paste", sub: "works anywhere" },
           { label: "Review", value: "Before Save", sub: "you stay in control" },
           { label: "Duplicates", value: "Skipped", sub: "automatically" },
         ]}
@@ -1809,59 +1807,11 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         </div>
       )}
 
-      {!hasResults && (
-        <div className="grid gap-3 lg:grid-cols-4">
-          {[
-            {
-              id: "extension" as ImportMethod,
-              title: "Fastest and cleanest",
-              text: "Install once, export from GEM, and keep hero data intact.",
-              icon: <Sparkles className="h-5 w-5" />,
-              badge: "Recommended",
-            },
-            {
-              id: "bookmarklet" as ImportMethod,
-              title: "Mobile quick sync",
-              text: "Set up a bookmarklet when extensions are not available.",
-              icon: <MousePointerClick className="h-5 w-5" />,
-              badge: "Mobile",
-            },
-            {
-              id: "paste" as ImportMethod,
-              title: "No install fallback",
-              text: "Copy your GEM history page and paste it for a guided review.",
-              icon: <ClipboardPaste className="h-5 w-5" />,
-              badge: "Fallback",
-            },
-            {
-              id: "csv" as ImportMethod,
-              title: "Advanced upload",
-              text: "Use a file when you already have exported match data.",
-              icon: <FileText className="h-5 w-5" />,
-              badge: "Advanced",
-            },
-          ].map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setMethod(option.id)}
-              className={`fab-step-card rounded-lg p-4 text-left transition-colors ${method === option.id ? "border-fab-gold/50" : "hover:border-fab-gold/30"}`}
-              data-active={method === option.id}
-            >
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-fab-border bg-fab-bg text-fab-gold">
-                  {option.icon}
-                </span>
-                <span className="rounded-full border border-fab-border bg-fab-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fab-muted">
-                  {option.badge}
-                </span>
-              </div>
-              <p className="font-bold text-fab-text">{option.title}</p>
-              <p className="mt-1 text-sm leading-5 text-fab-muted">{option.text}</p>
-            </button>
-          ))}
-        </div>
-      )}
+      {/* The four methods used to be presented THREE times (hero metrics, a
+          selector grid, and the accordions below) with three different
+          vocabularies — a wall of choices for a newcomer, and clicking the
+          grid just expanded an accordion below the fold. The accordions hold
+          the actual instructions, so they're the one representation kept. */}
 
       {/* Method Selection Cards */}
       {!hasResults && (

@@ -1,4 +1,5 @@
 "use client";
+import { notifyGameSaveFailure } from "@/lib/games/save-notify";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
@@ -101,7 +102,7 @@ export default function BladeDashPage() {
               syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
-          .catch(console.error);
+          .catch(notifyGameSaveFailure);
 
         if (profile) {
           createBladeDashFeedEvent(profile, "completed", dateStr, didWin, currentElapsed, gameState.totalHintsUsed, WORDS_PER_GAME).catch(() => {});

@@ -3,6 +3,8 @@ import { useCallback } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { MatchList } from "@/components/matches/MatchList";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { useMatches } from "@/hooks/useMatches";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { adjustHeroMatchupOnEdit, adjustOpponentHeroMatchupOnEdit } from "@/lib/hero-matchups";
@@ -20,6 +22,9 @@ interface MatchesTabProps {
 }
 
 export function MatchesTab({ matches, user, profile, updateMatch, deleteMatch, hideOpponentNames = false, privacyControl }: MatchesTabProps) {
+  // Same shared-cache hook instance — read the load error so a Firestore
+  // failure doesn't masquerade as "No matches yet" for a user with history.
+  const { error: loadError, refreshMatches, clearError } = useMatches();
   const handleUpdateMatch = useCallback(
     async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
       await updateMatch(id, updates);
@@ -75,7 +80,16 @@ export function MatchesTab({ matches, user, profile, updateMatch, deleteMatch, h
         </div>
       )}
 
-      {matches.length === 0 ? (
+      {matches.length === 0 && loadError && user ? (
+        <ErrorState
+          title="Couldn't load your matches"
+          detail="Your match history is safe — this is a connection problem, not a data problem."
+          onRetry={() => {
+            clearError();
+            refreshMatches().catch(() => {});
+          }}
+        />
+      ) : matches.length === 0 ? (
         <div className="text-center py-16 text-fab-dim">
           <img src="/assets/empty-states/no-matches.webp" alt="" className="w-24 h-24 mx-auto mb-4 object-contain opacity-70" />
           <p className="text-lg mb-2">No matches yet</p>

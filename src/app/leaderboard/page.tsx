@@ -16,6 +16,7 @@ import { TrophyIcon } from "@/components/icons/NavIcons";
 import { playerHref } from "@/lib/constants";
 import { loadAllKudosCounts, loadAllKudosGivenCounts, KUDOS_TYPES, type KudosCountsEntry } from "@/lib/kudos";
 import { loadAllGameStats, TRACKED_GAME_COUNT, type GameLeaderboardEntry } from "@/lib/game-leaderboard";
+import { ErrorState } from "@/components/ui/ErrorState";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { HeroImg } from "@/components/heroes/HeroImg";
@@ -459,7 +460,7 @@ const PAGE_SIZE = 50;
 
 export default function LeaderboardPage() {
   const { user, isAdmin } = useAuth();
-  const { entries, loading } = useLeaderboard(isAdmin);
+  const { entries, loading, error: lbError, reload: reloadLeaderboard } = useLeaderboard(isAdmin);
   const { matches } = useMatches();
   const searchParams = useSearchParams();
 
@@ -1073,8 +1074,13 @@ export default function LeaderboardPage() {
         </div>
       )}
 
+      {/* ── Load failure (never dress it up as a category empty state) ── */}
+      {!loading && lbError && entries.length === 0 && (
+        <ErrorState title="Couldn't load the leaderboard" onRetry={reloadLeaderboard} />
+      )}
+
       {/* ── Empty ── */}
-      {!loading && !kudosLoading && !gamesLoading && filtered.length === 0 && (
+      {!loading && !kudosLoading && !gamesLoading && !(lbError && entries.length === 0) && filtered.length === 0 && (
         <div className="text-center py-16 text-fab-dim">
           <p className="text-lg mb-1">
             {isSearching ? "No matches" : "No entries yet"}

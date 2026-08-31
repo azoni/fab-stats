@@ -1,4 +1,5 @@
 "use client";
+import { notifyGameSaveFailure } from "@/lib/games/save-notify";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
@@ -142,7 +143,7 @@ export default function ShadowStrikePage() {
                   syncAchievementsAfterGame(user.uid).catch(() => {});
                 }
               })
-              .catch(console.error);
+              .catch(notifyGameSaveFailure);
 
             if (profile) {
               createShadowStrikeFeedEvent(profile, "completed", dateStr, didWin, newFlips, currentElapsed, TOTAL_PAIRS).catch(() => {});
@@ -242,7 +243,7 @@ export default function ShadowStrikePage() {
               syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
-          .catch(console.error);
+          .catch(notifyGameSaveFailure);
 
         if (profile) {
           createShadowStrikeFeedEvent(profile, "completed", dateStr, didWin, gameState.flips, currentElapsed, TOTAL_PAIRS).catch(() => {});
