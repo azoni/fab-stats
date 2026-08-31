@@ -3250,3 +3250,35 @@ button:active:not(:disabled) {
 [data-theme="rosetta"] ::-webkit-scrollbar-track {
   background: var(--color-fab-bg);
 }
+
+/* ── UX wave additions (2026-08) ─────────────────────────────────────────── */
+
+/* Used by 10+ overflow-x tab strips but was never actually defined — the
+   class silently did nothing. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Native <select> popups follow the OS light theme unless told otherwise —
+   one rule instead of sprinkling [color-scheme:dark] per element. Light-ish
+   themes flip it back. */
+select {
+  color-scheme: dark;
+}
+[data-theme="daylight"] select {
+  color-scheme: light;
+}
+
+/* iOS Safari zooms the whole page when focusing any form control under 16px.
+   On phones, floor form-control text at 16px (the site's inputs are text-xs/sm). */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

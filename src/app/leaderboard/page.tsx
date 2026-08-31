@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1257,6 +1257,7 @@ function LeaderboardRow({
   gameEntry?: GameLeaderboardEntry;
   isSiteAdmin?: boolean;
 }) {
+  const router = useRouter();
   const initials = entry.displayName
     .split(" ")
     .map((w) => w[0])
@@ -1341,17 +1342,33 @@ function LeaderboardRow({
           <p className="text-[11px] text-fab-dim">@{entry.username}</p>
           {!entry.isPublic && <span className="text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
           {h2h && !isMe && (
-            <Link
-              href={`/opponents?q=${encodeURIComponent(entry.displayName)}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors"
+            /* Not a <Link>: the whole row is already an anchor, and nested <a>
+               is invalid HTML that browsers splice apart. role=link + keydown
+               keeps it keyboard-reachable; padding widens the touch target. */
+            <span
+              role="link"
+              tabIndex={0}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                router.push(`/opponents?q=${encodeURIComponent(entry.displayName)}`);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  router.push(`/opponents?q=${encodeURIComponent(entry.displayName)}`);
+                }
+              }}
+              className="inline-flex cursor-pointer items-center gap-1 text-[10px] px-2 py-1 -my-1 rounded bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors"
               title={`Your record: ${h2h.wins}W ${h2h.losses}L across ${h2h.totalMatches} matches`}
+              aria-label={`Head to head vs ${entry.displayName}: ${h2h.wins} wins, ${h2h.losses} losses`}
             >
               <span className="text-fab-muted">H2H</span>
               <span className={h2h.winRate >= 50 ? "text-fab-win font-semibold" : "text-fab-loss font-semibold"}>
                 {h2h.wins}-{h2h.losses}{h2h.draws > 0 ? `-${h2h.draws}` : ""}
               </span>
-            </Link>
+            </span>
           )}
         </div>
       </div>

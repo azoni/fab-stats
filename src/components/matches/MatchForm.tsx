@@ -6,6 +6,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { normalizeOpponentName } from "@/lib/stats";
 import { MatchResult, GameFormat } from "@/types";
 import { EVENT_TYPES } from "@/lib/event-types";
+import { toast } from "sonner";
 
 export function MatchForm() {
   const router = useRouter();
@@ -52,19 +53,16 @@ export function MatchForm() {
     }
   }, [opponentName, opponentHeroMap]);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function saveMatch(): boolean {
     setError("");
-
     if (!heroPlayed) {
       setError("Please select your hero.");
-      return;
+      return false;
     }
     if (!opponentHero) {
       setError("Please select opponent's hero.");
-      return;
+      return false;
     }
-
     addMatch({
       date,
       heroPlayed,
@@ -77,8 +75,22 @@ export function MatchForm() {
       matchNotes: matchNotes.trim() || undefined,
       source: "manual",
     });
+    return true;
+  }
 
-    router.push("/matches");
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (saveMatch()) router.push("/matches");
+  }
+
+  // Session logging: keep hero/format/date/opponent, clear the per-game bits,
+  // stay on the form — logging a 5-game testing session used to mean five
+  // trips back through /matches/new with everything re-picked.
+  function handleLogAnother() {
+    if (!saveMatch()) return;
+    toast.success("Match logged — form kept for the next one.");
+    setResult(MatchResult.Win);
+    setMatchNotes("");
   }
 
   return (
@@ -255,12 +267,21 @@ export function MatchForm() {
         </div>
       </div>
 
-      <button
-        type="submit"
-        className="w-full py-3 rounded-lg font-black bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-      >
-        Log Match
-      </button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="submit"
+          className="flex-1 py-3 rounded-lg font-black bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+        >
+          Log Match
+        </button>
+        <button
+          type="button"
+          onClick={handleLogAnother}
+          className="flex-1 py-3 rounded-lg font-black bg-fab-surface border border-fab-border text-fab-text hover:border-fab-gold/40 transition-colors"
+        >
+          Log &amp; Add Another
+        </button>
+      </div>
     </form>
   );
 }

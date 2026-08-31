@@ -17,12 +17,46 @@ const LS_KEY = "fab-whatsnew-seen";
 
 const DISCORD_URL = "https://discord.gg/WPP5aqCUHY";
 
+/** Any of these localStorage key prefixes proves a prior visit in this browser. */
+const RETURNING_PREFIXES = [
+  "fab", // fab-*, fabdoku-*, fab-stats-*
+  "crossword-",
+  "heroguesser-",
+  "matchupmania-",
+  "trivia-",
+  "timeline-",
+  "connections-",
+  "brutebrawl-",
+  "rhinarsrampage-",
+  "kayosknockout-",
+  "ninjacombo-",
+  "shadowstrike-",
+  "bladedash-",
+];
+
+function isReturningVisitor(): boolean {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key !== "fab-visited" && RETURNING_PREFIXES.some((p) => key.startsWith(p))) return true;
+  }
+  return false;
+}
+
 export function WhatsNewModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     try {
       if (localStorage.getItem(LS_KEY) === WHATS_NEW_VERSION) return;
+      // A changelog means nothing to someone who has never seen the site — and
+      // it used to open over EVERY entry page, including shared league links.
+      // Brand-new browsers skip this edition entirely (marked seen).
+      if (!isReturningVisitor()) {
+        localStorage.setItem(LS_KEY, WHATS_NEW_VERSION);
+        localStorage.setItem("fab-visited", new Date().toISOString());
+        return;
+      }
+      localStorage.setItem("fab-visited", new Date().toISOString());
     } catch {
       return; // storage unavailable — would re-show every visit, so skip
     }

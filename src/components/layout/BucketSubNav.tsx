@@ -84,22 +84,31 @@ export const HOME_BUCKET: BucketSubNavItem[] = [
 export const META_BUCKET: BucketSubNavItem[] = [
   { href: "/leaderboard", label: "Rankings" },
   { href: "/matchups", label: "Matchup Matrix" },
+  { href: "/archive", label: "Event Archive" },
+  { href: "/meta/reports", label: "Reports" },
+  { href: "/meta/snapshot", label: "Snapshot" },
 ];
 
 export const EXTRAS_BUCKET: BucketSubNavItem[] = [
   { href: "/games", label: "Daily Games" },
+  { href: "/tierlist", label: "Tier Lists" },
   { href: "/compare", label: "Versus" },
   { href: "/docs", label: "Docs" },
   { href: "/changelog", label: "Changelog" },
 ];
 
-const HOME_PATHS = ["/", "/matches", "/events", "/opponents", "/trends", "/tournament-stats", "/wrapped"];
-const META_PATHS = ["/meta", "/leaderboard", "/matchups"];
+const HOME_PATHS = ["/", "/matches", "/events", "/opponents", "/trends", "/tournament-stats"];
+const META_PATHS = ["/meta", "/leaderboard", "/matchups", "/archive"];
 const EXTRAS_PATHS = [
   "/games",
   "/compare",
   "/docs",
   "/changelog",
+  "/tierlist",
+  "/insights",
+  "/scout",
+  "/share-stats",
+  "/wrapped",
   "/fabdoku",
   "/crossword",
   "/heroguesser",

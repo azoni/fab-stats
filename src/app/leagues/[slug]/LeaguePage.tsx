@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { setReturnTo } from "@/lib/return-to";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -98,6 +99,7 @@ export default function LeaguePage() {
   // served from the /leagues/_.html placeholder, so useParams returns "_" and the
   // real league slug is only in the pathname. (Matches the player/group pattern.)
   const pathname = usePathname();
+  const router = useRouter();
   const slug = decodeURIComponent(pathname?.split("/").pop() || "");
   const { user, profile, isAdmin, refreshProfile } = useAuth();
 
@@ -627,14 +629,26 @@ export default function LeaguePage() {
                     Cancel request
                   </button>
                 </div>
-              ) : (
+              ) : user ? (
                 <button
                   type="button"
                   onClick={handleJoin}
-                  disabled={!user}
-                  className="rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80 disabled:opacity-50"
+                  className="rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80"
                 >
                   {leagueRequiresApproval(league) ? "Request to join" : "Join league"}
+                </button>
+              ) : (
+                /* Shared league links are the site's most-shared URLs — a
+                   disabled button was a dead end. Sign in, come back here. */
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReturnTo(`/leagues/${league.slug || slug}`);
+                    router.push("/login");
+                  }}
+                  className="rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80"
+                >
+                  Sign in to join
                 </button>
               ))}
             {isMember && (league.iconUrl || wearing) && (

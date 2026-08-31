@@ -467,7 +467,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [recycledCount, setRecycledCount] = useState<number | null>(null);
   const [quickMode, setQuickMode] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
-  const [confirmSkipHero, setConfirmSkipHero] = useState(false);
+  // (nested skip-hero confirm removed — the modal itself is the confirmation step)
   const [heroRequiredHard, setHeroRequiredHard] = useState(false);
   const [showOtherBrowsers, setShowOtherBrowsers] = useState(false);
   const [visibleEventCount, setVisibleEventCount] = useState(10);
@@ -1222,7 +1222,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     if (!showHeroWarning) return null;
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }} />
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowHeroWarning(false)} />
         <div className="relative bg-fab-bg border border-fab-border rounded-xl shadow-2xl w-full max-w-md p-6">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-fab-loss/15 flex items-center justify-center shrink-0">
@@ -1270,7 +1270,6 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
             <button
               onClick={() => {
                 setShowHeroWarning(false);
-                setConfirmSkipHero(false);
                 setHeroRequiredHard(false);
                 const first = missingHeroEvents.postCutoff[0] ?? missingHeroEvents.all[0];
                 if (first) {
@@ -1288,22 +1287,15 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
             >
               Go Back &amp; Add Heroes
             </button>
+            {/* One press, not a nested confirm — the modal itself already IS
+                the confirmation step (quick-sync could stack up to 4 presses). */}
             {!heroRequiredHard && (
-              !confirmSkipHero ? (
-                <button
-                  onClick={() => setConfirmSkipHero(true)}
-                  className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors text-xs"
-                >
-                  Import without heroes...
-                </button>
-              ) : (
-                <button
-                  onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
-                  className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors text-sm"
-                >
-                  Yes, import without heroes
-                </button>
-              )
+              <button
+                onClick={() => { setShowHeroWarning(false); handleImport(); }}
+                className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors text-sm"
+              >
+                Import without heroes
+              </button>
             )}
           </div>
         </div>
@@ -1329,12 +1321,12 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           </div>
           <p className="text-sm text-fab-muted mb-2">
             You have <span className="text-fab-loss font-semibold">Clear all existing matches</span> checked. This will{" "}
-            <span className="text-fab-loss font-semibold">permanently delete
+            <span className="text-fab-loss font-semibold">clear
             {existingMatchCount === null ? " all your existing matches" : ` all ${existingMatchCount} of your existing matches`}</span>{" "}
             and then import the {totalToImport} match{totalToImport !== 1 ? "es" : ""} shown above.
           </p>
           <p className="text-sm text-fab-muted mb-5">
-            This cannot be undone. If you only want to <span className="text-fab-text font-medium">add</span> these matches, cancel and uncheck that box — importing already skips duplicates automatically.
+            Cleared matches go to the recycle bin — you can restore them from Settings for 30 days. If you only want to <span className="text-fab-text font-medium">add</span> these matches, cancel and uncheck that box — importing already skips duplicates automatically.
           </p>
           <div className="flex flex-col gap-2">
             <button
