@@ -11,6 +11,7 @@ import { HeroImg } from "@/components/heroes/HeroImg";
 import { MetaShareModal } from "@/components/meta/MetaShareCard";
 import { MetaOverviewShareModal } from "@/components/meta/MetaOverviewShareCard";
 import { MetaMatchupMatrix } from "@/components/meta/MetaMatchupMatrix";
+import { WeeklyMetaReport } from "@/components/meta/WeeklyMetaReport";
 import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
@@ -705,6 +706,9 @@ export default function MetaPage() {
           )}
         </>
       )}
+
+      {/* Weekly meta report (renders only when a published article exists) */}
+      <WeeklyMetaReport />
 
       {/* Community Matchup Matrix */}
       <div className="mt-8">

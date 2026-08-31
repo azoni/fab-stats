@@ -947,26 +947,32 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       // If we can't get before matches, recap will still work with empty array
     }
 
-    // Enrich matches with opponent heroes from coverage data
+    // Enrich matches with opponent heroes from coverage data. Server-side
+    // lookup: coverage-matches is admin-read-only in rules (a direct client
+    // read silently failed for everyone else), and the endpoint's cached
+    // index avoids a full-collection client scan per import.
     let coverageHeroCount = 0;
     if (!quickMode) {
       try {
-        const { getAllCoverageMatches } = await import("@/lib/sitemap-scraper");
-        const { buildCoverageIndex, findOpponentHero } = await import("@/lib/coverage-lookup");
-        const coverageMatches = await getAllCoverageMatches();
-        if (coverageMatches.length > 0) {
-          const index = buildCoverageIndex(coverageMatches);
-          for (const m of matches) {
-            if (m.opponentHero && m.opponentHero !== "Unknown") continue;
-            if (!m.opponentName) continue;
-            const lookup = findOpponentHero(
-              m.opponentName,
-              m.date,
-              m.notes || "",
-              index
-            );
-            if (lookup && lookup.confidence === "exact") {
-              (m as Record<string, unknown>).opponentHero = lookup.hero;
+        const candidates: { idx: number; opponentName: string; date: string; notes: string }[] = [];
+        matches.forEach((m, idx) => {
+          if (m.opponentHero && m.opponentHero !== "Unknown") return;
+          if (!m.opponentName) return;
+          candidates.push({ idx, opponentName: m.opponentName, date: m.date, notes: m.notes || "" });
+        });
+        if (candidates.length > 0) {
+          const res = await fetch("/.netlify/functions/coverage-heroes", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ pairs: candidates.slice(0, 1000) }),
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { results?: { i: number; hero: string; confidence: string }[] };
+            for (const hit of data.results || []) {
+              if (hit.confidence !== "exact") continue;
+              const target = candidates[hit.i];
+              if (!target) continue;
+              (matches[target.idx] as Record<string, unknown>).opponentHero = hit.hero;
               coverageHeroCount++;
             }
           }

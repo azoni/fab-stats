@@ -8,6 +8,8 @@ export interface RawAiConfig {
   model?: string;
   monthlyBudgetUsd?: number;
   dailyQueryLimit?: number;
+  /** Per-user daily query cap for non-admin users (0 disables non-admin access). */
+  perUserDailyLimit?: number;
 }
 
 export interface AiUsage {
@@ -25,10 +27,36 @@ export async function readAiConfig(db: Firestore): Promise<RawAiConfig> {
       model: typeof d.model === "string" ? d.model : undefined,
       monthlyBudgetUsd: typeof d.monthlyBudgetUsd === "number" ? d.monthlyBudgetUsd : undefined,
       dailyQueryLimit: typeof d.dailyQueryLimit === "number" ? d.dailyQueryLimit : undefined,
+      perUserDailyLimit: typeof d.perUserDailyLimit === "number" ? d.perUserDailyLimit : undefined,
     };
   } catch {
     return {};
   }
+}
+
+function utcDateStr(): string {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** How many queries this uid has made today (UTC), from the per-user counter doc. */
+export async function getUserTodayCount(db: Firestore, uid: string): Promise<number> {
+  try {
+    const snap = await db.doc(`aiUserDaily/${uid}_${utcDateStr()}`).get();
+    const d = (snap.data() ?? {}) as { count?: number };
+    return typeof d.count === "number" ? d.count : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Increment this uid's daily counter (called before spending, so parallel
+ *  requests can't slip past the cap by racing the trace write). */
+export async function bumpUserDailyCount(db: Firestore, uid: string): Promise<void> {
+  const { FieldValue } = await import("firebase-admin/firestore");
+  await db
+    .doc(`aiUserDaily/${uid}_${utcDateStr()}`)
+    .set({ count: FieldValue.increment(1), updatedAt: new Date().toISOString() }, { merge: true });
 }
 
 export async function getUsage(db: Firestore): Promise<AiUsage> {

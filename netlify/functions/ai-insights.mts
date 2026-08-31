@@ -14,8 +14,11 @@ import { getAdminDb } from "./firebase-admin.ts";
 import { ask, askStream } from "./lib/agent/core.ts";
 import type { AskResult } from "./lib/agent/defs.ts";
 import { AI_MODELS, DEFAULT_AI_MODEL } from "../../src/lib/ai-models.ts";
-import { readAiConfig, getUsage } from "./lib/ai-usage.ts";
+import { readAiConfig, getUsage, getUserTodayCount, bumpUserDailyCount } from "./lib/ai-usage.ts";
 import type { Firestore } from "firebase-admin/firestore";
+
+/** Non-admin users get this many questions per UTC day unless Admin → AI overrides. */
+const DEFAULT_PER_USER_DAILY_LIMIT = 10;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -99,25 +102,48 @@ export default async function handler(req: Request): Promise<Response> {
   const history = sanitizeHistory(body.history);
   const wantStream = body.stream === true;
 
-  // Admin-only beta.
+  // Signed-in beta: any authenticated user, with a per-user daily cap for
+  // non-admins on top of the global budget/rate caps.
   const auth = await verifyFirebaseToken(req);
   if (!auth) return json({ error: "Sign in required." }, 401);
-  if (!(await isAdminEmail(auth.email))) return json({ error: "The assistant is in a private admin beta." }, 403);
+  const isAdminUser = await isAdminEmail(auth.email);
 
   const db = getAdminDb();
   const cfg = await readAiConfig(db);
   const model = cfg.model && AI_MODELS.some((m) => m.id === cfg.model) ? cfg.model : process.env.FAB_AGENT_MODEL || DEFAULT_AI_MODEL;
 
-  // Enforce admin budget / rate caps before spending anything. (Pre-stream, so
-  // the client gets a clean non-200 JSON error rather than a half-open stream.)
+  // Enforce budget / rate caps before spending anything. (Pre-stream, so the
+  // client gets a clean non-200 JSON error rather than a half-open stream.)
   if (cfg.monthlyBudgetUsd != null || cfg.dailyQueryLimit != null) {
     const usage = await getUsage(db);
     if (cfg.monthlyBudgetUsd != null && usage.monthSpendUsd >= cfg.monthlyBudgetUsd) {
-      return json({ error: `The monthly AI budget ($${cfg.monthlyBudgetUsd}) has been reached. Raise it in Admin → AI.` }, 429);
+      return json({
+        error: isAdminUser
+          ? `The monthly AI budget ($${cfg.monthlyBudgetUsd}) has been reached. Raise it in Admin → AI.`
+          : "The assistant has hit its monthly budget — check back after the reset.",
+      }, 429);
     }
     if (cfg.dailyQueryLimit != null && usage.todayCount >= cfg.dailyQueryLimit) {
-      return json({ error: `The daily query limit (${cfg.dailyQueryLimit}) has been reached. Raise it in Admin → AI or try tomorrow.` }, 429);
+      return json({
+        error: isAdminUser
+          ? `The daily query limit (${cfg.dailyQueryLimit}) has been reached. Raise it in Admin → AI or try tomorrow.`
+          : "The assistant has hit its daily limit — try again tomorrow.",
+      }, 429);
     }
+  }
+
+  // Per-user daily cap (admins exempt). perUserDailyLimit: 0 closes the beta
+  // to non-admins entirely; unset falls back to the default.
+  if (!isAdminUser) {
+    const perUserLimit = cfg.perUserDailyLimit ?? DEFAULT_PER_USER_DAILY_LIMIT;
+    if (perUserLimit <= 0) {
+      return json({ error: "The assistant is in a private admin beta." }, 403);
+    }
+    const used = await getUserTodayCount(db, auth.uid);
+    if (used >= perUserLimit) {
+      return json({ error: `You've used your ${perUserLimit} assistant questions for today — more unlock tomorrow.` }, 429);
+    }
+    await bumpUserDailyCount(db, auth.uid);
   }
 
   // ── Streaming (SSE) path ────────────────────────────────────────────────

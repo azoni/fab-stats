@@ -1,10 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, CalendarClock, Gamepad2, ListOrdered, Swords, Trophy } from "lucide-react";
+import { Archive, BookOpen, CalendarClock, Gamepad2, Gift, ListOrdered, Radar, Share2, Sparkles, Swords, Trophy } from "lucide-react";
 import { PageHero } from "@/components/ui/PageHero";
 
 const extras = [
+  {
+    href: "/wrapped",
+    title: "Season Wrapped",
+    text: "Your year in review: record, main hero, nemesis, streaks, and month-by-month form.",
+    icon: <Gift className="h-5 w-5" />,
+    accent: "text-amber-300",
+  },
+  {
+    href: "/share-stats",
+    title: "Share My Stats",
+    text: "A shareable snapshot: rating tier, top heroes, toughest matchups, and recent form.",
+    icon: <Share2 className="h-5 w-5" />,
+    accent: "text-teal-300",
+  },
+  {
+    href: "/archive",
+    title: "Event Archive",
+    text: "Top 8s from official major-event coverage, with heroes and decklists.",
+    icon: <Archive className="h-5 w-5" />,
+    accent: "text-indigo-300",
+  },
+  {
+    href: "/insights",
+    title: "AI Insights",
+    text: "Ask about your stats, the community meta, or card rules. Beta, a few questions a day.",
+    icon: <Sparkles className="h-5 w-5" />,
+    accent: "text-purple-300",
+  },
+  {
+    href: "/scout",
+    title: "Player Scout",
+    text: "Find players by playstyle: describe who you're looking for, or start from a player you know.",
+    icon: <Radar className="h-5 w-5" />,
+    accent: "text-cyan-300",
+  },
   {
     href: "/games",
     title: "Daily Games",
