@@ -64,7 +64,7 @@ export function CrosswordShareCard({ gameState, puzzle, onClose, onShared }: Cro
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
           <h3 className="text-sm font-semibold text-fab-text">Share Result</h3>
-          <button onClick={onClose} className="text-fab-dim hover:text-fab-muted">
+          <button onClick={onClose} aria-label="Close" className="-m-2 rounded-md p-2.5 text-fab-dim hover:text-fab-muted">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>

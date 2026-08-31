@@ -255,7 +255,7 @@ export function MetaShareModal({ heroes, title, subtitle, onClose }: MetaShareMo
         {/* Modal header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
           <h3 className="text-sm font-semibold text-fab-text">Share Meta</h3>
-          <button onClick={onClose} className="text-fab-muted hover:text-fab-text transition-colors">
+          <button onClick={onClose} aria-label="Close" className="-m-2 rounded-md p-2.5 text-fab-muted hover:text-fab-text transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>

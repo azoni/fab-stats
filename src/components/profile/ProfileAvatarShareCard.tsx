@@ -200,7 +200,7 @@ export function AvatarShareModal({
       >
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-fab-text">Share your avatar</p>
-          <button type="button" onClick={onClose} className="text-fab-dim hover:text-fab-text" aria-label="Close">
+          <button type="button" onClick={onClose} aria-label="Close" className="-m-2 rounded-md p-2.5 text-fab-dim hover:text-fab-text">
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
             </svg>

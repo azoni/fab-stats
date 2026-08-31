@@ -89,7 +89,7 @@ export function FaBdokuShareCard({ gameState, uniqueness, onClose, onShared }: F
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
           <h3 className="text-sm font-semibold text-fab-text">Share Result</h3>
-          <button onClick={onClose} className="text-fab-dim hover:text-fab-muted">
+          <button onClick={onClose} aria-label="Close" className="-m-2 rounded-md p-2.5 text-fab-dim hover:text-fab-muted">
             <CloseIcon className="w-4 h-4" />
           </button>
         </div>

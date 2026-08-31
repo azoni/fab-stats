@@ -363,7 +363,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
             <button
               onClick={() => setFilterFormat("all")}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+              className={`px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[11px] font-medium transition-colors ${
                 filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
               }`}
             >
@@ -373,7 +373,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
               <button
                 key={f}
                 onClick={() => setFilterFormat(f)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                className={`px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[11px] font-medium transition-colors whitespace-nowrap ${
                   filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}
               >
@@ -388,7 +388,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setFilterEventType("all")}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+              className={`px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[11px] font-medium transition-colors ${
                 filterEventType === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
               }`}
             >
@@ -398,7 +398,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
               <button
                 key={t}
                 onClick={() => setFilterEventType(t)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                className={`px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[11px] font-medium transition-colors whitespace-nowrap ${
                   filterEventType === t ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}
               >
@@ -776,7 +776,7 @@ function ShareModal({
       <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
           <h3 className="text-sm font-semibold text-fab-text">Share Head to Head</h3>
-          <button onClick={onClose} className="text-fab-muted hover:text-fab-text transition-colors">
+          <button onClick={onClose} aria-label="Close" className="-m-2 rounded-md p-2.5 text-fab-muted hover:text-fab-text transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>

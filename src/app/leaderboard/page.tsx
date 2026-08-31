@@ -470,6 +470,17 @@ export default function LeaderboardPage() {
   const [activeTab, setActiveTabRaw] = useState<Tab>(validInitialTab);
   const [activeCategory, setActiveCategory] = useState(categoryForTab(validInitialTab));
 
+  // Keep the active pill visible inside the horizontally scrolling strips —
+  // deep links (?tab=...) select pills that can sit far offscreen.
+  const categoryStripRef = useRef<HTMLDivElement>(null);
+  const tabStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    for (const strip of [categoryStripRef.current, tabStripRef.current]) {
+      const active = strip?.querySelector<HTMLElement>("[data-active]");
+      active?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [activeCategory, activeTab]);
+
   const setActiveTab = (tab: Tab) => {
     setActiveTabRaw(tab);
     const url = new URL(window.location.href);
@@ -927,44 +938,53 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* ── Category tabs — flat segmented control with active bottom border. */}
-      <div className="flex gap-1 overflow-x-auto rounded-lg border border-fab-border bg-fab-surface/90 p-1.5 mb-3 scrollbar-hide">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => selectCategory(cat.id)}
-            className={`relative rounded-md px-4 py-3 text-sm font-bold whitespace-nowrap transition-colors ${
-              activeCategory === cat.id
-                ? "bg-fab-gold/15 text-fab-gold"
-                : "text-fab-muted hover:bg-fab-bg/70 hover:text-fab-text"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+      {/* ── Category tabs — flat segmented control with active bottom border.
+          fab-edge-fade signals hidden overflow; the active pill auto-scrolls
+          into view (deep links like ?tab=top8s_worlds used to select a pill
+          that sat offscreen with no hint it existed). */}
+      <div className="fab-edge-fade mb-3">
+        <div ref={categoryStripRef} className="flex gap-1 overflow-x-auto rounded-lg border border-fab-border bg-fab-surface/90 p-1.5 scrollbar-hide">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              data-active={activeCategory === cat.id || undefined}
+              onClick={() => selectCategory(cat.id)}
+              className={`relative rounded-md px-4 py-3 text-sm font-bold whitespace-nowrap transition-colors ${
+                activeCategory === cat.id
+                  ? "bg-fab-gold/15 text-fab-gold"
+                  : "text-fab-muted hover:bg-fab-bg/70 hover:text-fab-text"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Sub-tabs for selected category ── */}
       {activeCategoryObj.tabs.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
-          {activeCategoryObj.tabs.map((tabId) => (
-            <button
-              key={tabId}
-              onClick={() => selectTab(tabId)}
-              className={`px-3.5 py-2 rounded-lg border text-xs font-bold whitespace-nowrap transition-colors ${
-                activeTab === tabId
-                  ? "border-fab-gold/35 bg-fab-gold/15 text-fab-gold"
-                  : "border-fab-border bg-fab-surface/85 text-fab-muted hover:text-fab-text"
-              }`}
-            >
-              {tabMap[tabId]?.label || tabId}
-              {mySubTabRanks.has(tabId) && (
-                <span className={`ml-1.5 text-[10px] font-bold ${activeTab === tabId ? "text-fab-gold" : "text-fab-dim"}`}>
-                  #{mySubTabRanks.get(tabId)}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="fab-edge-fade mb-4">
+          <div ref={tabStripRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {activeCategoryObj.tabs.map((tabId) => (
+              <button
+                key={tabId}
+                data-active={activeTab === tabId || undefined}
+                onClick={() => selectTab(tabId)}
+                className={`px-3.5 py-2 rounded-lg border text-xs font-bold whitespace-nowrap transition-colors ${
+                  activeTab === tabId
+                    ? "border-fab-gold/35 bg-fab-gold/15 text-fab-gold"
+                    : "border-fab-border bg-fab-surface/85 text-fab-muted hover:text-fab-text"
+                }`}
+              >
+                {tabMap[tabId]?.label || tabId}
+                {mySubTabRanks.has(tabId) && (
+                  <span className={`ml-1.5 text-[10px] font-bold ${activeTab === tabId ? "text-fab-gold" : "text-fab-dim"}`}>
+                    #{mySubTabRanks.get(tabId)}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

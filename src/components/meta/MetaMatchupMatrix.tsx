@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
 import { getHeroByName, resolveHeroName, buildHeroLabels } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
@@ -38,7 +38,20 @@ export function MetaMatchupMatrix({ format, eventType, sinceDate, untilDate, rat
   const [data, setData] = useState<CommunityMatchupCell[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ hero: string; opp: string } | null>(null);
-  const [showAll, setShowAll] = useState(true);
+  // Top-20 by default: the full ~60-hero grid is a ~5000px-wide scroll on a
+  // phone, and most lookups are top-meta anyway. "Show all" is one tap.
+  const [showAll, setShowAll] = useState(false);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  // On phones the detail panel renders below the 70vh grid — off screen, so a
+  // cell tap looked like it did nothing. Bring the panel into view on select.
+  useEffect(() => {
+    if (selectedCell) {
+      requestAnimationFrame(() => {
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    }
+  }, [selectedCell]);
   const [ageFilter, setAgeFilter] = useState<"adult" | "young" | "all">("adult");
   const [excludeLL, setExcludeLL] = useState(true);
   const [heroSearch, setHeroSearch] = useState("");
@@ -310,7 +323,7 @@ export function MetaMatchupMatrix({ format, eventType, sinceDate, untilDate, rat
 
       {/* Detail panel */}
       {selectedCell && selectedMu && (
-        <div className="mt-3 p-3 bg-fab-surface border border-fab-border rounded-lg">
+        <div ref={detailRef} className="mt-3 p-3 bg-fab-surface border border-fab-border rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold text-fab-text">
               {selectedCell.hero} vs {selectedCell.opp}
