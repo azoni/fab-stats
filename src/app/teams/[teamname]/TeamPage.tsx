@@ -22,6 +22,7 @@ import { getEventTier } from "@/lib/events";
 import type { MatchRecord } from "@/types";
 import { toast } from "sonner";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 type PageState = "loading" | "not_found" | "loaded";
 
@@ -347,6 +348,15 @@ export default function TeamPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Back to the directory — league and store pages already have this;
+          shared team links were a dead end on mobile. */}
+      <Link
+        href="/teams"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-fab-dim transition-colors hover:text-fab-gold"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" /> All teams
+      </Link>
+
       {/* Hero Header */}
       <TeamHeader
         team={team!}

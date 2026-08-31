@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { isUsernameTaken, createProfile } from "@/lib/firestore-storage";
+import { consumeReturnTo } from "@/lib/return-to";
 
 const USERNAME_REGEX = /^[a-z0-9_-]{3,20}$/;
 
@@ -13,10 +14,10 @@ export default function SetupPage() {
 
   // A freshly-created account lands on /import — the app's value loop is
   // import → stats, and the marketing home is a dead end for someone who just
-  // signed up. (Guests already go straight to /import; this aligns the funnel
-  // for registered sign-ups, which previously bounced to the home page.)
+  // signed up. Exception: if they arrived via a gated action on a specific
+  // page (e.g. "Sign in to join" on a shared league), send them back there.
   useEffect(() => {
-    if (profile) router.replace("/import");
+    if (profile) router.replace(consumeReturnTo() ?? "/import");
   }, [profile, router]);
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -30,6 +31,17 @@ export default function SetupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Email registrations already ticked the Terms box on /login — don't ask the
+  // same person twice in a row. (Google sign-ins never saw it; they keep the box.)
+  const [termsPreAccepted, setTermsPreAccepted] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("fab-terms-accepted") === "1") {
+        setAcceptedTerms(true);
+        setTermsPreAccepted(true);
+      }
+    } catch {}
+  }, []);
 
   function handleUsernameChange(value: string) {
     const lower = value.toLowerCase().replace(/[^a-z0-9_-]/g, "");
@@ -245,20 +257,22 @@ export default function SetupPage() {
             </p>
           )}
 
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="mt-0.5 accent-fab-gold"
-            />
-            <span className="text-xs text-fab-muted">
-              I agree to the{" "}
-              <Link href="/terms" className="text-fab-gold hover:underline" target="_blank">Terms of Service</Link>
-              {" "}and{" "}
-              <Link href="/privacy" className="text-fab-gold hover:underline" target="_blank">Privacy Policy</Link>
-            </span>
-          </label>
+          {!termsPreAccepted && (
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 accent-fab-gold"
+              />
+              <span className="text-xs text-fab-muted">
+                I agree to the{" "}
+                <Link href="/terms" className="text-fab-gold hover:underline" target="_blank">Terms of Service</Link>
+                {" "}and{" "}
+                <Link href="/privacy" className="text-fab-gold hover:underline" target="_blank">Privacy Policy</Link>
+              </span>
+            </label>
+          )}
 
           {error && (
             <p className="text-fab-loss text-sm">{error}</p>

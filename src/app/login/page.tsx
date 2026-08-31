@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { peekReturnTo } from "@/lib/return-to";
 
 const ERROR_MAP: Record<string, string> = {
   "auth/invalid-email": "Invalid email address.",
@@ -63,8 +64,15 @@ export default function LoginPage() {
         await signIn(email, password);
       } else {
         await signUp(email, password);
+        // The register form already required the Terms checkbox — flag it so
+        // /setup doesn't make the same person tick the same box twice.
+        try {
+          sessionStorage.setItem("fab-terms-accepted", "1");
+        } catch {}
       }
-      router.push("/");
+      // Peek, don't consume: a brand-new account detours through /setup,
+      // which consumes the destination when the profile is created.
+      router.push(peekReturnTo() ?? "/");
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -77,7 +85,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      router.push("/");
+      router.push(peekReturnTo() ?? "/");
     } catch (err) {
       setError(friendlyError(err));
     } finally {

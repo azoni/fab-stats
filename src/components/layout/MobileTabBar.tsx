@@ -23,7 +23,7 @@ const tabs: TabSpec[] = [
     href: "/",
     label: "Home",
     icon: <NavAssetIcon name="home" />,
-    match: (p) => p === "/" || p.startsWith("/matches") || p.startsWith("/events") || p.startsWith("/opponents") || p.startsWith("/trends") || p.startsWith("/tournament-stats") || p.startsWith("/wrapped"),
+    match: (p) => p === "/" || p.startsWith("/matches") || p.startsWith("/events") || p.startsWith("/opponents") || p.startsWith("/trends") || p.startsWith("/tournament-stats") || p.startsWith("/import"),
   },
   {
     href: "/activity",
@@ -42,13 +42,13 @@ const tabs: TabSpec[] = [
     href: "/meta",
     label: "Meta",
     icon: <NavAssetIcon name="meta" />,
-    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups"),
+    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups") || p.startsWith("/archive"),
   },
   {
     href: "/extras",
     label: "Extras",
     icon: <NavAssetIcon name="extras" />,
-    match: (p) => p.startsWith("/extras") || p.startsWith("/achievements") || p.startsWith("/games") || p.startsWith("/compare") || p.startsWith("/docs") || p.startsWith("/changelog") || p.startsWith("/fabdoku") || p.startsWith("/crossword") || p.startsWith("/heroguesser") || p.startsWith("/matchupmania") || p.startsWith("/connections") || p.startsWith("/timeline") || p.startsWith("/trivia") || p.startsWith("/rhinarsrampage") || p.startsWith("/kayosknockout") || p.startsWith("/brutebrawl") || p.startsWith("/ninjacombo") || p.startsWith("/shadowstrike") || p.startsWith("/bladedash"),
+    match: (p) => p.startsWith("/extras") || p.startsWith("/achievements") || p.startsWith("/games") || p.startsWith("/compare") || p.startsWith("/docs") || p.startsWith("/changelog") || p.startsWith("/fabdoku") || p.startsWith("/crossword") || p.startsWith("/heroguesser") || p.startsWith("/matchupmania") || p.startsWith("/connections") || p.startsWith("/timeline") || p.startsWith("/trivia") || p.startsWith("/rhinarsrampage") || p.startsWith("/kayosknockout") || p.startsWith("/brutebrawl") || p.startsWith("/ninjacombo") || p.startsWith("/shadowstrike") || p.startsWith("/bladedash") || p.startsWith("/tierlist") || p.startsWith("/insights") || p.startsWith("/scout") || p.startsWith("/share-stats") || p.startsWith("/wrapped"),
   },
 ];
 
