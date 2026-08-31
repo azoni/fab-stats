@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { BUCKET_ROUTES, routeInBucket } from "./nav-data";
 
 export interface BucketSubNavItem {
   href: string;
@@ -97,40 +98,12 @@ export const EXTRAS_BUCKET: BucketSubNavItem[] = [
   { href: "/changelog", label: "Changelog" },
 ];
 
-const HOME_PATHS = ["/", "/matches", "/events", "/opponents", "/trends", "/tournament-stats"];
-const META_PATHS = ["/meta", "/leaderboard", "/matchups", "/archive"];
-const EXTRAS_PATHS = [
-  "/games",
-  "/compare",
-  "/docs",
-  "/changelog",
-  "/tierlist",
-  "/insights",
-  "/scout",
-  "/share-stats",
-  "/wrapped",
-  "/fabdoku",
-  "/crossword",
-  "/heroguesser",
-  "/matchupmania",
-  "/connections",
-  "/timeline",
-  "/trivia",
-  "/rhinarsrampage",
-  "/kayosknockout",
-  "/brutebrawl",
-  "/ninjacombo",
-  "/shadowstrike",
-  "/bladedash",
-];
-
-function pathInBucket(pathname: string, bucket: string[]): boolean {
-  return bucket.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p + "/")));
-}
-
 /**
- * Picks the right bucket subnav based on current pathname. Renders nothing on
- * pages that don't belong to a bucket (e.g. /import, /admin, /share, /login).
+ * Picks the right bucket subnav based on current pathname. Routes come from
+ * nav-data's BUCKET_ROUTES — the same registry the mobile tab bar uses, so
+ * the two can't drift apart again. Renders nothing on pages outside every
+ * bucket (e.g. /admin, /share, /login) and on the Home bucket (which has its
+ * own HomeTabs).
  */
 export function BucketSubNavRouter() {
   // Lazy-evaluated to avoid hydration churn — usePathname inside hook only.
@@ -140,9 +113,9 @@ export function BucketSubNavRouter() {
 function BucketSubNavRouterInner() {
   const pathname = usePathnameSafe();
   if (!pathname) return null;
-  if (pathInBucket(pathname, HOME_PATHS)) return null;
-  if (pathInBucket(pathname, META_PATHS)) return <BucketSubNav items={META_BUCKET} />;
-  if (pathInBucket(pathname, EXTRAS_PATHS)) return <BucketSubNav items={EXTRAS_BUCKET} />;
+  if (pathname === "/" || routeInBucket(pathname, BUCKET_ROUTES.home)) return null;
+  if (routeInBucket(pathname, BUCKET_ROUTES.meta)) return <BucketSubNav items={META_BUCKET} />;
+  if (routeInBucket(pathname, BUCKET_ROUTES.extras)) return <BucketSubNav items={EXTRAS_BUCKET} />;
   return null;
 }
 
