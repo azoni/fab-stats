@@ -34,6 +34,7 @@ import {
   Area,
 } from "recharts";
 import { localDate } from "@/lib/constants";
+import { computeEloHistory, getEloTier } from "@/lib/elo";
 import { TrendsIcon } from "@/components/icons/NavIcons";
 import { TrendsShareModal } from "@/components/trends/TrendsShareCard";
 import { HomeTabs } from "@/components/home/HomeTabs";
@@ -515,6 +516,19 @@ export default function TrendsPage() {
       .sort((a, b) => (b.firstCount + b.secondCount) - (a.firstCount + a.secondCount));
   }, [filteredMatches]);
 
+  // Rating trajectory over the FULL history (never period-filtered — the walk
+  // starts at 1200 and only makes sense end to end).
+  const eloHistory = useMemo(() => computeEloHistory(matches), [matches]);
+  const eloNow = useMemo(() => {
+    const rating = eloHistory.length > 0 ? eloHistory[eloHistory.length - 1].rating : 1200;
+    return { rating, tier: getEloTier(rating) };
+  }, [eloHistory]);
+  const eloPeak = useMemo(() => {
+    let best = { rating: 1200, date: "" };
+    for (const p of eloHistory) if (p.rating > best.rating) best = { rating: p.rating, date: p.date };
+    return best;
+  }, [eloHistory]);
+
   if (!isLoaded) {
     return <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />;
   }
@@ -787,6 +801,45 @@ export default function TrendsPage() {
                 dot={false}
                 name="Win Rate %"
               />
+            </LineChart>
+          </ResponsiveContainer>
+        </CollapsibleSection>
+      )}
+
+      {/* Rating History — always over the FULL history (a period filter would
+          restart the walk at 1200 and lie about the trajectory) */}
+      {eloHistory.length >= 10 && (
+        <CollapsibleSection
+          id="eloHistory"
+          title="Rating History"
+          subtitle="Site rating after every match, all time"
+          collapsed={collapsed}
+          toggle={toggle}
+        >
+          <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-fab-muted">
+            <span>
+              Current{" "}
+              <span className="font-bold" style={{ color: eloNow.tier.color }}>
+                {eloNow.rating} · {eloNow.tier.label}
+              </span>
+            </span>
+            <span>
+              Peak{" "}
+              <span className="font-bold text-fab-text">{eloPeak.rating}</span>{" "}
+              {eloPeak.date && (
+                <span className="text-fab-dim">
+                  ({localDate(eloPeak.date).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })})
+                </span>
+              )}
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={eloHistory}>
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
+              <XAxis dataKey="date" tick={{ fill: COLORS.muted, fontSize: 11 }} minTickGap={40} />
+              <YAxis domain={["dataMin - 30", "dataMax + 30"]} tick={{ fill: COLORS.muted, fontSize: 11 }} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Line type="monotone" dataKey="rating" stroke={COLORS.gold} strokeWidth={2} dot={false} name="Rating" />
             </LineChart>
           </ResponsiveContainer>
         </CollapsibleSection>
