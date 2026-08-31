@@ -10,7 +10,7 @@
  * sort, 30-minute localStorage cache.
  */
 import { useEffect, useState } from "react";
-import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { Newspaper } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { ArticleBlocks } from "@/components/articles/ArticleBlocks";
@@ -29,8 +29,13 @@ async function getLatestPublishedArticle(): Promise<ArticleRecord | null> {
   } catch {}
 
   try {
+    // No limit: a limited query without orderBy windows by DOC ID (title slugs,
+    // alphabetical), which would eventually pin an old article forever. The
+    // published set grows one per week and is cached 30 min, so a full fetch
+    // stays cheap; add orderBy(publishedAt desc) + a composite index if it
+    // ever gets heavy.
     const snap = await getDocs(
-      query(collection(db, "articles"), where("status", "==", "published"), limit(25)),
+      query(collection(db, "articles"), where("status", "==", "published")),
     );
     const articles = snap.docs.map((d) => d.data() as ArticleRecord);
     articles.sort((a, b) => (b.publishedAt || b.createdAt).localeCompare(a.publishedAt || a.createdAt));

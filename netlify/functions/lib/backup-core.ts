@@ -51,10 +51,16 @@ async function startExport(token: string, stamp: string): Promise<string> {
   return body.name || "(no operation name)";
 }
 
-/** Delete export objects older than RETENTION_DAYS. Best-effort. */
-async function pruneOldExports(token: string): Promise<{ deleted: number; errors: number }> {
+/**
+ * Delete export objects older than RETENTION_DAYS — but ONLY when a recent
+ * export (≤7 days) actually produced objects. If exports have been silently
+ * failing async (permissions/quota surfacing operation-side), pruning must not
+ * eat the last good backups. Best-effort.
+ */
+async function pruneOldExports(token: string): Promise<{ deleted: number; errors: number; skipped?: string }> {
   const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
-  let deleted = 0;
+  const recentCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const items: { name: string; timeCreated: string }[] = [];
   let errors = 0;
   let pageToken: string | undefined;
 
@@ -66,25 +72,50 @@ async function pruneOldExports(token: string): Promise<{ deleted: number; errors
     if (pageToken) listUrl.searchParams.set("pageToken", pageToken);
 
     const res = await fetch(listUrl, { headers: { authorization: `Bearer ${token}` } });
-    if (!res.ok) return { deleted, errors: errors + 1 };
+    if (!res.ok) return { deleted: 0, errors: 1, skipped: `list failed (${res.status})` };
     const body = (await res.json()) as {
       items?: { name: string; timeCreated: string }[];
       nextPageToken?: string;
     };
-
-    for (const item of body.items || []) {
-      if (new Date(item.timeCreated).getTime() >= cutoff) continue;
-      const del = await fetch(
-        `https://storage.googleapis.com/storage/v1/b/${BUCKET}/o/${encodeURIComponent(item.name)}`,
-        { method: "DELETE", headers: { authorization: `Bearer ${token}` } },
-      );
-      if (del.ok || del.status === 404) deleted++;
-      else errors++;
-    }
+    items.push(...(body.items || []));
     pageToken = body.nextPageToken;
   } while (pageToken);
 
+  const hasRecent = items.some((i) => new Date(i.timeCreated).getTime() >= recentCutoff);
+  if (!hasRecent) {
+    // No export produced objects in the last week — keep everything.
+    return { deleted: 0, errors: 0, skipped: "no recent export objects; keeping old backups" };
+  }
+
+  let deleted = 0;
+  for (const item of items) {
+    if (new Date(item.timeCreated).getTime() >= cutoff) continue;
+    const del = await fetch(
+      `https://storage.googleapis.com/storage/v1/b/${BUCKET}/o/${encodeURIComponent(item.name)}`,
+      { method: "DELETE", headers: { authorization: `Bearer ${token}` } },
+    );
+    if (del.ok || del.status === 404) deleted++;
+    else errors++;
+  }
+
   return { deleted, errors };
+}
+
+/** One quick poll of the export operation to catch fast failures (the export
+ *  is long-running; a clean poll here means "started and not yet failed"). */
+async function pollOperation(token: string, operation: string): Promise<{ done: boolean; error?: string }> {
+  try {
+    await new Promise((r) => setTimeout(r, 5000));
+    const res = await fetch(`https://firestore.googleapis.com/v1/${operation}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return { done: false };
+    const body = (await res.json()) as { done?: boolean; error?: { message?: string } };
+    if (body.error) return { done: true, error: body.error.message || "operation failed" };
+    return { done: !!body.done };
+  } catch {
+    return { done: false };
+  }
 }
 
 export interface BackupResult {
@@ -133,6 +164,15 @@ export async function runBackup(force: boolean): Promise<BackupResult> {
     const accessToken = await getAccessToken(app);
     const stamp = now.toISOString().replace(/[:.]/g, "-");
     const operation = await startExport(accessToken, stamp);
+
+    // Catch fast operation-side failures (bad bucket, permissions) before
+    // declaring success. A still-running operation is fine — pruning is
+    // separately guarded on recent exports actually producing objects.
+    const opStatus = await pollOperation(accessToken, operation);
+    if (opStatus.error) {
+      throw new Error(`export operation failed: ${opStatus.error}`);
+    }
+
     const prune = await pruneOldExports(accessToken);
 
     await runRef.set({
@@ -142,9 +182,10 @@ export async function runBackup(force: boolean): Promise<BackupResult> {
       outputPrefix: `gs://${BUCKET}/${PREFIX}${stamp}`,
       pruned: prune.deleted,
       pruneErrors: prune.errors,
+      ...(prune.skipped ? { pruneSkipped: prune.skipped } : {}),
     });
 
-    console.log(`[firestore-backup] Started ${operation}, pruned ${prune.deleted} old objects`);
+    console.log(`[firestore-backup] Started ${operation}, pruned ${prune.deleted} old objects${prune.skipped ? ` (prune skipped: ${prune.skipped})` : ""}`);
     return { ok: true, operation, pruned: prune.deleted, pruneErrors: prune.errors };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

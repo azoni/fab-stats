@@ -193,7 +193,7 @@ export default function GamesPage() {
         ))}
       </div>
 
-      {showShare && <AllGamesShareCard onClose={() => setShowShare(false)} />}
+      {showShare && <AllGamesShareCard onClose={() => setShowShare(false)} streak={streak} />}
     </div>
   );
 }

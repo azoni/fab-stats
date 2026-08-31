@@ -15,7 +15,7 @@ import { loadStats as loadBrawlStats } from "./brutebrawl/firestore";
 import { loadStats as loadNinjaComboStats } from "./ninjacombo/firestore";
 import { loadStats as loadShadowStrikeStats } from "./shadowstrike/firestore";
 import { loadStats as loadBladeDashStats } from "./bladedash/firestore";
-import { markGamePlayedToday, mergeLocalDatesToServer, computeStreakFromDates } from "./games/activity";
+import { mergeLocalDatesToServer, computeStreakFromDates } from "./games/activity";
 import { loadKudosGivenCounts } from "./kudos";
 import type { Achievement, OverallStats } from "@/types";
 
@@ -61,9 +61,10 @@ const EMPTY_OVERALL: OverallStats = {
  * Only merges new IDs; never removes existing ones.
  */
 export async function syncAchievementsAfterGame(userId: string): Promise<void> {
-  // Stamp today's play date first — it feeds the day-streak achievements below
-  // and the /games calendar, and must land even if the rest of the sync fails.
-  await markGamePlayedToday(userId).catch(() => {});
+  // Play dates are stamped by mergeLocalDatesToServer below, which reads the
+  // completed puzzle's OWN date key from localStorage — never "now". Stamping
+  // completion time here would credit a phantom day when a game started before
+  // UTC midnight finishes after it.
 
   const ref = doc(db, "users", userId, "earnedAchievements", "main");
   const snap = await getDoc(ref);

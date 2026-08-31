@@ -14,7 +14,7 @@ import { getAdminDb } from "./firebase-admin.ts";
 import { ask, askStream } from "./lib/agent/core.ts";
 import type { AskResult } from "./lib/agent/defs.ts";
 import { AI_MODELS, DEFAULT_AI_MODEL } from "../../src/lib/ai-models.ts";
-import { readAiConfig, getUsage, getUserTodayCount, bumpUserDailyCount } from "./lib/ai-usage.ts";
+import { readAiConfig, getUsage, takeUserDailySlot } from "./lib/ai-usage.ts";
 import type { Firestore } from "firebase-admin/firestore";
 
 /** Non-admin users get this many questions per UTC day unless Admin → AI overrides. */
@@ -133,17 +133,17 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   // Per-user daily cap (admins exempt). perUserDailyLimit: 0 closes the beta
-  // to non-admins entirely; unset falls back to the default.
+  // to non-admins entirely; unset falls back to the default. Slot-taking is a
+  // transaction so a parallel burst can't slip past the cap.
   if (!isAdminUser) {
     const perUserLimit = cfg.perUserDailyLimit ?? DEFAULT_PER_USER_DAILY_LIMIT;
     if (perUserLimit <= 0) {
       return json({ error: "The assistant is in a private admin beta." }, 403);
     }
-    const used = await getUserTodayCount(db, auth.uid);
-    if (used >= perUserLimit) {
+    const granted = await takeUserDailySlot(db, auth.uid, perUserLimit);
+    if (!granted) {
       return json({ error: `You've used your ${perUserLimit} assistant questions for today — more unlock tomorrow.` }, 429);
     }
-    await bumpUserDailyCount(db, auth.uid);
   }
 
   // ── Streaming (SSE) path ────────────────────────────────────────────────

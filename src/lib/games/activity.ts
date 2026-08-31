@@ -17,15 +17,10 @@ function activityDoc(uid: string) {
   return doc(db, "users", uid, "gameActivity", "main");
 }
 
-/** Mark today as played (merge write; safe to call once per game completion). */
-export async function markGamePlayedToday(uid: string): Promise<void> {
-  const today = getTodayDateStr();
-  await setDoc(
-    activityDoc(uid),
-    { dates: { [today]: true }, updatedAt: new Date().toISOString() },
-    { merge: true },
-  );
-}
+// NOTE: there is deliberately no "mark today played" helper. Play dates are
+// derived from each puzzle's localStorage completion key (mergeLocalDatesToServer),
+// so a game started before UTC midnight and finished after it credits the
+// puzzle's own day — a completion-time stamp would credit a phantom second day.
 
 /** All played dates recorded server-side, ascending. */
 export async function loadPlayedDates(uid: string): Promise<string[]> {

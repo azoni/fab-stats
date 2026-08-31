@@ -93,7 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const localMatches = getAllMatches();
           if (localMatches.length > 0) {
-            await importMatchesFirestore(u.uid, localMatches);
+            const { created } = await importMatchesFirestore(u.uid, localMatches);
+            // Count the migrated matches into the community matchup aggregates —
+            // guest-mode matches were never incremented, but every delete path
+            // decrements, so skipping this would let later deletes subtract
+            // tallies that were never added.
+            if (created.length > 0) {
+              const { updateCommunityHeroMatchups } = await import("@/lib/hero-matchups");
+              updateCommunityHeroMatchups(u.uid, created).catch(() => {});
+            }
           }
           clearAllData();
           localStorage.removeItem(GUEST_KEY);

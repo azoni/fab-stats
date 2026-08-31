@@ -201,14 +201,24 @@ export async function restoreDeletedMatches(
   // (multiset): a bin doc is skipped only when an actual live match still "covers"
   // it (e.g. it was re-imported after the clear); each skip consumes one live slot.
   // Siblings that merely share a fingerprint are all restored under their own ids.
+  // The key also includes heroPlayed: with targeted deletes in the bin, a live
+  // same-day same-opponent match with a DIFFERENT hero must not "cover" the
+  // deleted one (it's a distinct match, and skipping would drop it).
   const current = await getMatchesByUserId(userId);
+  const liveKey = (m: { date?: unknown; opponentName?: unknown; notes?: unknown; result?: unknown; heroPlayed?: unknown }) =>
+    `${matchFingerprint({
+      date: m.date as string,
+      opponentName: m.opponentName as string | undefined,
+      notes: m.notes as string | undefined,
+      result: m.result as string,
+    })}|${(m.heroPlayed as string) || ""}`;
   const liveFpCount = new Map<string, number>();
   for (const m of current) {
-    const fp = matchFingerprint(m);
+    const fp = liveKey(m);
     liveFpCount.set(fp, (liveFpCount.get(fp) ?? 0) + 1);
   }
 
-  const toRestore: { id: string; data: Record<string, unknown> }[] = [];
+  const toRestore: { id: string; binRef: ReturnType<typeof doc>; data: Record<string, unknown> }[] = [];
   const communityToReincrement: MatchRecord[] = [];
   let skipped = 0;
 
@@ -219,12 +229,7 @@ export async function restoreDeletedMatches(
     for (const [k, v] of Object.entries(raw)) {
       if (!RESERVED_KEYS.has(k)) clean[k] = v;
     }
-    const fp = matchFingerprint({
-      date: clean.date as string,
-      opponentName: clean.opponentName as string | undefined,
-      notes: clean.notes as string | undefined,
-      result: clean.result as string,
-    });
+    const fp = liveKey(clean);
     const covered = liveFpCount.get(fp) ?? 0;
     if (covered > 0) {
       // A distinct live match already represents this one — consume the slot, skip.
@@ -232,7 +237,7 @@ export async function restoreDeletedMatches(
       skipped += 1;
       continue;
     }
-    toRestore.push({ id: originalId, data: clean });
+    toRestore.push({ id: originalId, binRef: d.ref, data: clean });
     if (raw.communityDecremented === true) {
       communityToReincrement.push({ id: originalId, ...clean } as MatchRecord);
     }
@@ -241,10 +246,11 @@ export async function restoreDeletedMatches(
   // 1) Write the matches back under their original ids.
   await commitInChunks(toRestore, (batch, r) => batch.set(doc(matchesCollection(userId), r.id), r.data));
 
-  // 2) Consume the whole batch from the bin. Every doc was either written back
-  //    above or skipped because a live match already covers it — both are safe to
-  //    drop (no doc that failed to reach `matches` is deleted here).
-  await commitInChunks(docs, (batch, d) => batch.delete(d.ref));
+  // 2) Drop ONLY the restored docs from the bin. Skipped-as-covered docs stay:
+  //    with targeted deletes in the mix, "covered" can be a false positive for a
+  //    near-identical distinct match, and purging would destroy the only copy
+  //    inside the 30-day window. Leftovers age out via the normal purge.
+  await commitInChunks(toRestore, (batch, r) => batch.delete(r.binRef));
 
   // 3) Rebuild derived data from the full restored set. All best-effort — a
   //    recompute miss self-heals on the next import/app-load recompute.
