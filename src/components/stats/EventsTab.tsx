@@ -542,6 +542,22 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
               Sign Up to Get Started
             </Link>
           )}
+          {eventStats.length === 0 && user && (
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link
+                href="/import"
+                className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+              >
+                Import Matches
+              </Link>
+              <Link
+                href="/matches/new"
+                className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
+              >
+                Log Manually
+              </Link>
+            </div>
+          )}
         </div>
       ) : view === "timeline" ? (
         <>

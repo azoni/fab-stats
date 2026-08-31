@@ -29,6 +29,7 @@ import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import { updateProfile } from "@/lib/firestore-storage";
 import { LoggedOutHome } from "@/components/home/LoggedOutHome";
+import { GettingStartedCard } from "@/components/home/GettingStartedCard";
 import { HomeTabs } from "@/components/home/HomeTabs";
 
 // Modals — lazy-loaded (only rendered when opened)
@@ -264,6 +265,9 @@ export default function Dashboard() {
     <div className="relative space-y-8">
       {/* Ambient page glow — subtle gold atmosphere at the top */}
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(201,168,76,0.06),transparent)]" />
+
+      {/* No matches + signed in: first-run checklist above the showcase */}
+      {!hasMatches && user && <GettingStartedCard profile={profile} />}
 
       {/* No matches: logged-out / new user landing page */}
       {!hasMatches && (
