@@ -1136,6 +1136,9 @@ service cloud.firestore {
     match /meta-article-runs/{docId} {
       allow read: if isAdmin();
     }
+    match /backup-runs/{docId} {
+      allow read: if isAdmin();
+    }
     match /coverage-matches/{docId} {
       allow read, write: if isAdmin();
     }
