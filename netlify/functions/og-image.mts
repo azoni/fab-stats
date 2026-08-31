@@ -1116,21 +1116,21 @@ async function renderLeagueStandings(slug: string): Promise<VNode> {
         {
           type: "div",
           props: {
-            style: { display: "flex", flexDirection: "column" as const, padding: "40px 64px", flex: 1 },
+            style: { display: "flex", flexDirection: "column" as const, padding: "32px 64px", flex: 1 },
             children: [
               brandHeader(),
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 20 },
+                  style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 },
                   children: [
                     {
                       type: "div",
                       props: {
                         style: { display: "flex", flexDirection: "column" as const },
                         children: [
-                          { type: "span", props: { style: { fontSize: 14, fontWeight: 700, color: gold, letterSpacing: "0.18em", marginBottom: 8 }, children: "LEAGUE STANDINGS" } },
-                          { type: "div", props: { style: { fontSize: title.length > 26 ? 38 : 46, fontWeight: 700, color: textLight, letterSpacing: "-0.02em", lineHeight: 1.05 }, children: title } },
+                          { type: "span", props: { style: { fontSize: 13, fontWeight: 700, color: gold, letterSpacing: "0.18em", marginBottom: 6 }, children: "LEAGUE STANDINGS" } },
+                          { type: "div", props: { style: { fontSize: title.length > 26 ? 34 : 42, fontWeight: 700, color: textLight, letterSpacing: "-0.02em", lineHeight: 1.05 }, children: title } },
                         ],
                       },
                     },
@@ -1141,16 +1141,16 @@ async function renderLeagueStandings(slug: string): Promise<VNode> {
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", flexDirection: "column" as const, gap: 7, flex: 1 },
+                  style: { display: "flex", flexDirection: "column" as const, gap: 6 },
                   children: rows.map((r) => ({
                     type: "div",
                     props: {
-                      style: { display: "flex", alignItems: "center", height: 42, background: cardBg, border: `1px solid ${r.rank === 1 ? gold : cardBorder}`, borderRadius: 6, padding: "0 20px" },
+                      style: { display: "flex", alignItems: "center", height: 37, background: cardBg, border: `1px solid ${r.rank === 1 ? gold : cardBorder}`, borderRadius: 6, padding: "0 20px" },
                       children: [
-                        { type: "span", props: { style: { width: 44, fontSize: 20, fontWeight: 700, color: rankColors[r.rank] || muted }, children: `${r.rank}` } },
-                        { type: "span", props: { style: { flex: 1, fontSize: 21, fontWeight: r.rank <= 3 ? 700 : 400, color: textLight }, children: r.name } },
-                        { type: "span", props: { style: { width: 120, fontSize: 18, color: muted, textAlign: "right" as const }, children: r.record } },
-                        { type: "span", props: { style: { width: 130, fontSize: 21, fontWeight: 700, color: gold, textAlign: "right" as const }, children: `${r.points} pts` } },
+                        { type: "span", props: { style: { width: 44, fontSize: 19, fontWeight: 700, color: rankColors[r.rank] || muted }, children: `${r.rank}` } },
+                        { type: "span", props: { style: { flex: 1, fontSize: 20, fontWeight: r.rank <= 3 ? 700 : 400, color: textLight }, children: r.name } },
+                        { type: "span", props: { style: { width: 120, fontSize: 17, color: muted, textAlign: "right" as const }, children: r.record } },
+                        { type: "span", props: { style: { width: 130, fontSize: 20, fontWeight: 700, color: gold, textAlign: "right" as const }, children: `${r.points} pts` } },
                       ],
                     },
                   })),
@@ -1159,7 +1159,7 @@ async function renderLeagueStandings(slug: string): Promise<VNode> {
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 },
+                  style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: 10 },
                   children: [
                     { type: "span", props: { style: { fontSize: 18, color: muted }, children: `fabstats.net/leagues/${truncate(slug, 40)}` } },
                     { type: "span", props: { style: { fontSize: 16, color: muted }, children: "Flesh and Blood league standings" } },
