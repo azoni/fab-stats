@@ -61,6 +61,7 @@ import {
   standingsFromPool,
   signatureHeroByUid,
   recentFormByUid,
+  LeagueScheduleCard,
   CARD_CLS,
   CARD_TITLE_CLS,
   EYEBROW_CLS,
@@ -471,7 +472,7 @@ export default function LeaguePage() {
   async function handleApprove(request: LeagueJoinRequest) {
     if (!league) return;
     try {
-      await approveJoinRequest(league.id, request);
+      await approveJoinRequest(league, request);
       toast.success(`Approved ${request.displayName}.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to approve.");
@@ -675,6 +676,28 @@ export default function LeaguePage() {
             >
               <Link2 className="h-3.5 w-3.5" /> Copy link
             </button>
+            {(standings?.length ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const imgUrl = `https://www.fabstats.net/og/league-standings/${league.slug || slug}.png?v=${Date.now()}`;
+                  try {
+                    const res = await fetch(imgUrl);
+                    if (!res.ok) throw new Error("render failed");
+                    const blob = await res.blob();
+                    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                    toast.success("Standings image copied — paste it into Discord.");
+                  } catch {
+                    // Clipboard-image support varies; opening the image still works everywhere.
+                    window.open(imgUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                title="Copy the current standings as an image for Discord or socials"
+                className="inline-flex items-center gap-1 rounded-md border border-fab-border bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-dim hover:text-fab-gold"
+              >
+                <ImageIcon className="h-3.5 w-3.5" /> Standings image
+              </button>
+            )}
             {canEdit && (
               <button
                 type="button"
@@ -756,6 +779,9 @@ export default function LeaguePage() {
         }}
         currentSeasonLabel={`Current${league.seasonName ? ` — ${league.seasonName}` : (league.seasonNumber || 1) > 1 ? ` — Season ${league.seasonNumber}` : ""}`}
       />
+
+      {/* The session schedule that gates scoring — current season only. */}
+      {viewingSeasonId === null && <LeagueScheduleCard league={league} />}
 
       {leagueTab === "standings" && (() => {
         const viewingSeason = viewingSeasonId ? seasons.find((s) => s.id === viewingSeasonId) : null;

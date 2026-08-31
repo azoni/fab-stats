@@ -1048,6 +1048,133 @@ function capitalize(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+/** Like fetchQuery, but also returns the matched document's id (last path segment). */
+async function fetchQueryDoc(
+  collection: string,
+  field: string,
+  value: string,
+): Promise<{ id: string; fields: Record<string, unknown> } | null> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  if (!projectId || !apiKey) return null;
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ structuredQuery: { from: [{ collectionId: collection }], where: { fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value: { stringValue: value } } }, limit: 1 } }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const docData = data?.[0]?.document;
+    if (!docData?.fields || typeof docData.name !== "string") return null;
+    return { id: docData.name.split("/").pop() || "", fields: docData.fields };
+  } catch {
+    return null;
+  }
+}
+
+/** League standings card: top rows of the live standings doc — organizers post
+ *  this to store Discords instead of screenshotting the table. */
+async function renderLeagueStandings(slug: string): Promise<VNode> {
+  const found = await fetchQueryDoc("leagues", "slug", slug);
+  if (!found) return renderGenericCard();
+  const lf = found.fields;
+  const standings = found.id ? await fetchDoc(`leagues/${found.id}/standings/current`) : null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const entriesRaw: any[] = (standings?.entries as any)?.arrayValue?.values || [];
+  if (entriesRaw.length === 0) return renderLeague(slug);
+
+  const gold = "#c9a84c";
+  const muted = "#6b6580";
+  const cardBg = "#1a1625";
+  const cardBorder = "#2a2435";
+  const textLight = "#e8e4f0";
+  const rankColors: Record<number, string> = { 1: gold, 2: "#c0c8d4", 3: "#b0783c" };
+
+  const rows = entriesRaw.slice(0, 8).map((e, i) => {
+    const f = e?.mapValue?.fields || {};
+    return {
+      rank: i + 1,
+      name: truncate(fStr(f.displayName) || fStr(f.username) || "—", 26),
+      points: fInt(f.points),
+      record: `${fInt(f.wins)}-${fInt(f.losses)}${fInt(f.draws) ? `-${fInt(f.draws)}` : ""}`,
+    };
+  });
+
+  const seasonName = fStr(lf.seasonName);
+  const seasonNumber = fInt(lf.seasonNumber);
+  const subtitle = seasonName || (seasonNumber > 1 ? `Season ${seasonNumber}` : "Current season");
+  const title = truncate(fStr(lf.name) || slug, 38);
+
+  return {
+    type: "div",
+    props: {
+      style: { width: 1200, height: 630, display: "flex", flexDirection: "column" as const, background: "linear-gradient(135deg, #0c0a0e 0%, #161222 100%)", fontFamily: "Inter" },
+      children: [
+        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860)" } } },
+        {
+          type: "div",
+          props: {
+            style: { display: "flex", flexDirection: "column" as const, padding: "40px 64px", flex: 1 },
+            children: [
+              brandHeader(),
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 20 },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column" as const },
+                        children: [
+                          { type: "span", props: { style: { fontSize: 14, fontWeight: 700, color: gold, letterSpacing: "0.18em", marginBottom: 8 }, children: "LEAGUE STANDINGS" } },
+                          { type: "div", props: { style: { fontSize: title.length > 26 ? 38 : 46, fontWeight: 700, color: textLight, letterSpacing: "-0.02em", lineHeight: 1.05 }, children: title } },
+                        ],
+                      },
+                    },
+                    { type: "span", props: { style: { fontSize: 20, color: muted }, children: truncate(subtitle, 30) } },
+                  ],
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column" as const, gap: 7, flex: 1 },
+                  children: rows.map((r) => ({
+                    type: "div",
+                    props: {
+                      style: { display: "flex", alignItems: "center", height: 42, background: cardBg, border: `1px solid ${r.rank === 1 ? gold : cardBorder}`, borderRadius: 6, padding: "0 20px" },
+                      children: [
+                        { type: "span", props: { style: { width: 44, fontSize: 20, fontWeight: 700, color: rankColors[r.rank] || muted }, children: `${r.rank}` } },
+                        { type: "span", props: { style: { flex: 1, fontSize: 21, fontWeight: r.rank <= 3 ? 700 : 400, color: textLight }, children: r.name } },
+                        { type: "span", props: { style: { width: 120, fontSize: 18, color: muted, textAlign: "right" as const }, children: r.record } },
+                        { type: "span", props: { style: { width: 130, fontSize: 21, fontWeight: 700, color: gold, textAlign: "right" as const }, children: `${r.points} pts` } },
+                      ],
+                    },
+                  })),
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18 },
+                  children: [
+                    { type: "span", props: { style: { fontSize: 18, color: muted }, children: `fabstats.net/leagues/${truncate(slug, 40)}` } },
+                    { type: "span", props: { style: { fontSize: 16, color: muted }, children: "Flesh and Blood league standings" } },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860)" } } },
+      ],
+    },
+  };
+}
+
 async function renderLeague(slug: string): Promise<VNode> {
   const f = await fetchQuery("leagues", "slug", slug);
   if (!f) return renderGenericCard();
@@ -1189,7 +1316,7 @@ export default async function handler(req: Request) {
   // Netlify rewrites may pass the original URL path instead of query params.
   // Parse type/slug from the path as fallback: /og/<type>/<slug>.png, /og/meta.png
   if (!username && !type && !slug && !id) {
-    const m = url.pathname.match(/\/og\/(player|article|store|league|team|group)\/([^/]+)\.png$/i);
+    const m = url.pathname.match(/\/og\/(player|article|store|league-standings|league|team|group)\/([^/]+)\.png$/i);
     if (m) {
       const kind = m[1].toLowerCase();
       const val = decodeURIComponent(m[2]);
@@ -1203,13 +1330,13 @@ export default async function handler(req: Request) {
     }
   }
 
-  if ((type === "article" || type === "store" || type === "league" || type === "team" || type === "group") && !slug) {
+  if ((type === "article" || type === "store" || type === "league" || type === "league-standings" || type === "team" || type === "group") && !slug) {
     return new Response("Missing slug", { status: 400 });
   }
   if (type === "tierlist" && !id) {
     return new Response("Missing id", { status: 400 });
   }
-  if (!username && type !== "meta" && type !== "article" && type !== "store" && type !== "league" && type !== "team" && type !== "group" && type !== "tierlist") {
+  if (!username && type !== "meta" && type !== "article" && type !== "store" && type !== "league" && type !== "league-standings" && type !== "team" && type !== "group" && type !== "tierlist") {
     return new Response("Missing username", { status: 400 });
   }
 
@@ -1226,6 +1353,8 @@ export default async function handler(req: Request) {
       card = await renderStore(slug);
     } else if (type === "league") {
       card = await renderLeague(slug);
+    } else if (type === "league-standings") {
+      card = await renderLeagueStandings(slug);
     } else if (type === "team") {
       card = await renderTeam(slug);
     } else if (type === "group") {

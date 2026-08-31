@@ -68,6 +68,11 @@
   status = 200
 
 [[redirects]]
+  from = "/og/league-standings/:slug.png"
+  to = "/.netlify/functions/og-image?type=league-standings&slug=:slug"
+  status = 200
+
+[[redirects]]
   from = "/og/team/:slug.png"
   to = "/.netlify/functions/og-image?type=team&slug=:slug"
   status = 200
