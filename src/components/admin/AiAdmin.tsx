@@ -9,6 +9,7 @@ interface Config {
   model: string | null;
   monthlyBudgetUsd: number | null;
   dailyQueryLimit: number | null;
+  perUserDailyLimit: number | null;
 }
 interface Summary {
   total: number;
@@ -43,6 +44,7 @@ export function AiAdmin() {
   const [traces, setTraces] = useState<TraceRow[]>([]);
   const [budgetInput, setBudgetInput] = useState("");
   const [limitInput, setLimitInput] = useState("");
+  const [perUserInput, setPerUserInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +73,7 @@ export function AiAdmin() {
       setTraces(data.traces ?? []);
       setBudgetInput(data.config?.monthlyBudgetUsd != null ? String(data.config.monthlyBudgetUsd) : "");
       setLimitInput(data.config?.dailyQueryLimit != null ? String(data.config.dailyQueryLimit) : "");
+      setPerUserInput(data.config?.perUserDailyLimit != null ? String(data.config.perUserDailyLimit) : "");
     } catch (e) {
       setError((e as Error)?.message ?? "Failed to load");
     } finally {
@@ -102,7 +105,8 @@ export function AiAdmin() {
     try {
       const monthlyBudgetUsd = budgetInput.trim() ? Number(budgetInput) : null;
       const dailyQueryLimit = limitInput.trim() ? Number(limitInput) : null;
-      await call("set-limits", { monthlyBudgetUsd, dailyQueryLimit });
+      const perUserDailyLimit = perUserInput.trim() ? Number(perUserInput) : null;
+      await call("set-limits", { monthlyBudgetUsd, dailyQueryLimit, perUserDailyLimit });
       await refresh();
     } catch (e) {
       setError((e as Error)?.message ?? "Failed to save");
@@ -203,6 +207,18 @@ export function AiAdmin() {
               value={limitInput}
               onChange={(e) => setLimitInput(e.target.value)}
               placeholder="no cap"
+              className="w-full rounded-lg border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold focus:outline-none"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs text-fab-muted">Per-user daily limit (empty = 10, 0 = admins only)</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={perUserInput}
+              onChange={(e) => setPerUserInput(e.target.value)}
+              placeholder="default (10)"
               className="w-full rounded-lg border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold focus:outline-none"
             />
           </label>

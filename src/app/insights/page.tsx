@@ -90,7 +90,7 @@ function buildHistory(msgs: ChatMsg[]): { role: "user" | "assistant"; content: s
 }
 
 export default function InsightsPage() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -203,19 +203,18 @@ export default function InsightsPage() {
 
   const stop = useCallback(() => abortRef.current?.abort(), []);
 
-  // Admin-only gate.
-  if (!isAdmin) {
+  // Signed-in beta: any account can use it (per-day question cap server-side).
+  if (!user) {
     return (
       <div className="max-w-3xl mx-auto">
         <div className="mt-8 flex items-center gap-3 rounded-xl border border-fab-border bg-fab-surface p-5 text-sm text-fab-muted">
           <Lock className="h-5 w-5 shrink-0 text-fab-dim" />
           <p>
-            The AI assistant is in a private admin beta.{" "}
-            {!user && (
-              <Link href="/login" className="text-fab-gold hover:underline">
-                Sign in
-              </Link>
-            )}
+            The AI assistant needs an account.{" "}
+            <Link href="/login" className="text-fab-gold hover:underline">
+              Sign in
+            </Link>{" "}
+            to ask about your stats, the meta, or card rules.
           </p>
         </div>
       </div>

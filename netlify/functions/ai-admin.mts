@@ -43,7 +43,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!auth) return json({ error: "Sign in required." }, 401);
   if (!(await isAdminEmail(auth.email))) return json({ error: "Admins only." }, 403);
 
-  let body: { action?: string; model?: string; monthlyBudgetUsd?: number | null; dailyQueryLimit?: number | null };
+  let body: { action?: string; model?: string; monthlyBudgetUsd?: number | null; dailyQueryLimit?: number | null; perUserDailyLimit?: number | null };
   try {
     body = await req.json();
   } catch {
@@ -67,6 +67,11 @@ export default async function handler(req: Request): Promise<Response> {
       {
         monthlyBudgetUsd: clean(body.monthlyBudgetUsd),
         dailyQueryLimit: body.dailyQueryLimit && body.dailyQueryLimit > 0 ? Math.floor(body.dailyQueryLimit) : null,
+        // Per-user cap: null = built-in default; 0 = closed to non-admins.
+        perUserDailyLimit:
+          typeof body.perUserDailyLimit === "number" && body.perUserDailyLimit >= 0
+            ? Math.floor(body.perUserDailyLimit)
+            : null,
         updatedAt: new Date().toISOString(),
         updatedBy: auth.email,
       },
@@ -105,7 +110,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   return json({
-    config: { model, monthlyBudgetUsd: cfg.monthlyBudgetUsd ?? null, dailyQueryLimit: cfg.dailyQueryLimit ?? null },
+    config: { model, monthlyBudgetUsd: cfg.monthlyBudgetUsd ?? null, dailyQueryLimit: cfg.dailyQueryLimit ?? null, perUserDailyLimit: cfg.perUserDailyLimit ?? null },
     summary: {
       total: docs.length,
       totalCostUsd: totalCost,
