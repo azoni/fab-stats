@@ -1093,8 +1093,10 @@ export default function SettingsPage() {
                     <div className="min-w-0">
                       <p className="text-sm text-fab-text">
                         {b.count} match{b.count === 1 ? "" : "es"}
+                        {b.via === "single-delete" && <span className="ml-2 text-xs text-fab-dim">single delete</span>}
+                        {b.via === "event-delete" && <span className="ml-2 text-xs text-fab-dim">event delete</span>}
                       </p>
-                      <p className="text-xs text-fab-dim">Cleared {formatDeletedAt(b.deletedAt)}</p>
+                      <p className="text-xs text-fab-dim">Deleted {formatDeletedAt(b.deletedAt)}</p>
                     </div>
                     <button
                       onClick={() => handleRestoreBatch(b.batchId)}

@@ -10,6 +10,9 @@
  * the live copy, and `restoreDeletedMatches` brings a batch back and rebuilds the
  * derived data (leaderboard, feed placements, opponent links, H2H).
  *
+ * Single-match deletes and event deletes route through `softDeleteMatches`,
+ * which gives the same backup-first guarantee to the targeted delete flows.
+ *
  * Cleared matches are recoverable for RECYCLE_BIN_RETENTION_DAYS, then purged.
  *
  * Community-hero-matchups: softClearAllMatches decrements the shared `heroMatchups`
@@ -39,6 +42,9 @@ export const RECYCLE_BIN_RETENTION_DAYS = 30;
 
 /** Which destructive flow removed a match — drives restore's community-counter inverse. */
 export type ClearOrigin = "clear-before-import" | "clear-all-import" | "clear-all-settings";
+
+/** Targeted delete flows that also route through the bin (single match / whole event). */
+export type DeleteOrigin = "single-delete" | "event-delete";
 
 export interface DeletedMatchBatch {
   batchId: string;
@@ -112,6 +118,47 @@ export async function softClearAllMatches(
   await decrementCommunityHeroMatchups(userId, cleared).catch(() => {});
 
   return { batchId, count: snap.docs.length };
+}
+
+/**
+ * Soft-delete a specific set of matches (one match, or a whole event's worth):
+ * copy each into the recycle bin FIRST, then delete the live docs, then
+ * decrement the shared community counters. Same ordering guarantee as
+ * softClearAllMatches — a failed backup never loses data.
+ */
+export async function softDeleteMatches(
+  userId: string,
+  matches: MatchRecord[],
+  via: DeleteOrigin,
+): Promise<{ batchId: string; count: number }> {
+  if (matches.length === 0) return { batchId: "", count: 0 };
+
+  const batchId = new Date().toISOString();
+
+  // 1) Back up to the recycle bin FIRST (strip `id` + undefined values — the
+  //    match objects come from the client cache and Firestore rejects undefined).
+  await commitInChunks(matches, (batch, m) => {
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(m)) {
+      if (k !== "id" && v !== undefined) clean[k] = v;
+    }
+    batch.set(doc(deletedMatchesCollection(userId), m.id), {
+      ...clean,
+      originalId: m.id,
+      deletedAt: batchId,
+      deleteBatchId: batchId,
+      via,
+      communityDecremented: true,
+    });
+  });
+
+  // 2) Only now delete the live matches.
+  await commitInChunks(matches, (batch, m) => batch.delete(doc(matchesCollection(userId), m.id)));
+
+  // 3) Decrement community counters (best-effort; restore re-increments).
+  await decrementCommunityHeroMatchups(userId, matches).catch(() => {});
+
+  return { batchId, count: matches.length };
 }
 
 /** Group the recycle bin into restorable batches, newest first. */

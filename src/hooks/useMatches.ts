@@ -16,7 +16,7 @@ import {
   deleteMatch as storageDeleteMatch,
 } from "@/lib/storage";
 import type { MatchRecord, GameFormat } from "@/types";
-import { decrementCommunityHeroMatchups } from "@/lib/hero-matchups";
+import { softDeleteMatches } from "@/lib/match-recycle-bin";
 
 // Module-level cache shared across all hook instances
 let cachedMatches: MatchRecord[] | null = null;
@@ -118,9 +118,12 @@ export function useMatches() {
       try {
         setError(null);
         const match = (cachedMatches || []).find((m) => m.id === id);
-        await deleteMatchFirestore(user.uid, id);
         if (match) {
-          decrementCommunityHeroMatchups(user.uid, [match]).catch(() => {});
+          // Soft delete: bin copy first, then live delete + community decrement.
+          await softDeleteMatches(user.uid, [match], "single-delete");
+        } else {
+          // Not in cache (shouldn't happen) — fall back to a hard delete.
+          await deleteMatchFirestore(user.uid, id);
         }
         const updated = (cachedMatches || []).filter((m) => m.id !== id);
         updateCache(user.uid, updated);
@@ -307,9 +310,14 @@ export function useMatches() {
         setError(null);
         const idSet = new Set(matchIds);
         const deletedMatches = (cachedMatches || []).filter((m) => idSet.has(m.id));
-        await batchDeleteMatchesFirestore(user.uid, matchIds);
         if (deletedMatches.length > 0) {
-          decrementCommunityHeroMatchups(user.uid, deletedMatches).catch(() => {});
+          // Soft delete: bin copies first, then live deletes + community decrement.
+          await softDeleteMatches(user.uid, deletedMatches, "event-delete");
+        }
+        // Any ids missing from the cache (shouldn't happen) still get removed.
+        const uncached = matchIds.filter((id) => !deletedMatches.some((m) => m.id === id));
+        if (uncached.length > 0) {
+          await batchDeleteMatchesFirestore(user.uid, uncached);
         }
         const updated = (cachedMatches || []).filter((m) => !idSet.has(m.id));
         updateCache(user.uid, updated);
