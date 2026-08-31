@@ -12,6 +12,7 @@ import { MetaShareModal } from "@/components/meta/MetaShareCard";
 import { MetaOverviewShareModal } from "@/components/meta/MetaOverviewShareCard";
 import { MetaMatchupMatrix } from "@/components/meta/MetaMatchupMatrix";
 import { WeeklyMetaReport } from "@/components/meta/WeeklyMetaReport";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
@@ -39,7 +40,7 @@ function updateMetaUrl(params: Record<string, string>) {
 }
 
 export default function MetaPage() {
-  const { entries, loading } = useLeaderboard(true);
+  const { entries, loading, error, reload } = useLeaderboard(true);
   const { seasons } = useSeasons();
   const searchParams = useSearchParams();
 
@@ -209,6 +210,11 @@ export default function MetaPage() {
         </div>
       </div>
     );
+  }
+
+  // A failed load must not render "0 public players · 0 matches" as fact.
+  if (error && entries.length === 0) {
+    return <ErrorState title="Couldn't load the community meta" onRetry={reload} />;
   }
 
   return (

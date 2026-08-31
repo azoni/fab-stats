@@ -31,6 +31,7 @@ import { updateProfile } from "@/lib/firestore-storage";
 import { LoggedOutHome } from "@/components/home/LoggedOutHome";
 import { GettingStartedCard } from "@/components/home/GettingStartedCard";
 import { DailyGamesStrip } from "@/components/home/DailyGamesStrip";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { HomeTabs } from "@/components/home/HomeTabs";
 
 // Modals — lazy-loaded (only rendered when opened)
@@ -41,7 +42,7 @@ const TrendsShareModal = dynamic(() => import("@/components/trends/TrendsShareCa
 
 export default function Dashboard() {
   const router = useRouter();
-  const { matches, isLoaded } = useMatches();
+  const { matches, isLoaded, error: matchesError, refreshMatches, clearError } = useMatches();
   const { user, profile, isAdmin, refreshProfile } = useAuth();
   const { team: myTeam } = useTeamOnce(profile?.teamId || null);
   const { entries: lbEntries } = useLeaderboard(true);
@@ -267,11 +268,25 @@ export default function Dashboard() {
       {/* Ambient page glow — subtle gold atmosphere at the top */}
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(201,168,76,0.06),transparent)]" />
 
+      {/* Load FAILURE must not masquerade as the first-run experience — a
+          user with 2,000 matches on a flaky connection was shown "get
+          started" onboarding. */}
+      {!hasMatches && user && matchesError && (
+        <ErrorState
+          title="Couldn't load your matches"
+          detail="Your match history is safe — this is a connection problem, not a data problem."
+          onRetry={() => {
+            clearError();
+            refreshMatches().catch(() => {});
+          }}
+        />
+      )}
+
       {/* No matches + signed in: first-run checklist above the showcase */}
-      {!hasMatches && user && <GettingStartedCard profile={profile} />}
+      {!hasMatches && user && !matchesError && <GettingStartedCard profile={profile} />}
 
       {/* No matches: logged-out / new user landing page */}
-      {!hasMatches && (
+      {!hasMatches && !(user && matchesError) && (
         <LoggedOutHome user={user} communityMeta={communityMeta} lbEntries={lbEntries} communityCounts={communityCounts} />
       )}
 

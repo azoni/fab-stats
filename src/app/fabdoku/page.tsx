@@ -1,4 +1,5 @@
 "use client";
+import { notifyGameSaveFailure } from "@/lib/games/save-notify";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -278,8 +279,9 @@ export default function FaBdokuPage() {
           try {
             const result = buildResult(newState);
             await saveResult(user.uid, result);
-          } catch {
-            // Result save failed (e.g. replay overwrites blocked) — non-critical
+          } catch (e) {
+            // Replay overwrites are blocked on purpose; anything else deserves a toast.
+            notifyGameSaveFailure(e);
           }
           try {
             const updatedStats = await loadStats(user.uid);
@@ -633,8 +635,8 @@ export default function FaBdokuPage() {
                     try {
                       const result = buildResult(newState);
                       await saveResult(user.uid, result);
-                    } catch {
-                      // Result save failed (e.g. replay overwrites blocked) — non-critical
+                    } catch (e) {
+                      notifyGameSaveFailure(e);
                     }
                     try {
                       const updatedStats = await loadStats(user.uid);

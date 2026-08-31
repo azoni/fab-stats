@@ -338,9 +338,15 @@ export function useMatches() {
       return;
     }
     if (!user) return;
-    const data = await getMatchesByUserId(user.uid);
-    updateCache(user.uid, data);
-    setMatches(data);
+    try {
+      const data = await getMatchesByUserId(user.uid);
+      updateCache(user.uid, data);
+      setMatches(data);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load matches");
+      throw e;
+    }
   }, [user, isGuest]);
 
   const clearError = useCallback(() => setError(null), []);

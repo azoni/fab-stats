@@ -18,9 +18,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, loading, needsSetup, isGuest, pathname, router]);
 
   if (loading) {
+    // Skeleton shell instead of bare text — pages behind the guard show their
+    // own skeleton next, so keep this one structurally similar to reduce jump.
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-fab-muted animate-pulse">Loading...</div>
+      <div className="mx-auto max-w-5xl space-y-4 px-4 py-6">
+        <div className="h-8 w-48 animate-pulse rounded bg-fab-surface" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 animate-pulse rounded-lg border border-fab-border bg-fab-surface" />
+          ))}
+        </div>
+        <div className="h-64 animate-pulse rounded-xl border border-fab-border bg-fab-surface" />
       </div>
     );
   }

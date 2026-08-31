@@ -1,5 +1,6 @@
 "use client";
 
+import { notifyGameSaveFailure } from "@/lib/games/save-notify";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
@@ -229,7 +230,7 @@ export default function CrosswordPage() {
               syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
-          .catch(() => {});
+          .catch(notifyGameSaveFailure);
       }
 
       if (profile) {

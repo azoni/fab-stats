@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { setReturnTo } from "@/lib/return-to";
+import { ErrorState } from "@/components/ui/ErrorState";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -127,26 +128,38 @@ export default function LeaguePage() {
   const [leagueTab, setLeagueTab] = useState<"standings" | "meta" | "players" | "trend">("standings");
   const [pool, setPool] = useState<LeagueMatchPool | null>(null);
   const [filters, setFilters] = useState<LeagueFilters>({});
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     if (!slug || slug === "_") return;
     let cancelled = false;
     (async () => {
-      const found = await getLeagueBySlug(slug);
-      if (cancelled) return;
-      if (!found) {
-        setNotFound(true);
+      try {
+        const found = await getLeagueBySlug(slug);
+        if (cancelled) return;
+        if (!found) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+        setLeagueId(found.id);
+        setLeague(found);
+        setLoadError(false);
         setLoading(false);
-        return;
+      } catch {
+        // Without this, a network/permission failure left shared-link
+        // visitors staring at "Loading league…" forever.
+        if (!cancelled) {
+          setLoadError(true);
+          setLoading(false);
+        }
       }
-      setLeagueId(found.id);
-      setLeague(found);
-      setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, loadAttempt]);
 
   // Subscribe to league + members + standings
   useEffect(() => {
@@ -558,7 +571,27 @@ export default function LeaguePage() {
   }
 
   if (loading) {
-    return <div className="mx-auto max-w-5xl px-4 py-10 text-fab-dim">Loading league…</div>;
+    return (
+      <div className="mx-auto max-w-5xl space-y-4 px-4 py-8">
+        <div className="h-40 animate-pulse rounded-xl border border-fab-border bg-fab-surface" />
+        <div className="h-10 animate-pulse rounded-lg border border-fab-border bg-fab-surface" />
+        <div className="h-64 animate-pulse rounded-xl border border-fab-border bg-fab-surface" />
+      </div>
+    );
+  }
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-5xl px-4">
+        <ErrorState
+          title="Couldn't load this league"
+          onRetry={() => {
+            setLoadError(false);
+            setLoading(true);
+            setLoadAttempt((a) => a + 1);
+          }}
+        />
+      </div>
+    );
   }
   if (notFound || !league) {
     return (
