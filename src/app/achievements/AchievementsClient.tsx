@@ -27,6 +27,14 @@ import { loadStats as loadMatchupManiaStats } from "@/lib/matchupmania/firestore
 import { loadStats as loadTriviaStats } from "@/lib/trivia/firestore";
 import { loadStats as loadTimelineStats } from "@/lib/timeline/firestore";
 import { loadStats as loadConnectionsStats } from "@/lib/connections/firestore";
+import { loadStats as loadRampageStats } from "@/lib/rhinarsrampage/firestore";
+import { loadStats as loadKnockoutStats } from "@/lib/kayosknockout/firestore";
+import { loadStats as loadBrawlStats } from "@/lib/brutebrawl/firestore";
+import { loadStats as loadNinjaComboStats } from "@/lib/ninjacombo/firestore";
+import { loadStats as loadShadowStrikeStats } from "@/lib/shadowstrike/firestore";
+import { loadStats as loadBladeDashStats } from "@/lib/bladedash/firestore";
+import { mergeLocalDatesToServer, computeStreakFromDates } from "@/lib/games/activity";
+import type { ExtraGameStats } from "@/lib/achievements";
 import { AchievementIcon } from "@/components/gamification/AchievementIcons";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
@@ -122,6 +130,7 @@ export function AchievementsClient() {
   const [kudosGivenCounts, setKudosGivenCounts] = useState<Record<string, number>>({});
   const [manualBadges, setManualBadges] = useState<Achievement[]>([]);
   const [gameStats, setGameStats] = useState<GameAchievementStats>({});
+  const [extraStats, setExtraStats] = useState<ExtraGameStats>({});
   const [gameStatsLoaded, setGameStatsLoaded] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
 
@@ -191,6 +200,13 @@ export function AchievementsClient() {
       loadTriviaStats(user.uid).catch(() => null),
       loadTimelineStats(user.uid).catch(() => null),
       loadConnectionsStats(user.uid).catch(() => null),
+      loadRampageStats(user.uid).catch(() => null),
+      loadKnockoutStats(user.uid).catch(() => null),
+      loadBrawlStats(user.uid).catch(() => null),
+      loadNinjaComboStats(user.uid).catch(() => null),
+      loadShadowStrikeStats(user.uid).catch(() => null),
+      loadBladeDashStats(user.uid).catch(() => null),
+      mergeLocalDatesToServer(user.uid).catch(() => [] as string[]),
     ]).then(([
       fabdokuStats,
       fabdokuCardStats,
@@ -200,6 +216,13 @@ export function AchievementsClient() {
       triviaStats,
       timelineStats,
       connectionsStats,
+      rampageStats,
+      knockoutStats,
+      brawlStats,
+      ninjaComboStats,
+      shadowStrikeStats,
+      bladeDashStats,
+      playedDates,
     ]) => {
       if (cancelled) return;
       setGameStats({
@@ -211,6 +234,15 @@ export function AchievementsClient() {
         triviaStats,
         timelineStats,
         connectionsStats,
+      });
+      setExtraStats({
+        rampageStats: rampageStats ?? undefined,
+        knockoutStats: knockoutStats ?? undefined,
+        brawlStats: brawlStats ?? undefined,
+        ninjaComboStats: ninjaComboStats ?? undefined,
+        shadowStrikeStats: shadowStrikeStats ?? undefined,
+        bladeDashStats: bladeDashStats ?? undefined,
+        gameDayStreak: computeStreakFromDates(playedDates),
       });
       setGameStatsLoaded(true);
     }).catch(() => {
@@ -239,8 +271,9 @@ export function AchievementsClient() {
       gameStats.fabdokuCardStats ?? undefined,
       gameStats.crosswordStats ?? undefined,
       kudosGivenCounts,
+      extraStats,
     );
-  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, gameStats]);
+  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, gameStats, extraStats]);
 
   const earnedWithManualBadges = useMemo(() => [...earned, ...manualBadges], [earned, manualBadges]);
 
@@ -263,8 +296,9 @@ export function AchievementsClient() {
       gameStats.fabdokuCardStats ?? undefined,
       gameStats.crosswordStats ?? undefined,
       kudosGivenCounts,
+      extraStats,
     );
-  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, gameStats]);
+  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, gameStats, extraStats]);
 
   const totalCount = allAchievements.length;
   const earnedCount = earnedWithManualBadges.length;

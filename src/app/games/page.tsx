@@ -8,6 +8,9 @@ import { AllGamesShareCard } from "@/components/games/AllGamesShareCard";
 import { CountUp } from "@/components/games/fx";
 import { getHeroPortraitUrl } from "@/lib/heroes";
 import { getTodayDateStr, completedOn, computeOverallStreak } from "@/lib/games/streak";
+import { localPlayedDates, mergeLocalDatesToServer, computeStreakFromDates } from "@/lib/games/activity";
+import { StreakCalendar } from "@/components/games/StreakCalendar";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Iconic heroes with reliable portrait art, used as a decorative right-bleed accent
 // on each game card. Assigned deterministically per slug so a game always shows the
@@ -35,14 +38,34 @@ const CATEGORY_BORDER_COLORS: Record<string, string> = {
 };
 
 export default function GamesPage() {
+  const { user } = useAuth();
   const [showShare, setShowShare] = useState(false);
   const [playedSlugs, setPlayedSlugs] = useState<Set<string>>(() => new Set());
   const [streak, setStreak] = useState(0);
+  const [playedDates, setPlayedDates] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     setPlayedSlugs(new Set(VISIBLE_GAMES.filter((game) => hasPlayedToday(game.slug)).map((game) => game.slug)));
+    // Local view first (instant), then union in the server-tracked dates so
+    // streak + calendar survive device switches for signed-in players.
     setStreak(computeOverallStreak());
+    setPlayedDates(new Set(localPlayedDates()));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    mergeLocalDatesToServer(user.uid)
+      .then((dates) => {
+        if (cancelled) return;
+        setPlayedDates(new Set(dates));
+        setStreak(computeStreakFromDates(dates));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const completed = playedSlugs.size;
   const playedToday = completed > 0;
@@ -107,6 +130,8 @@ export default function GamesPage() {
           </button>
         )}
       </div>
+
+      {playedDates.size > 0 && <StreakCalendar playedDates={playedDates} />}
 
       <div className="space-y-6">
         {categoryStats.map((cat) => (
