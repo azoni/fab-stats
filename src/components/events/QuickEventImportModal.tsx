@@ -213,8 +213,11 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     }));
 
     let count: number;
+    let createdMatches: MatchRecord[] = [];
     if (user) {
-      count = await importMatchesFirestore(user.uid, matches);
+      const res = await importMatchesFirestore(user.uid, matches);
+      count = res.imported;
+      createdMatches = res.created;
     } else {
       count = importMatchesLocal(matches);
     }
@@ -237,7 +240,9 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
         .then((allMatches) => {
           updateLeaderboardEntry(profile, allMatches);
           computeH2HForUser(user.uid, allMatches);
-          updateCommunityHeroMatchups(user.uid, allMatches);
+          // Increment-based counters: pass only the matches this import
+          // created, never the full history (it re-counts every prior match).
+          updateCommunityHeroMatchups(user.uid, createdMatches);
 
           // Achievement + placement feed events (non-blocking)
           const importedMatches = parsedEvent?.matches || [];

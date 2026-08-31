@@ -164,6 +164,9 @@ const COLLECTIONS = {
 
 type GameKey = keyof typeof COLLECTIONS;
 
+/** Number of daily games aggregated into the leaderboard (for "X/N games" labels). */
+export const TRACKED_GAME_COUNT = Object.keys(COLLECTIONS).length;
+
 // ── Bulk fetch ──
 
 export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {

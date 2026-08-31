@@ -977,10 +977,13 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     }
 
     let count: number;
+    let createdMatches: MatchRecord[] = [];
     if (sandbox) {
       count = importSandboxMatches(matches);
     } else if (user) {
-      count = await importMatchesFirestore(user.uid, matches);
+      const res = await importMatchesFirestore(user.uid, matches);
+      count = res.imported;
+      createdMatches = res.created;
     } else {
       count = importMatchesLocal(matches);
     }
@@ -1101,10 +1104,13 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
 
       // Cross-player match linking + H2H + community matchups (non-blocking).
       // Reuse afterMatches (already the full post-import set) — no extra read.
+      // Community matchups get ONLY the matches this import created: the
+      // counters are increment-based, so passing the full history re-counts
+      // every prior match on every import.
       try {
         linkMatchesWithOpponents(user.uid, afterMatches);
         computeH2HForUser(user.uid, afterMatches);
-        updateCommunityHeroMatchups(user.uid, afterMatches);
+        updateCommunityHeroMatchups(user.uid, createdMatches);
       } catch {
         /* non-blocking */
       }
