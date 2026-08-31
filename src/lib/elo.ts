@@ -66,6 +66,45 @@ export function computeEloRating(matches: MatchRecord[]): number {
   return Math.round(rating);
 }
 
+export interface EloHistoryPoint {
+  /** ISO date of the match that produced this rating. */
+  date: string;
+  rating: number;
+  matchIndex: number;
+}
+
+/**
+ * Same walk as computeEloRating, but keeps the trajectory: one point per
+ * non-bye match (chronological). The final point's rating equals
+ * computeEloRating's result.
+ */
+export function computeEloHistory(matches: MatchRecord[]): EloHistoryPoint[] {
+  const sorted = [...matches]
+    .filter((m) => m.result !== MatchResult.Bye)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const points: EloHistoryPoint[] = [];
+  let rating = DEFAULT_RATING;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const match = sorted[i];
+    const K = getKFactor(i);
+    const weight = getEventWeight(match);
+    const opponentRating = DEFAULT_RATING;
+
+    let S: number;
+    if (match.result === MatchResult.Win) S = 1;
+    else if (match.result === MatchResult.Draw) S = 0.5;
+    else S = 0;
+
+    const E = 1 / (1 + Math.pow(10, (opponentRating - rating) / 400));
+    rating = rating + K * weight * (S - E);
+    points.push({ date: match.date, rating: Math.round(rating), matchIndex: i });
+  }
+
+  return points;
+}
+
 export interface EloTierDef {
   label: string;
   color: string;
