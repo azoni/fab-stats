@@ -1116,7 +1116,25 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     match /sitemap-meta/{docId} {
-      allow read, write: if isAdmin();
+      // hero-portraits is a public heroName→URL map read by every visitor for
+      // portrait art (loadDynamicPortraits in heroes.ts); the rest stays admin.
+      allow read: if docId == "hero-portraits" || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ── Scheduled-function run logs (written server-side via admin SDK; the
+    // admin SEO-health + content dashboards read them client-side) ──
+    match /seoAudits/{docId} {
+      allow read: if isAdmin();
+    }
+    match /webVitals/{docId} {
+      allow read: if isAdmin();
+    }
+    match /kg-sync-runs/{docId} {
+      allow read: if isAdmin();
+    }
+    match /meta-article-runs/{docId} {
+      allow read: if isAdmin();
     }
     match /coverage-matches/{docId} {
       allow read, write: if isAdmin();

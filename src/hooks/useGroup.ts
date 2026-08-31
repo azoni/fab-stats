@@ -32,9 +32,8 @@ function groupInvitesCollection() {
  * Subcollection: `users/{uid}/groups/{groupId}`
  * Each doc contains: { groupId: string, groupName: string, joinedAt: string }
  *
- * TODO: `groups.ts` (lib) needs to be updated to write/delete from
- * `users/{uid}/groups/{groupId}` whenever a user joins, leaves, is kicked,
- * or a group is disbanded. Handle that separately after this file is in place.
+ * `groups.ts` maintains this mirror on every membership change (create, join,
+ * leave, kick, invite-accept, disband) via its userGroupsDoc helper.
  */
 function userGroupsCollection(uid: string) {
   return collection(db, "users", uid, "groups");

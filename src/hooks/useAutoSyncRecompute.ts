@@ -5,7 +5,6 @@ import { getMatchesByUserId, updateProfile } from "@/lib/firestore-storage";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
 import { computeH2HForUser } from "@/lib/h2h";
-import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
 
 /**
  * Detects the `needsRecompute` flag set by server-side auto-sync
@@ -34,8 +33,10 @@ export function useAutoSyncRecompute() {
         linkMatchesWithOpponents(user.uid, allMatches).catch(() => {});
         // H2H
         computeH2HForUser(user.uid, allMatches).catch(() => {});
-        // Community hero matchups
-        updateCommunityHeroMatchups(user.uid, allMatches).catch(() => {});
+        // Community hero matchups deliberately NOT updated here: the counters
+        // are increment-based, so re-adding the full history double-counts.
+        // Auto-synced matches are folded in by the admin "Backfill hero
+        // matchups" rebuild (wipe + recount) instead.
       })
       .catch(() => {});
   }, [user, profile]);

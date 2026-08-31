@@ -143,7 +143,7 @@ export async function deleteMatchFirestore(
 export async function importMatchesFirestore(
   userId: string,
   matches: Omit<MatchRecord, "id" | "createdAt">[]
-): Promise<number> {
+): Promise<{ imported: number; created: MatchRecord[] }> {
   // Fetch existing matches to detect duplicates (and to heal missing venues).
   const existing = await getDocs(query(matchesCollection(userId)));
   type Ref = (typeof existing.docs)[number]["ref"];
@@ -212,7 +212,10 @@ export async function importMatchesFirestore(
     healed += chunk.length;
   }
 
-  // Create the brand-new matches.
+  // Create the brand-new matches. Track what was actually written (with the
+  // generated doc ids) so callers can increment community aggregates for JUST
+  // these matches — passing the full post-import history re-counts everything.
+  const created: MatchRecord[] = [];
   for (let i = 0; i < newMatches.length; i += batchSize) {
     const batch = writeBatch(db);
     const chunk = newMatches.slice(i, i + batchSize);
@@ -232,6 +235,7 @@ export async function importMatchesFirestore(
         else delete clean.venue;
       }
       batch.set(docRef, clean);
+      created.push({ ...clean, id: docRef.id } as unknown as MatchRecord);
     }
 
     await batch.commit();
@@ -246,7 +250,7 @@ export async function importMatchesFirestore(
     );
   }
 
-  return imported;
+  return { imported, created };
 }
 
 export async function batchUpdateMatchesFirestore(

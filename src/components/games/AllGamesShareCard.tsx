@@ -2,6 +2,13 @@
 import { useRef, useState } from "react";
 import { VISIBLE_GAMES as GAMES } from "@/lib/games";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
+import { computeOverallStreak, getTodayDateStr } from "@/lib/games/streak";
+
+function formatMs(ms: number): string {
+  const totalSecs = Math.floor((ms || 0) / 1000);
+  const m = Math.floor(totalSecs / 60);
+  return `${m}:${String(totalSecs % 60).padStart(2, "0")}`;
+}
 
 interface GameResult {
   slug: string;
@@ -10,11 +17,6 @@ interface GameResult {
   completed: boolean;
   won: boolean;
   detail: string; // e.g. "7/10", "5/5", "3 lives"
-}
-
-function getTodayDateStr(): string {
-  const now = new Date();
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
 }
 
 function loadTodayResults(): GameResult[] {
@@ -62,6 +64,20 @@ function loadTodayResults(): GameResult[] {
         case "brutebrawl":
           detail = `${state.totalDamage ?? 0}/${state.targetDamage ?? "?"} dmg`;
           break;
+        case "fabdoku-card": {
+          const cells: { correct?: boolean }[] = Array.isArray(state.cells) ? state.cells.flat() : [];
+          detail = `${cells.filter((c) => c && c.correct).length}/9`;
+          break;
+        }
+        case "shadowstrike":
+          detail = `${state.flips ?? 0} flips · ${formatMs(state.elapsedMs)}`;
+          break;
+        case "ninjacombo":
+          detail = `${state.totalDamage ?? 0}/${state.targetDamage ?? "?"} dmg`;
+          break;
+        case "bladedash":
+          detail = state.won ? formatMs(state.elapsedMs) : "DNF";
+          break;
       }
 
       results.push({
@@ -79,10 +95,11 @@ function loadTodayResults(): GameResult[] {
   return results;
 }
 
-function buildShareText(results: GameResult[], dateStr: string): string {
+function buildShareText(results: GameResult[], dateStr: string, streak: number): string {
   const wins = results.filter((r) => r.won).length;
   const lines = results.map((r) => `${r.won ? "✅" : "❌"} ${r.label} — ${r.detail}`);
-  return `FaB Stats Daily Games ${dateStr}\n${wins}/${results.length} won\n\n${lines.join("\n")}\n\nfabstats.net/games`;
+  const streakLine = streak > 1 ? `\n🔥 ${streak}-day streak` : "";
+  return `FaB Stats Daily Games ${dateStr}\n${wins}/${results.length} won${streakLine}\n\n${lines.join("\n")}\n\nfabstats.net/games`;
 }
 
 export function AllGamesShareCard({ onClose }: { onClose: () => void }) {
@@ -90,12 +107,13 @@ export function AllGamesShareCard({ onClose }: { onClose: () => void }) {
   const [status, setStatus] = useState<"idle" | "copied" | "downloaded">("idle");
   const dateStr = getTodayDateStr();
   const results = loadTodayResults();
+  const streak = computeOverallStreak();
 
   const wins = results.filter((r) => r.won).length;
   const allWon = wins === results.length && results.length > 0;
 
   async function handleCopy() {
-    const text = buildShareText(results, dateStr);
+    const text = buildShareText(results, dateStr, streak);
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: "#0e0c08",
       fileName: `daily-games-${dateStr}.png`,
@@ -133,6 +151,9 @@ export function AllGamesShareCard({ onClose }: { onClose: () => void }) {
             <p className={`text-lg font-bold mt-1 ${allWon ? "text-fab-win" : wins > 0 ? "text-fab-gold" : "text-fab-loss"}`}>
               {wins}/{results.length} {allWon ? "Perfect!" : "Won"}
             </p>
+            {streak > 1 && (
+              <p className="text-[10px] font-semibold text-fab-gold">🔥 {streak}-day streak</p>
+            )}
           </div>
 
           {/* Game results grid */}

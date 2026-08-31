@@ -7,6 +7,7 @@ import { VISIBLE_GAMES, GAME_CATEGORIES } from "@/lib/games";
 import { AllGamesShareCard } from "@/components/games/AllGamesShareCard";
 import { CountUp } from "@/components/games/fx";
 import { getHeroPortraitUrl } from "@/lib/heroes";
+import { getTodayDateStr, completedOn, computeOverallStreak } from "@/lib/games/streak";
 
 // Iconic heroes with reliable portrait art, used as a decorative right-bleed accent
 // on each game card. Assigned deterministically per slug so a game always shows the
@@ -21,53 +22,9 @@ function accentFor(slug: string): string | undefined {
   return getHeroPortraitUrl(ACCENT_HEROES[h % ACCENT_HEROES.length]) || undefined;
 }
 
-function getTodayDateStr(): string {
-  const now = new Date();
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
-}
-
-function dateOffsetStr(dateStr: string, days: number): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d + days));
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
-}
-
-function completedOn(slug: string, dateStr: string): boolean {
-  try {
-    const raw = localStorage.getItem(`${slug}-${dateStr}`);
-    // Games persist state on the first move, so key-existence over-counts
-    // abandoned games as "done". Require an explicit completion flag.
-    return raw ? JSON.parse(raw).completed === true : false;
-  } catch {
-    return false;
-  }
-}
-
 function hasPlayedToday(slug: string): boolean {
   if (typeof window === "undefined") return false;
   return completedOn(slug, getTodayDateStr());
-}
-
-function playedAnyOn(dateStr: string): boolean {
-  return VISIBLE_GAMES.some((g) => completedOn(g.slug, dateStr));
-}
-
-/**
- * Overall daily-play streak from localStorage: consecutive days on which you
- * completed at least one game. Counts today if done, and doesn't break until a
- * full day is actually missed (so an as-yet-unplayed today still shows the
- * streak earned through yesterday). Free + client-side — no Firestore reads.
- */
-function computeOverallStreak(): number {
-  if (typeof window === "undefined") return 0;
-  const today = getTodayDateStr();
-  let cursor = playedAnyOn(today) ? today : dateOffsetStr(today, -1);
-  let streak = 0;
-  for (let i = 0; i < 400 && playedAnyOn(cursor); i++) {
-    streak++;
-    cursor = dateOffsetStr(cursor, -1);
-  }
-  return streak;
 }
 
 const CATEGORY_BORDER_COLORS: Record<string, string> = {

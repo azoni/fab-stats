@@ -15,7 +15,7 @@ import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import { playerHref } from "@/lib/constants";
 import { loadAllKudosCounts, loadAllKudosGivenCounts, KUDOS_TYPES, type KudosCountsEntry } from "@/lib/kudos";
-import { loadAllGameStats, type GameLeaderboardEntry } from "@/lib/game-leaderboard";
+import { loadAllGameStats, TRACKED_GAME_COUNT, type GameLeaderboardEntry } from "@/lib/game-leaderboard";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { HeroImg } from "@/components/heroes/HeroImg";
@@ -26,7 +26,7 @@ import { spec, type Material } from "@/components/cosmetics/materials";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "elo" | "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_superarmory" | "top8s_skirmish" | "top8s_pq" | "top8s_rtn" | "top8s_showdown" | "top8s_bh" | "top8s_battlegrounds" | "top8s_calling" | "top8s_nationals" | "top8s_protour" | "top8s_worlds" | "top8s_path" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections" | "games_rampage" | "games_knockout" | "games_brutebrawl" | "games_ninjacombo";
+type Tab = "elo" | "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_superarmory" | "top8s_skirmish" | "top8s_pq" | "top8s_rtn" | "top8s_showdown" | "top8s_bh" | "top8s_battlegrounds" | "top8s_calling" | "top8s_nationals" | "top8s_protour" | "top8s_worlds" | "top8s_path" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections" | "games_rampage" | "games_knockout" | "games_brutebrawl" | "games_ninjacombo" | "games_shadowstrike" | "games_bladedash";
 
 function isKudosTab(tab: Tab): boolean {
   return tab.startsWith("kudos_") && !tab.startsWith("kudos_given_");
@@ -122,6 +122,8 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "games_knockout", label: "Kayo's Knockout", description: "Highest best damage in Kayo's Knockout." },
   { id: "games_brutebrawl", label: "Brute Brawl", description: "Highest best damage in Brute Brawl." },
   { id: "games_ninjacombo", label: "Katsu's Combo", description: "Highest best damage in Katsu's Combo." },
+  { id: "games_shadowstrike", label: "Shadow Strike", description: "Fastest Shadow Strike clear. Requires at least 1 win." },
+  { id: "games_bladedash", label: "Blade Dash", description: "Fastest Blade Dash solve. Requires at least 1 win." },
 ];
 
 const tabMap = Object.fromEntries(tabs.map((t) => [t.id, t]));
@@ -147,7 +149,7 @@ const allCategories: Category[] = [
   { id: "table", label: "Table Stories", tabs: ["draws", "drawrate", "lowdrawrate", "fewestdraws", "byes", "byerate", "balanced", "uniqueopponents", "silvermedals", "globetrotter", "leaderboardcount", "earnings"] },
   { id: "kudos", label: "Kudos", tabs: ["kudos_total", "kudos_props", "kudos_good_sport", "kudos_skilled", "kudos_helpful"] },
   { id: "kudos_given", label: "Kudos Given", tabs: ["kudos_given_total", "kudos_given_props", "kudos_given_good_sport", "kudos_given_skilled", "kudos_given_helpful"] },
-  { id: "games", label: "Daily Games", tabs: ["games_total", "games_winrate", "games_streak", "games_variety", "games_fabdoku", "games_crossword", "games_heroguesser", "games_matchupmania", "games_trivia", "games_timeline", "games_connections", "games_rampage", "games_knockout", "games_brutebrawl", "games_ninjacombo"] },
+  { id: "games", label: "Daily Games", tabs: ["games_total", "games_winrate", "games_streak", "games_variety", "games_fabdoku", "games_crossword", "games_heroguesser", "games_matchupmania", "games_trivia", "games_timeline", "games_connections", "games_rampage", "games_knockout", "games_brutebrawl", "games_ninjacombo", "games_shadowstrike", "games_bladedash"] },
   { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
 ];
 
@@ -309,13 +311,13 @@ function getKudosStat(entry: KudosCountsEntry, tab: Tab): { value: string; sub: 
 function getGameStat(entry: GameLeaderboardEntry, tab: Tab): { value: string; sub: string; color: string; rate?: number } {
   switch (tab) {
     case "games_total":
-      return { value: String(entry.totalGamesPlayed), sub: `${entry.totalGamesWon} won (${entry.gamesWithActivity}/11 games)`, color: "text-fab-text" };
+      return { value: String(entry.totalGamesPlayed), sub: `${entry.totalGamesWon} won (${entry.gamesWithActivity}/${TRACKED_GAME_COUNT} games)`, color: "text-fab-text" };
     case "games_winrate":
       return { value: formatRate(entry.overallWinRate), sub: `${entry.totalGamesWon}W / ${entry.totalGamesPlayed} games`, color: entry.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss", rate: entry.overallWinRate };
     case "games_streak":
       return { value: String(entry.bestMaxStreak), sub: "best win streak", color: "text-fab-win" };
     case "games_variety":
-      return { value: `${entry.gamesWithActivity}/11`, sub: `${entry.totalGamesPlayed} total played`, color: "text-purple-400" };
+      return { value: `${entry.gamesWithActivity}/${TRACKED_GAME_COUNT}`, sub: `${entry.totalGamesPlayed} total played`, color: "text-purple-400" };
     case "games_fabdoku": {
       const s = entry.fabdoku;
       if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
@@ -375,6 +377,18 @@ function getGameStat(entry: GameLeaderboardEntry, tab: Tab): { value: string; su
       if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
       return { value: String(s.bestDamage), sub: `best dmg · ${s.gamesWon}W / ${s.gamesPlayed} played`, color: "text-cyan-400" };
     }
+    case "games_shadowstrike": {
+      const s = entry.shadowstrike;
+      if (!s || !s.bestTimeMs) return { value: "—", sub: "", color: "text-fab-dim" };
+      const totalSecs = Math.floor(s.bestTimeMs / 1000);
+      return { value: `${Math.floor(totalSecs / 60)}:${String(totalSecs % 60).padStart(2, "0")}`, sub: `best ${s.bestFlips || "?"} flips · ${s.gamesPlayed} played`, color: "text-indigo-400" };
+    }
+    case "games_bladedash": {
+      const s = entry.bladedash;
+      if (!s || !s.bestTimeMs) return { value: "—", sub: "", color: "text-fab-dim" };
+      const totalSecs = Math.floor(s.bestTimeMs / 1000);
+      return { value: `${Math.floor(totalSecs / 60)}:${String(totalSecs % 60).padStart(2, "0")}`, sub: `${s.perfectGames} perfect · ${s.gamesPlayed} played`, color: "text-pink-400" };
+    }
     default:
       return { value: "—", sub: "", color: "text-fab-dim" };
   }
@@ -431,6 +445,8 @@ function getEmptyMessage(tab: Tab): string {
     case "games_trivia": return "No players have played Trivia yet.";
     case "games_timeline": return "No players have played Timeline yet.";
     case "games_connections": return "No players have any perfect Connections games yet.";
+    case "games_shadowstrike": return "No players have cleared Shadow Strike yet.";
+    case "games_bladedash": return "No players have finished Blade Dash yet.";
     default:
       if (tab.startsWith("top8s")) return "No players have Top 8 finishes in this category yet.";
       return "Import matches to appear on the leaderboard.";
@@ -738,6 +754,20 @@ export default function LeaderboardPage() {
         return [...visibleEntries]
           .filter((e) => (gamesMap.get(e.userId)?.ninjacombo?.gamesPlayed ?? 0) > 0)
           .sort((a, b) => (gamesMap.get(b.userId)?.ninjacombo?.bestDamage ?? 0) - (gamesMap.get(a.userId)?.ninjacombo?.bestDamage ?? 0) || (gamesMap.get(b.userId)?.ninjacombo?.gamesPlayed ?? 0) - (gamesMap.get(a.userId)?.ninjacombo?.gamesPlayed ?? 0));
+      case "games_shadowstrike":
+        return [...visibleEntries]
+          .filter((e) => {
+            const s = gamesMap.get(e.userId)?.shadowstrike;
+            return s && s.bestTimeMs > 0 && s.gamesWon > 0;
+          })
+          .sort((a, b) => (gamesMap.get(a.userId)?.shadowstrike?.bestTimeMs || Infinity) - (gamesMap.get(b.userId)?.shadowstrike?.bestTimeMs || Infinity));
+      case "games_bladedash":
+        return [...visibleEntries]
+          .filter((e) => {
+            const s = gamesMap.get(e.userId)?.bladedash;
+            return s && s.bestTimeMs > 0 && s.gamesWon > 0;
+          })
+          .sort((a, b) => (gamesMap.get(a.userId)?.bladedash?.bestTimeMs || Infinity) - (gamesMap.get(b.userId)?.bladedash?.bestTimeMs || Infinity));
       default:
         return visibleEntries;
     }
