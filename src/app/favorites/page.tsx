@@ -65,7 +65,7 @@ export default function FavoritesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:p-6">
+      <section className="fab-page-hero relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:p-6">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_88%_22%,rgba(38,211,177,0.1),transparent_28%)]" />
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -98,7 +98,7 @@ export default function FavoritesPage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search favorites..."
+              placeholder="Search favorites..." aria-label="Search favorites"
               className="w-full rounded-lg border border-fab-border/80 bg-fab-bg/70 py-2 pl-9 pr-3 text-sm text-fab-text shadow-inner shadow-black/10 placeholder:text-fab-dim focus:border-fab-gold/50 focus:bg-fab-surface/95 focus:outline-none"
             />
           </div>

@@ -148,11 +148,17 @@ export default function RootLayout({
         <TooltipProvider>
           <ScrollProgress />
           <p className="hidden">Impact-Site-Verification: 9c661e6e-9cd9-451b-acbf-247741498db4</p>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-fab-gold focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-fab-bg"
+          >
+            Skip to content
+          </a>
           <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
           <Navbar />
           <MobileTopHeader />
-          <main className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 md:pl-64 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8">
+          <main id="main-content" className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 md:pl-64 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8">
             <FoolsBanner />
             <FoolsScrambler />
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 transparent-cards">
@@ -163,7 +169,7 @@ export default function RootLayout({
             </div>
           </main>
           <footer className="hidden md:block md:ml-64 text-center py-4 text-[11px] text-fab-dim space-y-1">
-            <p className="text-fab-gold/40">
+            <p className="text-fab-dim">
               Beta — Stats and data may be inaccurate. Always verify with official sources.
             </p>
             <p>

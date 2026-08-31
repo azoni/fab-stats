@@ -131,12 +131,20 @@ export function HeroGuesserBoard({
             placeholder="Type a hero name..."
             className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
             autoComplete="off"
+            role="combobox"
+            aria-label="Guess a hero"
+            aria-expanded={showDropdown && filtered.length > 0}
+            aria-controls="heroguesser-options"
+            aria-activedescendant={highlightIndex >= 0 ? `heroguesser-option-${highlightIndex}` : undefined}
           />
           {showDropdown && filtered.length > 0 && (
-            <div ref={dropdownRef} className="absolute top-full left-0 right-0 mt-1 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+            <div id="heroguesser-options" role="listbox" ref={dropdownRef} className="absolute top-full left-0 right-0 mt-1 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
               {filtered.map((h, idx) => (
                 <button
                   key={h.name}
+                  id={`heroguesser-option-${idx}`}
+                  role="option"
+                  aria-selected={idx === highlightIndex}
                   onClick={() => selectHero(h.name)}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${idx === highlightIndex ? "bg-fab-gold/15 text-fab-gold" : "hover:bg-fab-surface-hover"}`}
                 >

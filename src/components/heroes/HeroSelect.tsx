@@ -104,12 +104,13 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
             <span className="text-fab-text">{value}</span>
             <button
               type="button"
+              aria-label={`Clear ${label}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onChange("");
                 setQuery("");
               }}
-              className="ml-auto text-fab-dim hover:text-fab-muted"
+              className="-m-1.5 ml-auto rounded p-1.5 text-fab-dim hover:text-fab-muted"
             >
               <CloseIcon className="w-3.5 h-3.5" />
             </button>
@@ -134,11 +135,16 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
             onKeyDown={handleKeyDown}
             placeholder="Search heroes..."
             className="flex-1 bg-transparent outline-none text-fab-text placeholder:text-fab-dim text-sm"
+            role="combobox"
+            aria-label={label}
+            aria-expanded={isOpen && (results.length > 0 || !!allowClear)}
+            aria-controls="hero-select-options"
+            aria-activedescendant={results[highlighted] ? `hero-option-${highlighted}` : undefined}
           />
         )}
       </div>
       {isOpen && (results.length > 0 || allowClear) && (
-        <div className={`absolute z-50 w-full max-h-60 overflow-y-auto bg-fab-surface border border-fab-border rounded-md shadow-lg ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
+        <div id="hero-select-options" role="listbox" className={`absolute z-50 w-full max-h-60 overflow-y-auto bg-fab-surface border border-fab-border rounded-md shadow-lg ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
           {allowClear && !query.trim() && (
             <button
               type="button"
@@ -162,6 +168,9 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
           {results.map((hero, i) => (
             <button
               key={hero.cardIdentifier}
+              id={`hero-option-${i}`}
+              role="option"
+              aria-selected={i === highlighted}
               type="button"
               onClick={() => handleSelect(hero)}
               className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${

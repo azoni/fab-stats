@@ -179,18 +179,18 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
                     <div className="flex items-center gap-1.5 mb-1">
                       <AchievementIcon
                         icon={a.icon}
-                        className={`w-6 h-6 ${g.isEarned ? (isSpecial ? "text-violet-300" : colors.text) : "text-fab-dim/50"}`}
+                        className={`w-6 h-6 ${g.isEarned ? (isSpecial ? "text-violet-300" : colors.text) : "text-fab-dim"}`}
                       />
                       {!g.isEarned && (
-                        <svg className="w-3.5 h-3.5 text-fab-dim/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="w-3.5 h-3.5 text-fab-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                         </svg>
                       )}
                     </div>
-                    <p className={`text-xs font-semibold truncate ${g.isEarned ? (isSpecial ? "text-violet-300" : colors.text) : "text-fab-dim/60"}`}>
+                    <p className={`text-xs font-semibold truncate ${g.isEarned ? (isSpecial ? "text-violet-300" : colors.text) : "text-fab-dim"}`}>
                       {a.name}
                     </p>
-                    <p className={`text-[10px] truncate ${g.isEarned ? "text-fab-dim" : "text-fab-dim/40"}`}>{a.description}</p>
+                    <p className={`text-[10px] truncate ${g.isEarned ? "text-fab-dim" : "text-fab-dim"}`}>{a.description}</p>
 
                     {/* Progress bar for unearned */}
                     {!g.isEarned && progress?.[a.id] && (() => {
@@ -204,7 +204,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <p className="text-[9px] text-fab-dim/50 mt-0.5">{p.current}/{p.target}</p>
+                          <p className="text-[9px] text-fab-dim mt-0.5">{p.current}/{p.target}</p>
                         </div>
                       );
                     })()}
@@ -258,16 +258,16 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
                           >
                             <AchievementIcon
                               icon={t.icon}
-                              className={`w-3.5 h-3.5 shrink-0 ${tEarned ? tc.text : "text-fab-dim/40"}`}
+                              className={`w-3.5 h-3.5 shrink-0 ${tEarned ? tc.text : "text-fab-dim"}`}
                             />
-                            <span className={`truncate ${tEarned ? tc.text : "text-fab-dim/50"} font-medium`}>
+                            <span className={`truncate ${tEarned ? tc.text : "text-fab-dim"} font-medium`}>
                               {t.name}
                             </span>
-                            <span className={`ml-auto shrink-0 ${tEarned ? "text-fab-dim" : "text-fab-dim/40"}`}>
+                            <span className={`ml-auto shrink-0 ${tEarned ? "text-fab-dim" : "text-fab-dim"}`}>
                               {t.description}
                             </span>
                             {!tEarned && tp && (
-                              <span className="text-fab-dim/40 shrink-0">{tp.current}/{tp.target}</span>
+                              <span className="text-fab-dim shrink-0">{tp.current}/{tp.target}</span>
                             )}
                           </div>
                         );

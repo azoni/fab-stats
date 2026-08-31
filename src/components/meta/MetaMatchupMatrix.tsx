@@ -328,7 +328,7 @@ export function MetaMatchupMatrix({ format, eventType, sinceDate, untilDate, rat
             <h3 className="text-sm font-bold text-fab-text">
               {selectedCell.hero} vs {selectedCell.opp}
             </h3>
-            <button onClick={() => setSelectedCell(null)} className="text-fab-dim hover:text-fab-muted">
+            <button onClick={() => setSelectedCell(null)} aria-label="Close matchup detail" className="-m-2 rounded-md p-2.5 text-fab-dim hover:text-fab-muted">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
