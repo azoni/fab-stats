@@ -22,7 +22,7 @@ interface StatsHubProps {
 export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { matches, isLoaded, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchUpdateDecklist, batchDeleteMatches } = useMatches();
+  const { matches, isLoaded, error: matchesError, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchUpdateDecklist, batchDeleteMatches } = useMatches();
   const { user, profile } = useAuth();
   const [hideOpponentNames, setHideOpponentNames] = useState(false);
   const [privacyPrefLoaded, setPrivacyPrefLoaded] = useState(false);
@@ -97,7 +97,7 @@ export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
 
       {/* Tab content */}
       {activeTab === "matches" && (
-        <MatchesTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} deleteMatch={deleteMatch} hideOpponentNames={hideOpponentNames} privacyControl={privacyControl} />
+        <MatchesTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} deleteMatch={deleteMatch} hideOpponentNames={hideOpponentNames} privacyControl={privacyControl} loadError={matchesError} onRetryLoad={refreshMatches} />
       )}
       {activeTab === "events" && (
         <EventsTab
