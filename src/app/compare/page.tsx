@@ -972,7 +972,7 @@ function H2HArena({ p1, p2, h2h, h2hLoading }: {
           <div className="text-center py-4">
             <SwordsIcon className="w-8 h-8 text-fab-dim/30 mx-auto mb-2" />
             <p className="text-sm text-fab-dim">No head-to-head matches found</p>
-            <p className="text-[10px] text-fab-dim/60 mt-1">These players haven&apos;t faced each other yet</p>
+            <p className="text-[10px] text-fab-dim mt-1">These players haven&apos;t faced each other yet</p>
           </div>
         )}
       </div>
@@ -1062,7 +1062,7 @@ function CommonOpponentsSection({ p1, p2, opponents, loading }: {
         <div className="text-center py-6">
           <SwordsIcon className="w-7 h-7 text-fab-dim/30 mx-auto mb-2" />
           <p className="text-sm text-fab-dim">No common opponents found</p>
-          <p className="text-[10px] text-fab-dim/60 mt-1">These players haven&apos;t faced any of the same opponents yet</p>
+          <p className="text-[10px] text-fab-dim mt-1">These players haven&apos;t faced any of the same opponents yet</p>
         </div>
       </div>
     );

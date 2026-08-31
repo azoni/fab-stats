@@ -1895,6 +1895,9 @@ button:active:not(:disabled) {
 [data-theme="daylight"] .fab-empty-state,
 [data-theme="daylight"] .fab-metric {
   background-color: rgba(255, 255, 255, 0.96);
+  /* Kill hand-rolled dark gradient utilities (games/favorites/resources
+     heroes) that otherwise render as dark slabs on the light theme. */
+  background-image: none;
   box-shadow: 0 14px 30px -26px rgba(15, 23, 42, 0.28);
 }
 

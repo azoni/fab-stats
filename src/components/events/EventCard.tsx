@@ -715,7 +715,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                       <div className="inline-flex items-center gap-1.5">
                         {match.editedAt && (
                           <span
-                            className="text-fab-dim/60"
+                            className="text-fab-dim"
                             title={`Edited ${new Date(match.editedAt).toLocaleString()}`}
                             aria-label="This match was edited"
                           >
@@ -738,7 +738,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                                 toast.error("Failed to delete match.");
                               }
                             }}
-                            className="text-fab-dim/50 hover:text-fab-loss transition-colors ml-0.5"
+                            className="text-fab-dim hover:text-fab-loss transition-colors ml-0.5"
                             title="Delete this match"
                             aria-label="Delete this match"
                           >

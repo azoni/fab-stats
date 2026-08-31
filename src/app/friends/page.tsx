@@ -172,7 +172,7 @@ export default function FriendsPage() {
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search friends"
+                  placeholder="Search friends" aria-label="Search friends"
                   className="w-full rounded-md border border-fab-border bg-fab-bg py-2 pl-8 pr-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold focus:outline-none"
                 />
               </div>

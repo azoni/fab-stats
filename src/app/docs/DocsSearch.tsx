@@ -45,7 +45,7 @@ export function DocsSearch({ toc }: DocsSearchProps) {
                   setQuery("");
                 }
               }}
-              placeholder="Search sections..."
+              placeholder="Search sections..." aria-label="Search docs"
               className="w-full px-2.5 py-1.5 bg-fab-bg border border-fab-border rounded-md text-sm text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/40"
             />
           </div>

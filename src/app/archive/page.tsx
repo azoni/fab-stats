@@ -139,7 +139,7 @@ export default function ArchivePage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search events, players, heroes…"
+            placeholder="Search events, players, heroes…" aria-label="Search the event archive"
             className="w-full rounded-md border border-fab-border bg-fab-surface py-1.5 pl-8 pr-3 text-xs text-fab-text placeholder:text-fab-dim focus:border-fab-gold/50 focus:outline-none"
           />
         </div>
