@@ -87,6 +87,7 @@ async function buildPlayers(): Promise<{
   guest: CompactPlayer[];
   total: number;
   withStats: number;
+  healedPrivacyFields: number;
 }> {
   const db = getAdminDb();
   const [unameSnap, lbSnap, visitSnap, profileSnap] = await Promise.all([
@@ -115,6 +116,42 @@ async function buildPlayers(): Promise<{
     const data = doc.data() as ProfileDoc;
     const uid = data.uid || doc.ref.parent.parent?.id;
     if (uid) profByUid.set(uid, data);
+  }
+
+  // ── Heal missing privacy fields on leaderboard docs ─────────────────────
+  // The client's guest query is where(isPublic==true) + where(hideFromGuests==false),
+  // and Firestore equality NEVER matches an absent field — so legacy docs written
+  // before updateLeaderboardEntry stamped both fields were invisible to guests
+  // (the logged-out home/leaderboard/meta rendered empty). Patch them here with
+  // the profile as the privacy source of truth; entries rewritten by the client
+  // keep the fields going forward.
+  let healedPrivacyFields = 0;
+  {
+    const toPatch: { ref: FirebaseFirestore.DocumentReference; patch: Record<string, unknown> }[] = [];
+    for (const doc of lbSnap.docs) {
+      const data = doc.data() as LeaderboardDoc;
+      if (data.isPublic !== undefined && data.hideFromGuests !== undefined) continue;
+      const prof = data.userId ? profByUid.get(data.userId) : undefined;
+      const explicitlyPrivate =
+        prof?.isPublic === false ||
+        prof?.profileVisibility === "private" ||
+        prof?.profileVisibility === "friends";
+      const publicIntent =
+        prof?.isPublic === true || prof?.profileVisibility === "public" || data.isPublic === true;
+      const patch: Record<string, unknown> = {};
+      if (data.isPublic === undefined) patch.isPublic = !explicitlyPrivate && publicIntent;
+      if (data.hideFromGuests === undefined) patch.hideFromGuests = prof?.hideFromGuests === true;
+      toPatch.push({ ref: doc.ref, patch });
+    }
+    for (let i = 0; i < toPatch.length; i += 400) {
+      const batch = db.batch();
+      for (const p of toPatch.slice(i, i + 400)) batch.update(p.ref, p.patch);
+      await batch.commit();
+    }
+    healedPrivacyFields = toPatch.length;
+    if (healedPrivacyFields > 0) {
+      console.log(`[community-aggregator] Healed privacy fields on ${healedPrivacyFields} leaderboard docs`);
+    }
   }
 
   const all: CompactPlayer[] = []; // includes hideFromGuests players (auth-only doc)
@@ -193,7 +230,7 @@ async function buildPlayers(): Promise<{
   const byMatches = (a: CompactPlayer, b: CompactPlayer) => (b.m || 0) - (a.m || 0);
   all.sort(byMatches);
   guest.sort(byMatches);
-  return { all, guest, total: all.length, withStats };
+  return { all, guest, total: all.length, withStats, healedPrivacyFields };
 }
 
 /** Serialize under the doc-size limit: drop photo URLs first, then truncate the
@@ -217,7 +254,7 @@ function fitToLimit(players: CompactPlayer[]): { list: CompactPlayer[]; truncate
 }
 
 async function run() {
-  const { all, guest, total, withStats } = await buildPlayers();
+  const { all, guest, total, withStats, healedPrivacyFields } = await buildPlayers();
   const db = getAdminDb();
   const now = new Date().toISOString();
 
@@ -253,6 +290,7 @@ async function run() {
     total,
     guestCount: guest.length,
     withStats,
+    healedPrivacyFields,
     guestWritten: guestFit.list.length,
     authWritten: authFit.list.length,
     guestTruncated: guestFit.truncated,
