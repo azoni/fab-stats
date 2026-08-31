@@ -30,7 +30,10 @@ export function Dialog({
             <RadixDialog.Title className="text-lg font-bold text-fab-gold">
               {title}
             </RadixDialog.Title>
-            <RadixDialog.Close className="text-fab-dim hover:text-fab-text transition-colors rounded-sm focus:outline-none focus:ring-1 focus:ring-fab-gold">
+            <RadixDialog.Close
+              aria-label="Close"
+              className="-m-2 p-2.5 text-fab-dim hover:text-fab-text transition-colors rounded-md focus:outline-none focus:ring-1 focus:ring-fab-gold"
+            >
               <X className="w-4 h-4" />
             </RadixDialog.Close>
           </div>

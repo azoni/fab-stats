@@ -92,7 +92,7 @@ export default function MatchupsPageContent() {
                 <button
                   key={f}
                   onClick={() => setFormat(f)}
-                  className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  className={`px-3 py-2 sm:px-2.5 sm:py-1 text-xs font-medium transition-colors ${
                     f !== "" ? "border-l border-fab-border" : ""
                   } ${
                     format === f ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
@@ -107,7 +107,7 @@ export default function MatchupsPageContent() {
                 <button
                   key={r}
                   onClick={() => setRatedFilter(r)}
-                  className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  className={`px-3 py-2 sm:px-2.5 sm:py-1 text-xs font-medium transition-colors ${
                     i > 0 ? "border-l border-fab-border" : ""
                   } ${
                     ratedFilter === r ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
@@ -121,7 +121,7 @@ export default function MatchupsPageContent() {
               <div className="flex rounded-lg border border-fab-border overflow-hidden overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setEventType("")}
-                  className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  className={`px-3 py-2 sm:px-2.5 sm:py-1 text-xs font-medium transition-colors ${
                     eventType === "" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
                   }`}
                 >
@@ -131,7 +131,7 @@ export default function MatchupsPageContent() {
                   <button
                     key={type}
                     onClick={() => setEventType(type)}
-                    className={`px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap border-l border-fab-border ${
+                    className={`px-3 py-2 sm:px-2.5 sm:py-1 text-xs font-medium transition-colors whitespace-nowrap border-l border-fab-border ${
                       eventType === type ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
                     }`}
                   >
@@ -145,7 +145,7 @@ export default function MatchupsPageContent() {
                 <button
                   key={t.id}
                   onClick={() => setTimePreset(t.id)}
-                  className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  className={`px-3 py-2 sm:px-2.5 sm:py-1 text-xs font-medium transition-colors ${
                     i > 0 ? "border-l border-fab-border" : ""
                   } ${
                     timePreset === t.id ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"

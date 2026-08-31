@@ -189,7 +189,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
             <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setFilterFormat("all")}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                className={`px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[11px] font-medium transition-colors whitespace-nowrap ${
                   filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}
               >
@@ -199,7 +199,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
                 <button
                   key={f}
                   onClick={() => setFilterFormat(f)}
-                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                  className={`px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[11px] font-medium transition-colors whitespace-nowrap ${
                     filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                   }`}
                 >
@@ -262,7 +262,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
             <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setFilterEventType("all")}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+                className={`px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[11px] font-medium transition-colors ${
                   filterEventType === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}
               >
@@ -272,7 +272,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
                 <button
                   key={t}
                   onClick={() => setFilterEventType(t)}
-                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                  className={`px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[11px] font-medium transition-colors whitespace-nowrap ${
                     filterEventType === t ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                   }`}
                 >
