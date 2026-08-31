@@ -452,7 +452,9 @@ let cachedEntriesGuest: LeaderboardEntry[] | null = null;
 let cacheTimestampGuest = 0;
 let cachedEntriesAll: LeaderboardEntry[] | null = null;
 let cacheTimestampAll = 0;
-const CACHE_TTL = 15 * 60_000; // 15 minutes
+// 30 minutes — every entry point full-scans ~3.7k leaderboard docs, so the
+// in-memory cache window is the main quota lever (leaderboards move slowly).
+const CACHE_TTL = 30 * 60_000;
 
 function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
   // Rolling windows: data is stale when the stored window has no overlap
@@ -511,7 +513,11 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
 export async function getLeaderboardEntries(includePrivate = false, isAuthenticated = true): Promise<LeaderboardEntry[]> {
   const now = Date.now();
 
-  if (includePrivate) {
+  // includePrivate only means anything with auth: an unfiltered scan from a
+  // guest can't satisfy the per-doc hideFromGuests rule, so Firestore denies
+  // the whole query — pages passing includePrivate=true (home, /meta,
+  // /activity) silently rendered EMPTY community data for guests.
+  if (includePrivate && isAuthenticated) {
     if (cachedEntriesAll && now - cacheTimestampAll < CACHE_TTL) {
       return cachedEntriesAll;
     }
