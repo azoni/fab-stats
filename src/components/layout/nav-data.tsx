@@ -80,7 +80,8 @@ export const navLinks: NavLink[] = [
   { href: "/leagues", label: "Leagues", icon: <Trophy className="w-5 h-5" />, color: "text-orange-400", bg: "bg-orange-400/10" },
   { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/matchups", label: "Matchup Matrix" },
-    { href: "/leaderboard", label: "Rankings", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    // Rankings deliberately NOT here — /leaderboard belongs to Prestige, and
+    // listing it twice made both sidebar buckets highlight at once.
     { href: "/archive", label: "Event Archive", icon: <Archive className="w-3.5 h-3.5" /> },
     { href: "/meta/reports", label: "Weekly Reports", icon: <Newspaper className="w-3.5 h-3.5" /> },
   ] },

@@ -3287,18 +3287,23 @@ select {
 }
 
 /* Horizontal-scroll affordance: soft fade at the right edge of overflowing
-   pill strips (wrap the scroll container in .fab-edge-fade). */
+   pill strips (wrap the scroll container in .fab-edge-fade). Phone-only —
+   desktop strips usually fit, where a permanent fade reads as truncation —
+   and subtle enough that the last pill stays legible at scroll end. Fades to
+   the strip surface (not the page bg) so it doesn't smudge bordered controls. */
 .fab-edge-fade {
   position: relative;
 }
-.fab-edge-fade::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 2rem;
-  pointer-events: none;
-  background: linear-gradient(to right, transparent, var(--color-fab-bg));
-  opacity: 0.9;
+@media (max-width: 640px) {
+  .fab-edge-fade::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    bottom: 1px;
+    width: 1.25rem;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent, var(--color-fab-surface));
+    opacity: 0.65;
+  }
 }

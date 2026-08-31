@@ -1377,7 +1377,18 @@ function LeaderboardRow({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                router.push(`/opponents?q=${encodeURIComponent(entry.displayName)}`);
+                const href = `/opponents?q=${encodeURIComponent(entry.displayName)}`;
+                // Honor open-in-new-tab gestures the way a real link would.
+                if (e.ctrlKey || e.metaKey || e.shiftKey) window.open(href, "_blank", "noopener");
+                else router.push(href);
+              }}
+              onAuxClick={(e) => {
+                // Middle-click: without this it fell through to the row link.
+                if (e.button === 1) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open(`/opponents?q=${encodeURIComponent(entry.displayName)}`, "_blank", "noopener");
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {

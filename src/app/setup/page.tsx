@@ -37,6 +37,10 @@ export default function SetupPage() {
   useEffect(() => {
     try {
       if (sessionStorage.getItem("fab-terms-accepted") === "1") {
+        // One-shot: consume the flag so a DIFFERENT account created later in
+        // this tab (e.g. a Google sign-in on a shared machine) still gets the
+        // checkbox instead of inheriting someone else's acceptance.
+        sessionStorage.removeItem("fab-terms-accepted");
         setAcceptedTerms(true);
         setTermsPreAccepted(true);
       }

@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { MatchList } from "@/components/matches/MatchList";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { useMatches } from "@/hooks/useMatches";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { adjustHeroMatchupOnEdit, adjustOpponentHeroMatchupOnEdit } from "@/lib/hero-matchups";
@@ -19,12 +18,13 @@ interface MatchesTabProps {
   deleteMatch?: (id: string) => Promise<void>;
   hideOpponentNames?: boolean;
   privacyControl?: ReactNode;
+  /** From the SAME useMatches instance that owns `matches` (StatsHub's) — a
+   *  second hook instance here retried into unrendered state. */
+  loadError?: string | null;
+  onRetryLoad?: () => Promise<void>;
 }
 
-export function MatchesTab({ matches, user, profile, updateMatch, deleteMatch, hideOpponentNames = false, privacyControl }: MatchesTabProps) {
-  // Same shared-cache hook instance — read the load error so a Firestore
-  // failure doesn't masquerade as "No matches yet" for a user with history.
-  const { error: loadError, refreshMatches, clearError } = useMatches();
+export function MatchesTab({ matches, user, profile, updateMatch, deleteMatch, hideOpponentNames = false, privacyControl, loadError, onRetryLoad }: MatchesTabProps) {
   const handleUpdateMatch = useCallback(
     async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
       await updateMatch(id, updates);
@@ -84,10 +84,9 @@ export function MatchesTab({ matches, user, profile, updateMatch, deleteMatch, h
         <ErrorState
           title="Couldn't load your matches"
           detail="Your match history is safe — this is a connection problem, not a data problem."
-          onRetry={() => {
-            clearError();
-            refreshMatches().catch(() => {});
-          }}
+          // Don't pre-clear the error: it stays up while the retry is in
+          // flight (no onboarding flash) and clears itself on success.
+          onRetry={() => onRetryLoad?.().catch(() => {})}
         />
       ) : matches.length === 0 ? (
         <div className="text-center py-16 text-fab-dim">

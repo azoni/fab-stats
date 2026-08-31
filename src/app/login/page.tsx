@@ -3,7 +3,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { peekReturnTo } from "@/lib/return-to";
+import { consumeReturnTo } from "@/lib/return-to";
+import { auth } from "@/lib/firebase";
+import { getProfile } from "@/lib/firestore-storage";
 
 const ERROR_MAP: Record<string, string> = {
   "auth/invalid-email": "Invalid email address.",
@@ -54,6 +56,23 @@ export default function LoginPage() {
     }
   }
 
+  /**
+   * Post-auth routing. Accounts WITHOUT a profile go straight to /setup
+   * (which consumes any return-to destination when the profile is created) —
+   * pushing the return-to directly would strand them on a now-public page
+   * with no /setup redirect and a Join button that can't work. Existing
+   * accounts consume the destination here so it can't go stale in the tab.
+   */
+  async function routeAfterAuth(knownNewAccount: boolean) {
+    const uid = auth.currentUser?.uid;
+    const prof = knownNewAccount || !uid ? null : await getProfile(uid).catch(() => null);
+    if (!prof) {
+      router.push("/setup");
+      return;
+    }
+    router.push(consumeReturnTo() ?? "/");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -70,9 +89,7 @@ export default function LoginPage() {
           sessionStorage.setItem("fab-terms-accepted", "1");
         } catch {}
       }
-      // Peek, don't consume: a brand-new account detours through /setup,
-      // which consumes the destination when the profile is created.
-      router.push(peekReturnTo() ?? "/");
+      await routeAfterAuth(mode === "register");
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -85,7 +102,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      router.push(peekReturnTo() ?? "/");
+      await routeAfterAuth(false);
     } catch (err) {
       setError(friendlyError(err));
     } finally {

@@ -53,7 +53,7 @@ export function MatchForm() {
     }
   }, [opponentName, opponentHeroMap]);
 
-  function saveMatch(): boolean {
+  async function saveMatch(): Promise<boolean> {
     setError("");
     if (!heroPlayed) {
       setError("Please select your hero.");
@@ -63,31 +63,38 @@ export function MatchForm() {
       setError("Please select opponent's hero.");
       return false;
     }
-    addMatch({
-      date,
-      heroPlayed,
-      opponentHero,
-      opponentName: opponentName.trim() || undefined,
-      result,
-      format,
-      eventType: eventType || "Practice",
-      goingFirst,
-      matchNotes: matchNotes.trim() || undefined,
-      source: "manual",
-    });
-    return true;
+    // AWAIT the write — firing and claiming success let a permission/quota
+    // failure silently drop the match behind a green toast.
+    try {
+      await addMatch({
+        date,
+        heroPlayed,
+        opponentHero,
+        opponentName: opponentName.trim() || undefined,
+        result,
+        format,
+        eventType: eventType || "Practice",
+        goingFirst,
+        matchNotes: matchNotes.trim() || undefined,
+        source: "manual",
+      });
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't save the match — try again.");
+      return false;
+    }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (saveMatch()) router.push("/matches");
+    if (await saveMatch()) router.push("/matches");
   }
 
   // Session logging: keep hero/format/date/opponent, clear the per-game bits,
   // stay on the form — logging a 5-game testing session used to mean five
   // trips back through /matches/new with everything re-picked.
-  function handleLogAnother() {
-    if (!saveMatch()) return;
+  async function handleLogAnother() {
+    if (!(await saveMatch())) return;
     toast.success("Match logged — form kept for the next one.");
     setResult(MatchResult.Win);
     setMatchNotes("");

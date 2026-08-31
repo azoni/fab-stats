@@ -42,7 +42,7 @@ const TrendsShareModal = dynamic(() => import("@/components/trends/TrendsShareCa
 
 export default function Dashboard() {
   const router = useRouter();
-  const { matches, isLoaded, error: matchesError, refreshMatches, clearError } = useMatches();
+  const { matches, isLoaded, error: matchesError, refreshMatches } = useMatches();
   const { user, profile, isAdmin, refreshProfile } = useAuth();
   const { team: myTeam } = useTeamOnce(profile?.teamId || null);
   const { entries: lbEntries } = useLeaderboard(true);
@@ -275,10 +275,10 @@ export default function Dashboard() {
         <ErrorState
           title="Couldn't load your matches"
           detail="Your match history is safe — this is a connection problem, not a data problem."
-          onRetry={() => {
-            clearError();
-            refreshMatches().catch(() => {});
-          }}
+          // No pre-clear: the error card stays up during the in-flight retry
+          // (clearing first flashed the first-run onboarding at users with
+          // history) and refreshMatches clears it on success.
+          onRetry={() => refreshMatches().catch(() => {})}
         />
       )}
 
