@@ -30,6 +30,7 @@ import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import { updateProfile } from "@/lib/firestore-storage";
 import { LoggedOutHome } from "@/components/home/LoggedOutHome";
 import { GettingStartedCard } from "@/components/home/GettingStartedCard";
+import { DailyGamesStrip } from "@/components/home/DailyGamesStrip";
 import { HomeTabs } from "@/components/home/HomeTabs";
 
 // Modals — lazy-loaded (only rendered when opened)
@@ -275,6 +276,9 @@ export default function Dashboard() {
       )}
 
       {hasMatches && <HomeTabs />}
+
+      {/* Daily games — the logged-in home never linked them before */}
+      {hasMatches && <DailyGamesStrip />}
 
       {/* On This Day — above profile card */}
       {hasMatches && <OnThisDay matches={matches} />}

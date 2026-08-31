@@ -1,25 +1,33 @@
 "use client";
 import type { ReactNode } from "react";
 import {
+  Archive,
   BarChart3,
   Bot,
   CalendarDays,
   Crown,
   Gamepad2,
+  Gift,
   ListOrdered,
   Mail,
   Medal,
   MessageCircle,
+  Newspaper,
+  Radar,
   Settings,
+  Share2,
   Shield,
   ShoppingCart,
+  Sparkles,
   Star,
   Store,
   Swords,
   TrendingUp,
   Trophy,
+  Upload,
   Users,
 } from "lucide-react";
+import { GAMES } from "@/lib/games";
 
 export type NavSubItem = { href: string; label: string; adminOnly?: boolean; authOnly?: boolean; badge?: string; icon?: ReactNode };
 export type NavLink = { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; alwaysOpen?: boolean; subItems?: NavSubItem[] };
@@ -53,6 +61,7 @@ function XIcon() {
 
 export const navLinks: NavLink[] = [
   { href: "/", label: "Home", icon: <NavAssetIcon name="home" />, color: "text-fab-gold", bg: "bg-fab-gold/10", subItems: [
+    { href: "/import", label: "Import", icon: <Upload className="w-3.5 h-3.5" /> },
     { href: "/matches", label: "Matches", icon: <Swords className="w-3.5 h-3.5" /> },
     { href: "/events", label: "Events", icon: <CalendarDays className="w-3.5 h-3.5" /> },
     { href: "/opponents", label: "Opponents", icon: <Users className="w-3.5 h-3.5" /> },
@@ -71,6 +80,9 @@ export const navLinks: NavLink[] = [
   { href: "/leagues", label: "Leagues", icon: <Trophy className="w-5 h-5" />, color: "text-orange-400", bg: "bg-orange-400/10" },
   { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/matchups", label: "Matchup Matrix" },
+    { href: "/leaderboard", label: "Rankings", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { href: "/archive", label: "Event Archive", icon: <Archive className="w-3.5 h-3.5" /> },
+    { href: "/meta/reports", label: "Weekly Reports", icon: <Newspaper className="w-3.5 h-3.5" /> },
   ] },
   // Rankings + Achievements share one "Prestige" tab — hover reveals both pages.
   { href: "/leaderboard", label: "Prestige", icon: <Crown className="w-5 h-5" />, color: "text-amber-400", bg: "bg-amber-400/10", subItems: [
@@ -82,6 +94,10 @@ export const navLinks: NavLink[] = [
   { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
     { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
     { href: "/tierlist", label: "Tier Lists", icon: <ListOrdered className="w-3.5 h-3.5" /> },
+    { href: "/wrapped", label: "Season Wrapped", icon: <Gift className="w-3.5 h-3.5" /> },
+    { href: "/share-stats", label: "Share My Stats", icon: <Share2 className="w-3.5 h-3.5" /> },
+    { href: "/insights", label: "AI Insights", icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { href: "/scout", label: "Player Scout", icon: <Radar className="w-3.5 h-3.5" /> },
     { href: "/compare", label: "Versus" },
     { href: "/docs", label: "Docs" },
     { href: "/changelog", label: "Changelog" },
@@ -99,6 +115,39 @@ export const navLinks: NavLink[] = [
 ];
 
 export const moreLinks: MoreLink[] = [];
+
+// ── Route buckets — SINGLE SOURCE for MobileTabBar highlighting and
+// BucketSubNav pill routing. These lists used to be hand-copied in three
+// files and drifted (five Extras pages lit no tab at all). Game routes come
+// straight from the games registry so a new game can't fall out of nav.
+const GAME_ROUTES = [...new Set(GAMES.map((g) => g.href.split("?")[0]))];
+
+export const BUCKET_ROUTES = {
+  /** "/" is handled specially (exact match) by consumers. */
+  home: ["/matches", "/events", "/opponents", "/trends", "/tournament-stats", "/import"],
+  activity: ["/activity", "/community", "/friends", "/feed"],
+  // "/player" also covers "/players" via prefix matching.
+  discover: ["/discover", "/player", "/search", "/stores", "/leagues", "/teams", "/group"],
+  meta: ["/meta", "/leaderboard", "/matchups", "/archive"],
+  extras: [
+    "/extras",
+    "/achievements",
+    "/games",
+    "/compare",
+    "/docs",
+    "/changelog",
+    "/tierlist",
+    "/insights",
+    "/scout",
+    "/share-stats",
+    "/wrapped",
+    ...GAME_ROUTES,
+  ],
+} as const;
+
+export function routeInBucket(pathname: string, bucket: readonly string[]): boolean {
+  return bucket.some((p) => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p));
+}
 
 export const userMenuLinks: UserMenuLink[] = [
   { href: "/inbox", label: "Inbox", icon: <Mail className="w-4 h-4" /> },

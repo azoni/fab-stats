@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BUCKET_ROUTES, routeInBucket } from "./nav-data";
 
 interface TabSpec {
   href: string;
@@ -18,37 +19,38 @@ function NavAssetIcon({ name }: { name: "home" | "meta" | "activity" | "extras" 
   );
 }
 
+// Route lists live in nav-data's BUCKET_ROUTES — the single registry shared
+// with BucketSubNav, so a new page can't silently fall out of one surface.
 const tabs: TabSpec[] = [
   {
     href: "/",
     label: "Home",
     icon: <NavAssetIcon name="home" />,
-    match: (p) => p === "/" || p.startsWith("/matches") || p.startsWith("/events") || p.startsWith("/opponents") || p.startsWith("/trends") || p.startsWith("/tournament-stats") || p.startsWith("/import"),
+    match: (p) => p === "/" || routeInBucket(p, BUCKET_ROUTES.home),
   },
   {
     href: "/activity",
     label: "Activity",
     icon: <NavAssetIcon name="activity" />,
-    match: (p) => p.startsWith("/activity") || p.startsWith("/community") || p.startsWith("/friends") || p.startsWith("/feed"),
+    match: (p) => routeInBucket(p, BUCKET_ROUTES.activity),
   },
   {
     href: "/discover",
     label: "Discover",
     icon: <NavAssetIcon name="discover" />,
-    // Discover is the hub for players/stores/leagues/teams. `/player` also covers `/players`.
-    match: (p) => p.startsWith("/discover") || p.startsWith("/player") || p.startsWith("/search") || p.startsWith("/stores") || p.startsWith("/leagues") || p.startsWith("/teams") || p.startsWith("/group"),
+    match: (p) => routeInBucket(p, BUCKET_ROUTES.discover),
   },
   {
     href: "/meta",
     label: "Meta",
     icon: <NavAssetIcon name="meta" />,
-    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups") || p.startsWith("/archive"),
+    match: (p) => routeInBucket(p, BUCKET_ROUTES.meta),
   },
   {
     href: "/extras",
     label: "Extras",
     icon: <NavAssetIcon name="extras" />,
-    match: (p) => p.startsWith("/extras") || p.startsWith("/achievements") || p.startsWith("/games") || p.startsWith("/compare") || p.startsWith("/docs") || p.startsWith("/changelog") || p.startsWith("/fabdoku") || p.startsWith("/crossword") || p.startsWith("/heroguesser") || p.startsWith("/matchupmania") || p.startsWith("/connections") || p.startsWith("/timeline") || p.startsWith("/trivia") || p.startsWith("/rhinarsrampage") || p.startsWith("/kayosknockout") || p.startsWith("/brutebrawl") || p.startsWith("/ninjacombo") || p.startsWith("/shadowstrike") || p.startsWith("/bladedash") || p.startsWith("/tierlist") || p.startsWith("/insights") || p.startsWith("/scout") || p.startsWith("/share-stats") || p.startsWith("/wrapped"),
+    match: (p) => routeInBucket(p, BUCKET_ROUTES.extras),
   },
 ];
 
