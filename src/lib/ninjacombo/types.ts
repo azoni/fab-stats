@@ -38,6 +38,8 @@ export interface NinjaComboResult {
   maxStreak: number;
   timestamp: number;
   uid: string;
+  /** True when the chain hit the puzzle's optimalScore (drives combo_perfect). */
+  perfect?: boolean;
 }
 
 export interface NinjaComboStats {

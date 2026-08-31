@@ -68,7 +68,7 @@ export async function saveResult(uid: string, result: NinjaComboResult): Promise
     totalDamageDealt: prev.totalDamageDealt + result.totalDamage,
     bestDamage: Math.max(prev.bestDamage, result.totalDamage),
     totalCombos: prev.totalCombos + result.comboCount,
-    perfectGames: prev.perfectGames,
+    perfectGames: prev.perfectGames + (result.perfect ? 1 : 0),
     ...(prev.hasShared ? { hasShared: true } : {}),
   };
 

@@ -952,7 +952,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     // read silently failed for everyone else), and the endpoint's cached
     // index avoids a full-collection client scan per import.
     let coverageHeroCount = 0;
-    if (!quickMode) {
+    if (!quickMode && user) {
       try {
         const candidates: { idx: number; opponentName: string; date: string; notes: string }[] = [];
         matches.forEach((m, idx) => {
@@ -961,9 +961,10 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           candidates.push({ idx, opponentName: m.opponentName, date: m.date, notes: m.notes || "" });
         });
         if (candidates.length > 0) {
+          const token = await user.getIdToken();
           const res = await fetch("/.netlify/functions/coverage-heroes", {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
             body: JSON.stringify({ pairs: candidates.slice(0, 1000) }),
           });
           if (res.ok) {

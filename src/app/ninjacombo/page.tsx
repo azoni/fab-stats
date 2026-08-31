@@ -62,6 +62,8 @@ export default function NinjaComboPage() {
           maxStreak,
           timestamp: Date.now(),
           uid: user.uid,
+          // Optimal chain found — drives the combo_perfect achievement.
+          perfect: newState.totalDamage >= puzzle.optimalScore,
         };
         const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)

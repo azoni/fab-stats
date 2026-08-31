@@ -5,13 +5,16 @@
  * (opponentName, date, event) against the coverage-matches collection. That
  * collection is admin-read-only in rules (and a full client scan would be
  * quota-heavy anyway), so this endpoint does the lookup with the admin SDK
- * and an in-memory index cache. Coverage data is public information from
- * fabtcg.com event coverage, so the endpoint is unauthenticated.
+ * and an in-memory index cache. Coverage data is public information, but the
+ * cold-cache path is a full-collection read — requiring a signed-in Firebase
+ * token keeps anonymous callers from farming scans, and concurrent cold
+ * requests coalesce onto one scan per instance.
  *
- *   POST { pairs: [{ opponentName, date, notes }] }  (max 1000)
+ *   POST { pairs: [{ opponentName, date, notes }] }  (max 1000, Bearer token)
  *   →    { results: [{ i, hero, confidence }] }      (hits only, i = pair index)
  */
 import { getAdminDb } from "./firebase-admin.ts";
+import { verifyFirebaseToken } from "./verify-auth.ts";
 import {
   buildCoverageIndex,
   findOpponentHero,
@@ -22,7 +25,7 @@ import type { CoverageMatch } from "../../src/lib/sitemap-scraper.ts";
 const CORS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "content-type",
+  "access-control-allow-headers": "content-type, authorization",
 };
 
 function json(body: unknown, status = 200) {
@@ -33,16 +36,26 @@ function json(body: unknown, status = 200) {
 }
 
 let cachedIndex: { index: CoverageIndex; size: number; ts: number } | null = null;
+let indexInFlight: Promise<{ index: CoverageIndex; size: number }> | null = null;
 const INDEX_TTL = 10 * 60_000;
 
 async function getIndex(): Promise<{ index: CoverageIndex; size: number }> {
   if (cachedIndex && Date.now() - cachedIndex.ts < INDEX_TTL) return cachedIndex;
-  const db = getAdminDb();
-  const snap = await db.collection("coverage-matches").get();
-  const matches = snap.docs.map((d) => d.data() as CoverageMatch);
-  const index = buildCoverageIndex(matches);
-  cachedIndex = { index, size: matches.length, ts: Date.now() };
-  return cachedIndex;
+  // Coalesce concurrent cold requests onto a single collection scan.
+  if (indexInFlight) return indexInFlight;
+  indexInFlight = (async () => {
+    try {
+      const db = getAdminDb();
+      const snap = await db.collection("coverage-matches").get();
+      const matches = snap.docs.map((d) => d.data() as CoverageMatch);
+      const index = buildCoverageIndex(matches);
+      cachedIndex = { index, size: matches.length, ts: Date.now() };
+      return cachedIndex;
+    } finally {
+      indexInFlight = null;
+    }
+  })();
+  return indexInFlight;
 }
 
 interface Pair {
@@ -54,6 +67,11 @@ interface Pair {
 export default async function handler(req: Request) {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  // Signed-in users only — the cold path is a full-collection read, so
+  // anonymous callers must not be able to trigger scans at will.
+  const auth = await verifyFirebaseToken(req);
+  if (!auth) return json({ error: "Sign in required." }, 401);
 
   let body: { pairs?: Pair[] };
   try {

@@ -66,6 +66,13 @@ import { loadStats as loadMatchupManiaStats } from "@/lib/matchupmania/firestore
 import { loadStats as loadTriviaStats } from "@/lib/trivia/firestore";
 import { loadStats as loadTimelineStats } from "@/lib/timeline/firestore";
 import { loadStats as loadConnectionsStats } from "@/lib/connections/firestore";
+import { loadStats as loadRampageStats } from "@/lib/rhinarsrampage/firestore";
+import { loadStats as loadKnockoutStats } from "@/lib/kayosknockout/firestore";
+import { loadStats as loadBrawlStats } from "@/lib/brutebrawl/firestore";
+import { loadStats as loadNinjaComboStats } from "@/lib/ninjacombo/firestore";
+import { loadStats as loadShadowStrikeStats } from "@/lib/shadowstrike/firestore";
+import { loadStats as loadBladeDashStats } from "@/lib/bladedash/firestore";
+import type { ExtraGameStats } from "@/lib/achievements";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
 import type { HeroGuesserStats } from "@/lib/heroguesser/types";
@@ -134,6 +141,7 @@ export default function PlayerProfile() {
     connections: ConnectionsStats | null;
   }
   const [gameStats, setGameStats] = useState<GameStatsBundle | null>(null);
+  const [extraGameStats, setExtraGameStats] = useState<ExtraGameStats>({});
 
   // Convenience aliases for backward compatibility with downstream code
   const fabdokuFullStats = gameStats?.fabdoku ?? null;
@@ -371,7 +379,13 @@ export default function PlayerProfile() {
         loadTriviaStats(profileUid),
         loadTimelineStats(profileUid),
         loadConnectionsStats(profileUid),
-      ]).then(([fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections]) => {
+        loadRampageStats(profileUid),
+        loadKnockoutStats(profileUid),
+        loadBrawlStats(profileUid),
+        loadNinjaComboStats(profileUid),
+        loadShadowStrikeStats(profileUid),
+        loadBladeDashStats(profileUid),
+      ]).then(([fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections, rampage, knockout, brawl, ninjaCombo, shadowStrike, bladeDash]) => {
         const v = <T,>(r: PromiseSettledResult<T | undefined>): T | null =>
           r.status === "fulfilled" ? r.value ?? null : null;
         setGameStats({
@@ -383,6 +397,17 @@ export default function PlayerProfile() {
           trivia: v(trivia),
           timeline: v(timeline),
           connections: v(connections),
+        });
+        // The six late-added games ride the extra bag (gameDayStreak stays
+        // unset here — another user's gameActivity doc is owner-read-only, so
+        // day-streak achievements only render on the owner's /achievements).
+        setExtraGameStats({
+          rampageStats: v(rampage) ?? undefined,
+          knockoutStats: v(knockout) ?? undefined,
+          brawlStats: v(brawl) ?? undefined,
+          ninjaComboStats: v(ninjaCombo) ?? undefined,
+          shadowStrikeStats: v(shadowStrike) ?? undefined,
+          bladeDashStats: v(bladeDash) ?? undefined,
         });
       });
     };
@@ -421,9 +446,9 @@ export default function PlayerProfile() {
       || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [fm]
   );
-  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, crosswordFullStats ?? undefined, kudosGivenCounts), [fm, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, crosswordFullStats]);
+  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, crosswordFullStats ?? undefined, kudosGivenCounts, extraGameStats), [fm, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, crosswordFullStats, extraGameStats]);
   const achievements = useMemo(() => [...userBadges, ...computedAchievements], [userBadges, computedAchievements]);
-  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, crosswordFullStats ?? undefined, kudosGivenCounts), [fm, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, crosswordFullStats]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, crosswordFullStats ?? undefined, kudosGivenCounts, extraGameStats), [fm, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, crosswordFullStats, extraGameStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);

@@ -39,24 +39,26 @@ function utcDateStr(): string {
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
 }
 
-/** How many queries this uid has made today (UTC), from the per-user counter doc. */
-export async function getUserTodayCount(db: Firestore, uid: string): Promise<number> {
+/**
+ * Atomically claim one of this uid's daily query slots (UTC day). Runs a
+ * transaction on aiUserDaily/{uid}_{date} so concurrent requests serialize —
+ * a check-then-increment here would let a parallel burst blow past the cap.
+ * Returns false when the cap is already spent.
+ */
+export async function takeUserDailySlot(db: Firestore, uid: string, limit: number): Promise<boolean> {
+  const ref = db.doc(`aiUserDaily/${uid}_${utcDateStr()}`);
   try {
-    const snap = await db.doc(`aiUserDaily/${uid}_${utcDateStr()}`).get();
-    const d = (snap.data() ?? {}) as { count?: number };
-    return typeof d.count === "number" ? d.count : 0;
+    return await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const count = typeof snap.data()?.count === "number" ? (snap.data()!.count as number) : 0;
+      if (count >= limit) return false;
+      tx.set(ref, { count: count + 1, updatedAt: new Date().toISOString() }, { merge: true });
+      return true;
+    });
   } catch {
-    return 0;
+    // Contention/transport failure: fail closed rather than granting free slots.
+    return false;
   }
-}
-
-/** Increment this uid's daily counter (called before spending, so parallel
- *  requests can't slip past the cap by racing the trace write). */
-export async function bumpUserDailyCount(db: Firestore, uid: string): Promise<void> {
-  const { FieldValue } = await import("firebase-admin/firestore");
-  await db
-    .doc(`aiUserDaily/${uid}_${utcDateStr()}`)
-    .set({ count: FieldValue.increment(1), updatedAt: new Date().toISOString() }, { merge: true });
 }
 
 export async function getUsage(db: Firestore): Promise<AiUsage> {

@@ -102,12 +102,14 @@ function buildShareText(results: GameResult[], dateStr: string, streak: number):
   return `FaB Stats Daily Games ${dateStr}\n${wins}/${results.length} won${streakLine}\n\n${lines.join("\n")}\n\nfabstats.net/games`;
 }
 
-export function AllGamesShareCard({ onClose }: { onClose: () => void }) {
+export function AllGamesShareCard({ onClose, streak: streakProp }: { onClose: () => void; streak?: number }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"idle" | "copied" | "downloaded">("idle");
   const dateStr = getTodayDateStr();
   const results = loadTodayResults();
-  const streak = computeOverallStreak();
+  // Prefer the hub's server-merged streak (survives device switches); fall
+  // back to the local computation when no prop is passed.
+  const streak = streakProp ?? computeOverallStreak();
 
   const wins = results.filter((r) => r.won).length;
   const allWon = wins === results.length && results.length > 0;

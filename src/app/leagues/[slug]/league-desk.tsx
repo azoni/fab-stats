@@ -1502,9 +1502,13 @@ export function LeagueScheduleCard({ league }: { league: League }) {
     [league.sessions],
   );
   // Hydration-safe "today": computed only after mount so SSG output is stable.
+  // LOCAL calendar date, not UTC — sessions are local league nights (organizers
+  // pick them with a date input, labels render at local midnight), and a UTC
+  // "today" would flip tonight's session to "played" at 8pm ET / 5pm PT.
   const [today, setToday] = useState<string | null>(null);
   useEffect(() => {
-    setToday(new Date().toISOString().slice(0, 10));
+    const d = new Date();
+    setToday(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
   }, []);
 
   if (sessions.length === 0 || !today) return null;
