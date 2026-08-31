@@ -329,6 +329,11 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // ── Daily-game activity (played-dates map for streaks + calendar) ──
+    match /users/{userId}/gameActivity/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // ── Username reservations ──
     match /usernames/{username} {
       // Anyone can read (for availability checks, search, profile lookups)

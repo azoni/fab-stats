@@ -8,8 +8,27 @@ import type { TriviaStats } from "@/lib/trivia/types";
 import type { TimelineStats } from "@/lib/timeline/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
 import type { ConnectionsStats } from "@/lib/connections/types";
+import type { RampageStats } from "@/lib/rhinarsrampage/types";
+import type { KnockoutStats } from "@/lib/kayosknockout/types";
+import type { BrawlStats } from "@/lib/brutebrawl/types";
+import type { NinjaComboStats } from "@/lib/ninjacombo/types";
+import type { ShadowStrikeStats } from "@/lib/shadowstrike/types";
+import type { BladeDashStats } from "@/lib/bladedash/types";
 
-interface CheckContext {
+/** Late-added game stats + daily-streak input, passed as one bag so
+ *  evaluateAchievements/getAchievementProgress call sites stay stable. */
+export interface ExtraGameStats {
+  rampageStats?: RampageStats;
+  knockoutStats?: KnockoutStats;
+  brawlStats?: BrawlStats;
+  ninjaComboStats?: NinjaComboStats;
+  shadowStrikeStats?: ShadowStrikeStats;
+  bladeDashStats?: BladeDashStats;
+  /** Consecutive days with at least one daily game completed (server + local union). */
+  gameDayStreak?: number;
+}
+
+interface CheckContext extends ExtraGameStats {
   matches: MatchRecord[];
   overall: OverallStats;
   heroStats: HeroStats[];
@@ -943,6 +962,58 @@ const CORE_ACHIEVEMENTS: AchievementDef[] = [
   },
 
   // ══════════════════════════════════════════
+  // EVENT TYPE: BATTLEGROUNDS (tiered)
+  // ══════════════════════════════════════════
+  {
+    id: "bg_1",
+    name: "Into the Grounds",
+    description: "Attend a Battlegrounds",
+    category: "exploration",
+    icon: "shield",
+    rarity: "uncommon",
+    group: "battlegrounds",
+    tier: 1,
+    check: (ctx) => countDistinctEvents(ctx, "Battlegrounds") >= 1,
+    progress: (ctx) => ({ current: countDistinctEvents(ctx, "Battlegrounds"), target: 1 }),
+  },
+  {
+    id: "bg_3",
+    name: "Battleground Regular",
+    description: "Attend 3 Battlegrounds events",
+    category: "exploration",
+    icon: "shield",
+    rarity: "rare",
+    group: "battlegrounds",
+    tier: 2,
+    check: (ctx) => countDistinctEvents(ctx, "Battlegrounds") >= 3,
+    progress: (ctx) => ({ current: countDistinctEvents(ctx, "Battlegrounds"), target: 3 }),
+  },
+  {
+    id: "bg_5",
+    name: "Battleground Veteran",
+    description: "Attend 5 Battlegrounds events",
+    category: "exploration",
+    icon: "shield",
+    rarity: "epic",
+    group: "battlegrounds",
+    tier: 3,
+    check: (ctx) => countDistinctEvents(ctx, "Battlegrounds") >= 5,
+    progress: (ctx) => ({ current: countDistinctEvents(ctx, "Battlegrounds"), target: 5 }),
+  },
+  {
+    id: "bg_10",
+    name: "Master of the Grounds",
+    description: "Attend 10 Battlegrounds events",
+    category: "exploration",
+    icon: "shield",
+    rarity: "legendary",
+    group: "battlegrounds",
+    tier: 4,
+    check: (ctx) => countDistinctEvents(ctx, "Battlegrounds") >= 10,
+    progress: (ctx) => ({ current: countDistinctEvents(ctx, "Battlegrounds"), target: 10 }),
+  },
+
+  // ══════════════════════════════════════════
   // EVENT TYPE: THE CALLING (tiered)
   // ══════════════════════════════════════════
   {
@@ -1127,6 +1198,15 @@ const CORE_ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => hasChampionFinish(ctx, "Battle Hardened"),
   },
   {
+    id: "champion_bg",
+    name: "Battlegrounds Champion",
+    description: "Win a Battlegrounds",
+    category: "milestone",
+    icon: "shield",
+    rarity: "epic",
+    check: (ctx) => hasChampionFinish(ctx, "Battlegrounds"),
+  },
+  {
     id: "champion_pq",
     name: "ProQuest Champion",
     description: "Win a ProQuest",
@@ -1195,6 +1275,35 @@ const CORE_ACHIEVEMENTS: AchievementDef[] = [
     icon: "compass",
     rarity: "rare",
     check: (ctx) => hasPlacementFinish(ctx, "ProQuest", "finalist"),
+  },
+  // Battle Hardened
+  // Battlegrounds
+  {
+    id: "top8_bg",
+    name: "Battlegrounds Top 8",
+    description: "Finish Top 8 at a Battlegrounds",
+    category: "milestone",
+    icon: "shield",
+    rarity: "uncommon",
+    check: (ctx) => hasPlacementFinish(ctx, "Battlegrounds", "top8"),
+  },
+  {
+    id: "top4_bg",
+    name: "Battlegrounds Top 4",
+    description: "Finish Top 4 at a Battlegrounds",
+    category: "milestone",
+    icon: "shield",
+    rarity: "rare",
+    check: (ctx) => hasPlacementFinish(ctx, "Battlegrounds", "top4"),
+  },
+  {
+    id: "finalist_bg",
+    name: "Battlegrounds Finalist",
+    description: "Finish as runner-up at a Battlegrounds",
+    category: "milestone",
+    icon: "shield",
+    rarity: "epic",
+    check: (ctx) => hasPlacementFinish(ctx, "Battlegrounds", "finalist"),
   },
   // Battle Hardened
   {
@@ -2099,6 +2208,124 @@ const CORE_ACHIEVEMENTS: AchievementDef[] = [
   ...tieredGameAchievements("matchup_mania", "Matchup Mania", "Matchup Mania run", "versus", "matchup_mania_games", matchupManiaCount),
   ...tieredGameAchievements("trivia", "Trivia", "trivia round", "lightbulb", "trivia_games", triviaCount),
   ...tieredGameAchievements("timeline", "Timeline", "Timeline run", "scroll", "timeline_games", timelineCount),
+
+  // ── Dice + Ninja games ──
+  ...tieredGameAchievements("rampage", "Rampage", "Rhinar's Rampage game", "hammer", "rampage_games", (ctx) => ctx.rampageStats?.gamesPlayed ?? 0),
+  ...tieredGameAchievements("knockout", "Knockout", "Kayo's Knockout game", "bolt", "knockout_games", (ctx) => ctx.knockoutStats?.gamesPlayed ?? 0),
+  ...tieredGameAchievements("brutebrawl", "Brute Brawl", "Brute Brawl game", "swords", "brutebrawl_games", (ctx) => ctx.brawlStats?.gamesPlayed ?? 0),
+  ...tieredGameAchievements("ninjacombo", "Katsu's Combo", "Katsu's Combo game", "target", "ninjacombo_games", (ctx) => ctx.ninjaComboStats?.gamesPlayed ?? 0),
+  ...tieredGameAchievements("shadowstrike", "Shadow Strike", "Shadow Strike game", "masks", "shadowstrike_games", (ctx) => ctx.shadowStrikeStats?.gamesPlayed ?? 0),
+  ...tieredGameAchievements("bladedash", "Blade Dash", "Blade Dash game", "wave", "bladedash_games", (ctx) => ctx.bladeDashStats?.gamesPlayed ?? 0),
+
+  // ── Game skill / accumulator one-offs ──
+  {
+    id: "rampage_damage_1000",
+    name: "Rampage Rager",
+    description: "Deal 1,000 total damage in Rhinar's Rampage",
+    category: "games",
+    icon: "hammer",
+    rarity: "rare",
+    check: (ctx) => (ctx.rampageStats?.totalDamageDealt ?? 0) >= 1000,
+    progress: (ctx) => ({ current: ctx.rampageStats?.totalDamageDealt ?? 0, target: 1000 }),
+  },
+  {
+    id: "knockout_damage_1000",
+    name: "Heavy Hitter",
+    description: "Deal 1,000 total damage in Kayo's Knockout",
+    category: "games",
+    icon: "bolt",
+    rarity: "rare",
+    check: (ctx) => (ctx.knockoutStats?.totalDamageDealt ?? 0) >= 1000,
+    progress: (ctx) => ({ current: ctx.knockoutStats?.totalDamageDealt ?? 0, target: 1000 }),
+  },
+  {
+    id: "brawl_damage_1000",
+    name: "Brawl Bruiser",
+    description: "Deal 1,000 total damage in Brute Brawl",
+    category: "games",
+    icon: "swords",
+    rarity: "rare",
+    check: (ctx) => (ctx.brawlStats?.totalDamageDealt ?? 0) >= 1000,
+    progress: (ctx) => ({ current: ctx.brawlStats?.totalDamageDealt ?? 0, target: 1000 }),
+  },
+  {
+    id: "combo_perfect",
+    name: "Flawless Chain",
+    description: "Find the optimal chain in Katsu's Combo",
+    category: "games",
+    icon: "star",
+    rarity: "rare",
+    check: (ctx) => (ctx.ninjaComboStats?.perfectGames ?? 0) >= 1,
+  },
+  {
+    id: "bladedash_perfect",
+    name: "No Hints Needed",
+    description: "Finish Blade Dash without using a hint",
+    category: "games",
+    icon: "check",
+    rarity: "uncommon",
+    check: (ctx) => (ctx.bladeDashStats?.perfectGames ?? 0) >= 1,
+  },
+  {
+    id: "ss_pairs_100",
+    name: "Pair Hunter",
+    description: "Find 100 total pairs in Shadow Strike",
+    category: "games",
+    icon: "masks",
+    rarity: "rare",
+    check: (ctx) => (ctx.shadowStrikeStats?.totalPairsFound ?? 0) >= 100,
+    progress: (ctx) => ({ current: ctx.shadowStrikeStats?.totalPairsFound ?? 0, target: 100 }),
+  },
+
+  // ── Daily-game day streak (any game counts; server-tracked play dates) ──
+  {
+    id: "gamestreak_3",
+    name: "Warming Up",
+    description: "Play a daily game 3 days in a row",
+    category: "games",
+    icon: "flame",
+    rarity: "common",
+    group: "game_streak",
+    tier: 1,
+    check: (ctx) => (ctx.gameDayStreak ?? 0) >= 3,
+    progress: (ctx) => ({ current: ctx.gameDayStreak ?? 0, target: 3 }),
+  },
+  {
+    id: "gamestreak_7",
+    name: "Weekly Ritual",
+    description: "Play a daily game 7 days in a row",
+    category: "games",
+    icon: "flame",
+    rarity: "uncommon",
+    group: "game_streak",
+    tier: 2,
+    check: (ctx) => (ctx.gameDayStreak ?? 0) >= 7,
+    progress: (ctx) => ({ current: ctx.gameDayStreak ?? 0, target: 7 }),
+  },
+  {
+    id: "gamestreak_30",
+    name: "Daily Devotion",
+    description: "Play a daily game 30 days in a row",
+    category: "games",
+    icon: "flame",
+    rarity: "epic",
+    group: "game_streak",
+    tier: 3,
+    check: (ctx) => (ctx.gameDayStreak ?? 0) >= 30,
+    progress: (ctx) => ({ current: ctx.gameDayStreak ?? 0, target: 30 }),
+  },
+  {
+    id: "gamestreak_100",
+    name: "Century of Play",
+    description: "Play a daily game 100 days in a row",
+    category: "games",
+    icon: "flame",
+    rarity: "legendary",
+    group: "game_streak",
+    tier: 4,
+    check: (ctx) => (ctx.gameDayStreak ?? 0) >= 100,
+    progress: (ctx) => ({ current: ctx.gameDayStreak ?? 0, target: 100 }),
+  },
 ];
 
 const TOTAL_TIERS: [number, Achievement["rarity"], string][] = [
@@ -2141,8 +2368,9 @@ export function evaluateAchievements(
   fabdokuCardStats?: FaBdokuStats,
   crosswordStats?: CrosswordStats,
   kudosGivenCounts?: Record<string, number>,
+  extra?: ExtraGameStats,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, ...extra };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -2167,8 +2395,9 @@ export function getAchievementProgress(
   fabdokuCardStats?: FaBdokuStats,
   crosswordStats?: CrosswordStats,
   kudosGivenCounts?: Record<string, number>,
+  extra?: ExtraGameStats,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, ...extra };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {

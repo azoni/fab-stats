@@ -9,6 +9,13 @@ import { loadStats as loadMatchupManiaStats } from "./matchupmania/firestore";
 import { loadStats as loadTriviaStats } from "./trivia/firestore";
 import { loadStats as loadTimelineStats } from "./timeline/firestore";
 import { loadStats as loadConnectionsStats } from "./connections/firestore";
+import { loadStats as loadRampageStats } from "./rhinarsrampage/firestore";
+import { loadStats as loadKnockoutStats } from "./kayosknockout/firestore";
+import { loadStats as loadBrawlStats } from "./brutebrawl/firestore";
+import { loadStats as loadNinjaComboStats } from "./ninjacombo/firestore";
+import { loadStats as loadShadowStrikeStats } from "./shadowstrike/firestore";
+import { loadStats as loadBladeDashStats } from "./bladedash/firestore";
+import { markGamePlayedToday, mergeLocalDatesToServer, computeStreakFromDates } from "./games/activity";
 import { loadKudosGivenCounts } from "./kudos";
 import type { Achievement, OverallStats } from "@/types";
 
@@ -54,11 +61,15 @@ const EMPTY_OVERALL: OverallStats = {
  * Only merges new IDs; never removes existing ones.
  */
 export async function syncAchievementsAfterGame(userId: string): Promise<void> {
+  // Stamp today's play date first — it feeds the day-streak achievements below
+  // and the /games calendar, and must land even if the rest of the sync fails.
+  await markGamePlayedToday(userId).catch(() => {});
+
   const ref = doc(db, "users", userId, "earnedAchievements", "main");
   const snap = await getDoc(ref);
   if (!snap.exists()) return; // Not bootstrapped yet; import page handles that
 
-  const [fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections] = await Promise.all([
+  const [fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections, rampage, knockout, brawl, ninjaCombo, shadowStrike, bladeDash, playedDates] = await Promise.all([
     loadFabdokuStats(userId).catch(() => null),
     loadFabdokuCardStats(userId).catch(() => null),
     loadCrosswordStats(userId).catch(() => null),
@@ -67,6 +78,13 @@ export async function syncAchievementsAfterGame(userId: string): Promise<void> {
     loadTriviaStats(userId).catch(() => null),
     loadTimelineStats(userId).catch(() => null),
     loadConnectionsStats(userId).catch(() => null),
+    loadRampageStats(userId).catch(() => null),
+    loadKnockoutStats(userId).catch(() => null),
+    loadBrawlStats(userId).catch(() => null),
+    loadNinjaComboStats(userId).catch(() => null),
+    loadShadowStrikeStats(userId).catch(() => null),
+    loadBladeDashStats(userId).catch(() => null),
+    mergeLocalDatesToServer(userId).catch(() => [] as string[]),
   ]);
 
   const earned = evaluateAchievements(
@@ -75,6 +93,16 @@ export async function syncAchievementsAfterGame(userId: string): Promise<void> {
     fabdoku ?? undefined, heroGuesser ?? undefined, matchupMania ?? undefined,
     trivia ?? undefined, timeline ?? undefined, connections ?? undefined,
     fabdokuCard ?? undefined, crossword ?? undefined,
+    undefined,
+    {
+      rampageStats: rampage ?? undefined,
+      knockoutStats: knockout ?? undefined,
+      brawlStats: brawl ?? undefined,
+      ninjaComboStats: ninjaCombo ?? undefined,
+      shadowStrikeStats: shadowStrike ?? undefined,
+      bladeDashStats: bladeDash ?? undefined,
+      gameDayStreak: computeStreakFromDates(playedDates),
+    },
   );
 
   const storedIds = new Set<string>((snap.data().ids as string[]) || []);
