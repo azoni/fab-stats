@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -459,6 +459,16 @@ const PAGE_SIZE = 50;
 // ── Main Page ──
 
 export default function LeaderboardPage() {
+  // useSearchParams needs a Suspense boundary now that this page prerenders
+  // OUTSIDE AuthGuard (public path) — without it the whole export fails.
+  return (
+    <Suspense fallback={null}>
+      <LeaderboardPageInner />
+    </Suspense>
+  );
+}
+
+function LeaderboardPageInner() {
   const { user, isAdmin } = useAuth();
   const { entries, loading, error: lbError, reload: reloadLeaderboard } = useLeaderboard(isAdmin);
   const { matches } = useMatches();

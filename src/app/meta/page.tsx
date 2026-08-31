@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useSeasons } from "@/hooks/useSeasons";
@@ -40,6 +40,16 @@ function updateMetaUrl(params: Record<string, string>) {
 }
 
 export default function MetaPage() {
+  // useSearchParams needs a Suspense boundary now that this page prerenders
+  // OUTSIDE AuthGuard (public path) — without it the whole export fails.
+  return (
+    <Suspense fallback={null}>
+      <MetaPageInner />
+    </Suspense>
+  );
+}
+
+function MetaPageInner() {
   const { entries, loading, error, reload } = useLeaderboard(true);
   const { seasons } = useSeasons();
   const searchParams = useSearchParams();
