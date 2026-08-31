@@ -572,7 +572,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "feedComment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "reaction" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite" | "leagueInvite";
+  type: "comment" | "feedComment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "reaction" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite" | "leagueInvite" | "leagueJoinRequest" | "leagueJoinApproved";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;

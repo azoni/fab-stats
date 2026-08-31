@@ -413,6 +413,35 @@ export async function joinLeague(
     };
     if (profile.photoUrl) reqData.photoUrl = profile.photoUrl;
     await setDoc(doc(leagueJoinRequestsCollection(league.id), profile.uid), reqData);
+
+    // Tell the organizer + co-admins — requests were invisible until a manager
+    // happened to open the league page. Best-effort: a notification failure
+    // must not undo the request itself.
+    try {
+      const managerUids = [...new Set([league.organizerUid, ...(league.adminUids ?? [])])].filter(
+        (uid) => uid && uid !== profile.uid,
+      );
+      if (managerUids.length > 0) {
+        const notifBatch = writeBatch(db);
+        for (const uid of managerUids) {
+          const notifData: Record<string, unknown> = {
+            type: "leagueJoinRequest",
+            leagueId: league.id,
+            leagueName: league.name,
+            leagueSlug: league.slug,
+            requesterUid: profile.uid,
+            requesterName: profile.displayName,
+            createdAt: now,
+            read: false,
+          };
+          if (league.iconUrl) notifData.leagueIconUrl = league.iconUrl;
+          notifBatch.set(doc(collection(db, "users", uid, "notifications")), notifData);
+        }
+        await notifBatch.commit();
+      }
+    } catch {
+      // Non-blocking.
+    }
     return "requested";
   }
 
@@ -432,9 +461,10 @@ export async function joinLeague(
   return "joined";
 }
 
-/** Organizer approves a pending request: adds the player and removes the request. */
+/** Organizer approves a pending request: adds the player, removes the request,
+ *  and tells the requester they're in. */
 export async function approveJoinRequest(
-  leagueId: string,
+  league: League,
   request: LeagueJoinRequest,
 ): Promise<void> {
   const now = new Date().toISOString();
@@ -447,10 +477,21 @@ export async function approveJoinRequest(
   };
   if (request.photoUrl) memberData.photoUrl = request.photoUrl;
 
+  const notifData: Record<string, unknown> = {
+    type: "leagueJoinApproved",
+    leagueId: league.id,
+    leagueName: league.name,
+    leagueSlug: league.slug,
+    createdAt: now,
+    read: false,
+  };
+  if (league.iconUrl) notifData.leagueIconUrl = league.iconUrl;
+
   const batch = writeBatch(db);
-  batch.set(doc(leagueMembersCollection(leagueId), request.uid), memberData);
-  batch.delete(doc(leagueJoinRequestsCollection(leagueId), request.uid));
-  batch.update(doc(db, "leagues", leagueId), { memberCount: increment(1), updatedAt: now });
+  batch.set(doc(leagueMembersCollection(league.id), request.uid), memberData);
+  batch.delete(doc(leagueJoinRequestsCollection(league.id), request.uid));
+  batch.update(doc(db, "leagues", league.id), { memberCount: increment(1), updatedAt: now });
+  batch.set(doc(collection(db, "users", request.uid, "notifications")), notifData);
   await batch.commit();
 }
 

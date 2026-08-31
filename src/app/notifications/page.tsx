@@ -160,6 +160,8 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
     case "teamInvite":
     case "groupInvite":
     case "leagueInvite":
+    case "leagueJoinRequest":
+    case "leagueJoinApproved":
       return {
         bg: "bg-amber-500/15",
         iconColor: "text-amber-400",
@@ -196,8 +198,8 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
 function NotifAvatar({ n }: { n: UserNotification }) {
   const { bg, iconColor, icon } = getNotifIcon(n.type);
 
-  if (n.type === "teamInvite" || n.type === "groupInvite" || n.type === "leagueInvite") {
-    const iconUrl = n.type === "teamInvite" ? n.teamIconUrl : n.type === "leagueInvite" ? n.leagueIconUrl : n.groupIconUrl;
+  if (n.type === "teamInvite" || n.type === "groupInvite" || n.type === "leagueInvite" || n.type === "leagueJoinRequest" || n.type === "leagueJoinApproved") {
+    const iconUrl = n.type === "teamInvite" ? n.teamIconUrl : n.type === "groupInvite" ? n.groupIconUrl : n.leagueIconUrl;
     return iconUrl ? (
       <img src={iconUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-fab-border" />
     ) : (
@@ -247,7 +249,7 @@ export default function NotificationsPage() {
   }, [filter, groups, readGroups, unreadGroups]);
   const messageGroups = useMemo(() => groups.filter((g) => g.latest.type === "message").length, [groups]);
   const actionGroups = useMemo(
-    () => groups.filter((g) => ["friendRequest", "teamInvite", "groupInvite", "leagueInvite", "heroCorrection"].includes(g.latest.type)).length,
+    () => groups.filter((g) => ["friendRequest", "teamInvite", "groupInvite", "leagueInvite", "leagueJoinRequest", "heroCorrection"].includes(g.latest.type)).length,
     [groups],
   );
 
@@ -367,6 +369,9 @@ export default function NotificationsPage() {
     } else if (n.type === "teamInvite" || n.type === "groupInvite" || n.type === "leagueInvite") {
       // Don't navigate — handled by inline Accept/Decline buttons
       await markAsRead(n.id);
+    } else if (n.type === "leagueJoinRequest" || n.type === "leagueJoinApproved") {
+      await markAsRead(n.id);
+      if (n.leagueSlug) router.push(`/leagues/${n.leagueSlug}`);
     } else if (n.type === "feedbackStatus") {
       await markAsRead(n.id);
     }
@@ -753,6 +758,27 @@ export default function NotificationsPage() {
                               </button>
                             </div>
                           </>
+                        ) : n.type === "leagueJoinRequest" ? (
+                          <p className="text-sm text-fab-text">
+                            <span className="font-semibold">{n.requesterName}</span>{" "}
+                            asked to join{" "}
+                            <Link
+                              href={`/leagues/${n.leagueSlug || ""}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-amber-400 hover:text-amber-300 transition-colors"
+                            >{n.leagueName}</Link>
+                            <span className="text-fab-muted"> — review the request on the league page</span>
+                          </p>
+                        ) : n.type === "leagueJoinApproved" ? (
+                          <p className="text-sm text-fab-text">
+                            You&apos;re in —{" "}
+                            <Link
+                              href={`/leagues/${n.leagueSlug || ""}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-amber-400 hover:text-amber-300 transition-colors"
+                            >{n.leagueName}</Link>{" "}
+                            approved your join request
+                          </p>
                         ) : n.type === "heroCorrection" ? (
                           <>
                             <p className="text-sm text-fab-text">

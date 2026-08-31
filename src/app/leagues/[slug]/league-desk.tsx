@@ -1485,5 +1485,96 @@ export function MatchupGrid({ matches }: { matches: PooledMatch[] }) {
   );
 }
 
+// ── League schedule (player-visible) ─────────────────────────────────────────
+// The sessions that decide which matches score were only visible inside the
+// manager's schedule editor. This card shows every member the next league
+// night and the full (store, date) list, past dates checked off.
+
+function scheduleDateLabel(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+export function LeagueScheduleCard({ league }: { league: League }) {
+  const [open, setOpen] = useState(false);
+  const sessions = useMemo(
+    () => (league.sessions ?? []).slice().sort((a, b) => a.date.localeCompare(b.date) || a.storeSlug.localeCompare(b.storeSlug)),
+    [league.sessions],
+  );
+  // Hydration-safe "today": computed only after mount so SSG output is stable.
+  const [today, setToday] = useState<string | null>(null);
+  useEffect(() => {
+    setToday(new Date().toISOString().slice(0, 10));
+  }, []);
+
+  if (sessions.length === 0 || !today) return null;
+
+  const nameFor = (slug: string) => league.storeNames?.[slug] || slug;
+  const upcoming = sessions.filter((s) => s.date >= today);
+  const next = upcoming[0];
+  const daysAway = next
+    ? Math.round((Date.parse(next.date) - Date.parse(today)) / 86_400_000)
+    : null;
+
+  return (
+    <div className="mt-4 rounded-lg border border-fab-border bg-fab-surface/95">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2.5 px-4 py-3 text-left"
+      >
+        <CalendarDays className="h-4 w-4 shrink-0 text-fab-gold" />
+        <div className="min-w-0 flex-1">
+          {next ? (
+            <p className="truncate text-sm text-fab-text">
+              <span className="font-semibold">Next league night:</span>{" "}
+              {scheduleDateLabel(next.date)} · {nameFor(next.storeSlug)}
+              <span className="ml-1.5 text-xs text-fab-dim">
+                {daysAway === 0 ? "today" : daysAway === 1 ? "tomorrow" : `in ${daysAway} days`}
+              </span>
+            </p>
+          ) : (
+            <p className="text-sm text-fab-muted">
+              Schedule complete — {sessions.length} session{sessions.length === 1 ? "" : "s"} played
+            </p>
+          )}
+          <p className="text-[11px] text-fab-dim">
+            Matches count when they&apos;re played at a scheduled store on a scheduled date
+          </p>
+        </div>
+        <span className="flex shrink-0 items-center gap-1 text-xs text-fab-muted">
+          {sessions.length} dates
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-fab-border/60 px-4 py-3">
+          <ul className="grid gap-1.5 sm:grid-cols-2">
+            {sessions.map((s) => {
+              const past = s.date < today;
+              const isNext = next && s.date === next.date && s.storeSlug === next.storeSlug;
+              return (
+                <li
+                  key={`${s.date}_${s.storeSlug}`}
+                  className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs ${
+                    isNext ? "bg-fab-gold/10 text-fab-text" : past ? "text-fab-dim" : "bg-white/[0.02] text-fab-muted"
+                  }`}
+                >
+                  <span className={`w-3.5 shrink-0 ${past ? "text-fab-win" : "text-fab-dim"}`}>
+                    {past ? "✓" : "·"}
+                  </span>
+                  <span className="w-24 shrink-0 font-mono">{scheduleDateLabel(s.date)}</span>
+                  <span className="truncate">{nameFor(s.storeSlug)}</span>
+                  {isNext && <span className="ml-auto shrink-0 text-[10px] font-bold text-fab-gold">NEXT</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Re-export for the page's filtered-standings path.
 export { standingsFromPool, signatureHeroByUid, recentFormByUid };
