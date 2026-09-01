@@ -449,9 +449,10 @@ interface CommunityHeroStats {
 function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; matchCount: number }) {
   const [heroStats, setHeroStats] = useState<CommunityHeroStats | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const { user, loading: authLoading } = useAuth();
 
   const loadStats = useCallback(() => {
-    if (loaded) return;
+    if (loaded || authLoading) return;
     setLoaded(true);
     // Check localStorage cache first
     const cacheKey = "fab_community_hero_stats_v2";
@@ -463,9 +464,11 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
       }
     } catch {}
 
-    // Lazy fetch from leaderboard
+    // Lazy fetch from leaderboard. Shares the page's scan tier (signed-in →
+    // the cached unfiltered scan, guest → the rules-safe guest query; the old
+    // default args ran an authed query for guests, which rules rejected).
     import("@/lib/leaderboard").then(({ getLeaderboardEntries }) => {
-      getLeaderboardEntries().then((entries) => {
+      getLeaderboardEntries(false, !!user).catch(() => []).then((entries) => {
         let totalMatches = 0;
         let withHero = 0;
         let withOpponent = 0;
@@ -503,7 +506,7 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
         try { localStorage.setItem(cacheKey, JSON.stringify({ stats, ts: Date.now() })); } catch {}
       });
     });
-  }, [loaded]);
+  }, [loaded, user, authLoading]);
 
   const heroPct = heroStats ? Math.round(heroStats.withHero / heroStats.totalMatches * 100) : 0;
 
