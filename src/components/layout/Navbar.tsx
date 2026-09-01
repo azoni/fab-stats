@@ -468,7 +468,7 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
     // the cached unfiltered scan, guest → the rules-safe guest query; the old
     // default args ran an authed query for guests, which rules rejected).
     import("@/lib/leaderboard").then(({ getLeaderboardEntries }) => {
-      getLeaderboardEntries(false, !!user).catch(() => []).then((entries) => {
+      getLeaderboardEntries(false, !!user, { compact: true }).catch(() => []).then((entries) => {
         let totalMatches = 0;
         let withHero = 0;
         let withOpponent = 0;

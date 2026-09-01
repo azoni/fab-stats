@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
 import { updateProfile, uploadProfilePhoto, deleteAccountData, getMatchesByUserId, registerGemId, deleteGemId } from "@/lib/firestore-storage";
+import { storeProfilePhoto } from "@/lib/profile-photo";
 import {
   softClearAllMatches,
   restoreDeletedMatches,
@@ -358,7 +359,15 @@ export default function SettingsPage() {
     setUploading(true);
     try {
       const dataUrl = await resizeImage(file, 200);
-      await uploadProfilePhoto(user.uid, dataUrl);
+      // Host the image in Storage and keep only its URL in the profile; if the
+      // upload fails, fall back to the inline data URL rather than blocking.
+      let photoUrl = dataUrl;
+      try {
+        photoUrl = await storeProfilePhoto(user.uid, dataUrl);
+      } catch (storageErr) {
+        console.warn("Storage upload failed, saving inline photo:", storageErr);
+      }
+      await uploadProfilePhoto(user.uid, photoUrl);
     } catch (err) {
       console.error("Photo upload failed:", err);
       toast.error("Failed to upload photo. Please try again.");

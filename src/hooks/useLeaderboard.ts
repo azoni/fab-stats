@@ -11,10 +11,16 @@ export interface UseLeaderboardOptions {
    *  that only need community data once some other gate (auth, a picked
    *  player) is satisfied. */
   enabled?: boolean;
+  /** Read the compactor's snapshot (every list/rank field, none of the
+   *  per-hero / per-venue arrays) — a handful of reads instead of a
+   *  2,300–3,800-doc scan. Pages that use heroBreakdownDetailed,
+   *  monthlyHeroBreakdown or venueBreakdown must leave this off. */
+  compact?: boolean;
 }
 
 export function useLeaderboard(includePrivate = false, options: UseLeaderboardOptions = {}) {
   const enabled = options.enabled ?? true;
+  const compact = options.compact ?? false;
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +36,7 @@ export function useLeaderboard(includePrivate = false, options: UseLeaderboardOp
     // to settle; the guest query is only right once we know there is no user.
     if (!enabled || authLoading) return;
     setLoading(true);
-    getLeaderboardEntries(includePrivate, isAuthenticated)
+    getLeaderboardEntries(includePrivate, isAuthenticated, { compact })
       .then((data) => {
         setEntries(data);
         setError(null);
@@ -40,7 +46,7 @@ export function useLeaderboard(includePrivate = false, options: UseLeaderboardOp
         setError("Failed to load leaderboard data");
       })
       .finally(() => setLoading(false));
-  }, [includePrivate, isAuthenticated, attempt, authLoading, enabled]);
+  }, [includePrivate, isAuthenticated, attempt, authLoading, enabled, compact]);
 
   /** Bust the module cache and refetch — for retry buttons. */
   const reload = useCallback(() => {

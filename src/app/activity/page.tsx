@@ -83,7 +83,9 @@ export default function ActivityPage() {
   const { user } = useAuth();
   const { userCount, matchCount } = useCommunityStats();
   const { matches } = useMatches();
-  const { entries: lbEntries } = useLeaderboard(true);
+  // Rank/tier maps + CommunityHighlights (weekly hero mix, recent top 8s) all
+  // read fields the compact snapshot carries.
+  const { entries: lbEntries } = useLeaderboard(true, { compact: true });
 
   const [activePrediction, setActivePrediction] = useState<Poll | null>(null);
   const [showcaseConfig, setShowcaseConfig] = useState<EventShowcaseConfig | null>(null);

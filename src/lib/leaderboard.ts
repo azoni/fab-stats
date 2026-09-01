@@ -12,6 +12,8 @@ import { computeOverallStats, computeEventStats, computeOpponentStats, computePl
 import { computeEloRating } from "./elo";
 import { isBlockedUser } from "./blocked-users";
 import { normalizeVenueName } from "./venue-normalize";
+import { localDateStr, getWeekStart, getMonthStart } from "./rolling-windows";
+import { readCompactLeaderboard } from "./leaderboard-compact";
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -32,22 +34,9 @@ function leaderboardCollection() {
   return collection(db, "leaderboard");
 }
 
-/** Local YYYY-MM-DD string for N days ago */
-function localDateStr(daysAgo: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** Get ISO date string (YYYY-MM-DD) for 7 days ago (rolling week) */
-export function getWeekStart(): string {
-  return localDateStr(7);
-}
-
-/** Get ISO date string (YYYY-MM-DD) for 30 days ago (rolling month) */
-export function getMonthStart(): string {
-  return localDateStr(30);
-}
+// Date helpers moved to ./rolling-windows (Firebase-free, shared with the
+// compactor function); re-exported for the existing importers.
+export { getWeekStart, getMonthStart } from "./rolling-windows";
 
 export async function updateLeaderboardEntry(
   profile: UserProfile,
@@ -436,6 +425,10 @@ export async function updateLeaderboardEntry(
   }
 
   await setDoc(doc(leaderboardCollection(), profile.uid), clean);
+  // The compact snapshot (published by the compactor every 30 min) would show
+  // this user their pre-sync numbers for up to a cycle — patch their own row
+  // in the in-memory compact caches so the next page sees the fresh entry.
+  patchOwnCompactEntry(clean as unknown as LeaderboardEntry);
   // Intentionally NOT invalidating the cache here. The home page fires this
   // self-sync write on load (throttled ~10 min), and a blanket invalidation
   // nuked all three cache tiers every time — so the next /activity or
@@ -551,8 +544,85 @@ async function scanAllEntries(): Promise<LeaderboardEntry[]> {
   return inflightAll;
 }
 
-export async function getLeaderboardEntries(includePrivate = false, isAuthenticated = true): Promise<LeaderboardEntry[]> {
+// ── Compact snapshot tier ──
+// netlify/functions/leaderboard-compactor.mts publishes the list/rank fields
+// of every entry as a few sharded docs (community/_lb_auth*, _lb_guest*).
+// Pages that never touch the per-hero/venue arrays read those (≤5 small
+// reads) instead of scanning 2,300–3,800 docs. Missing/stale snapshot → the
+// raw scan below, exactly as before.
+type CompactTier = "guest" | "auth";
+const compactCache: Record<CompactTier, { entries: LeaderboardEntry[]; publicView: LeaderboardEntry[] | null; ts: number } | null> = {
+  guest: null,
+  auth: null,
+};
+const compactInflight: Record<CompactTier, Promise<LeaderboardEntry[] | null> | null> = { guest: null, auth: null };
+
+async function loadCompactTier(tier: CompactTier): Promise<LeaderboardEntry[] | null> {
+  const hit = compactCache[tier];
+  if (hit && Date.now() - hit.ts < CACHE_TTL) return hit.entries;
+  if (compactInflight[tier]) return compactInflight[tier];
+  const p = (async () => {
+    try {
+      const raw = await readCompactLeaderboard(tier === "auth");
+      if (!raw) return null;
+      const entries = sanitizeEntries(raw);
+      compactCache[tier] = { entries, publicView: null, ts: Date.now() };
+      return entries;
+    } catch {
+      return null;
+    } finally {
+      compactInflight[tier] = null;
+    }
+  })();
+  compactInflight[tier] = p;
+  return p;
+}
+
+/** Replace (or add) one user's row in the compact caches after a self-sync. */
+export function patchOwnCompactEntry(entry: LeaderboardEntry): void {
+  if (!entry?.userId) return;
+  const [fresh] = sanitizeEntries([{ ...entry }]);
+  if (!fresh) return;
+  for (const tier of ["guest", "auth"] as CompactTier[]) {
+    const hit = compactCache[tier];
+    if (!hit) continue;
+    if (tier === "guest" && (fresh.isPublic !== true || fresh.hideFromGuests === true)) {
+      hit.entries = hit.entries.filter((e) => e.userId !== fresh.userId);
+    } else {
+      const idx = hit.entries.findIndex((e) => e.userId === fresh.userId);
+      const next = hit.entries.slice();
+      if (idx === -1) next.push(fresh);
+      else next[idx] = fresh;
+      hit.entries = next;
+    }
+    hit.publicView = null;
+  }
+}
+
+export interface GetLeaderboardOptions {
+  /** Read the compactor's snapshot (list/rank fields only) and fall back to
+   *  the full scan when it is missing or stale. */
+  compact?: boolean;
+}
+
+export async function getLeaderboardEntries(
+  includePrivate = false,
+  isAuthenticated = true,
+  options: GetLeaderboardOptions = {},
+): Promise<LeaderboardEntry[]> {
   const now = Date.now();
+
+  if (options.compact) {
+    const tier: CompactTier = isAuthenticated ? "auth" : "guest";
+    const entries = await loadCompactTier(tier);
+    if (entries) {
+      if (includePrivate || tier === "guest") return entries;
+      const hit = compactCache[tier]!;
+      if (!hit.publicView) hit.publicView = entries.filter((e) => e.isPublic === true);
+      return hit.publicView;
+    }
+    // no snapshot yet / stale / unreadable → raw scan
+  }
 
   // includePrivate only means anything with auth: an unfiltered scan from a
   // guest can't satisfy the per-doc hideFromGuests rule, so Firestore denies
@@ -586,6 +656,8 @@ export function invalidateLeaderboardCache() {
   cacheTimestampAll = 0;
   cachedEntriesPublic = null;
   cachedEntriesPublicSource = null;
+  compactCache.guest = null;
+  compactCache.auth = null;
 }
 
 /** Look up a userId from leaderboard by stale username or display name. */

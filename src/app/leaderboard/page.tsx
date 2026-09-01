@@ -470,7 +470,9 @@ export default function LeaderboardPage() {
 
 function LeaderboardPageInner() {
   const { user, isAdmin } = useAuth();
-  const { entries, loading, error: lbError, reload: reloadLeaderboard } = useLeaderboard(isAdmin);
+  // Every tab ranks on scalar fields (+ the top-8 count maps), all of which
+  // the compact snapshot carries.
+  const { entries, loading, error: lbError, reload: reloadLeaderboard } = useLeaderboard(isAdmin, { compact: true });
   const { matches } = useMatches();
   const searchParams = useSearchParams();
 
