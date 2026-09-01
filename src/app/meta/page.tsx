@@ -199,10 +199,12 @@ function MetaPageInner() {
   const heroStartIdx = (heroSafePage - 1) * HERO_PAGE_SIZE;
   const pageHeroes = sortedHeroes.slice(heroStartIdx, heroStartIdx + HERO_PAGE_SIZE);
 
-  // Top hero for the overview card
-  const topHero = heroStats.length > 0
-    ? [...heroStats].sort((a, b) => b.totalMatches - a.totalMatches)[0]
-    : null;
+  // Top hero for the overview card (a full sort in the render body re-ran on
+  // every search keystroke; one linear pass, memoized on the stats)
+  const topHero = useMemo(() => {
+    if (heroStats.length === 0) return null;
+    return [...heroStats].sort((a, b) => b.totalMatches - a.totalMatches)[0];
+  }, [heroStats]);
 
   if (loading) {
     return (

@@ -45,11 +45,38 @@ function countResults(matches: MatchRecord[]): { wins: number; losses: number; d
   return { wins, losses, draws, byes };
 }
 
+// ── Per-string derivation caches ──
+// Match records are re-derived on every pass and inside every sort comparator
+// (a 2,000-match dashboard render ran ~300k regex tests and ~200k Date
+// allocations). These caches key on the STRING inputs, not the match object,
+// so they are pure and immune to in-place edits; they are bounded so a long
+// session cannot grow them without limit.
+const CACHE_LIMIT = 50_000;
+const dateMsCache = new Map<string, number>();
+const roundCache = new Map<string, number>();
+const eventTypeCache = new Map<string, string>();
+const venueCache = new Map<string, string | null>();
+const playoffRoundCache = new Map<string, boolean>();
+
+function cacheSet<K, V>(cache: Map<K, V>, key: K, value: V): V {
+  if (cache.size >= CACHE_LIMIT) cache.clear();
+  cache.set(key, value);
+  return value;
+}
+
+/** `new Date(str).getTime()` with memoization — identical value, no allocation. */
+export function dateMs(str: string | undefined | null): number {
+  const key = str ?? "";
+  const hit = dateMsCache.get(key);
+  if (hit !== undefined) return hit;
+  return cacheSet(dateMsCache, key, new Date(key).getTime());
+}
+
 export function computeOverallStats(matches: MatchRecord[]): OverallStats {
   const sorted = [...matches].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    (a, b) => dateMs(a.date) - dateMs(b.date)
       || getRoundNumber(a) - getRoundNumber(b)
-      || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      || dateMs(a.createdAt) - dateMs(b.createdAt)
   );
   const { wins: totalWins, losses: totalLosses, draws: totalDraws, byes: totalByes } = countResults(sorted);
   const totalMatches = totalWins + totalLosses + totalDraws;
@@ -252,7 +279,7 @@ export function computeOpponentStats(matches: MatchRecord[]): OpponentStats[] {
         heroesPlayed,
         opponentHeroes,
         matches: oppMatches.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          (a, b) => dateMs(b.date) - dateMs(a.date)
         ),
       };
     })
@@ -264,9 +291,9 @@ export function computeTrends(
   granularity: "weekly" | "monthly" = "weekly"
 ): TrendDataPoint[] {
   const sorted = [...matches].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    (a, b) => dateMs(a.date) - dateMs(b.date)
       || getRoundNumber(a) - getRoundNumber(b)
-      || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      || dateMs(a.createdAt) - dateMs(b.createdAt)
   );
 
   if (sorted.length === 0) return [];
@@ -309,9 +336,9 @@ export function computeRollingWinRate(
   const sorted = [...matches]
     .filter((m) => m.result !== MatchResult.Bye)
     .sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      (a, b) => dateMs(a.date) - dateMs(b.date)
         || getRoundNumber(a) - getRoundNumber(b)
-        || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        || dateMs(a.createdAt) - dateMs(b.createdAt)
     );
 
   const results: { index: number; winRate: number; date: string }[] = [];
@@ -420,9 +447,18 @@ export function refineEventType(eventType: string, eventName: string): string {
 
 export function getEventType(match: MatchRecord): string {
   if (match.eventTypeOverride) return match.eventTypeOverride;
-  const eventName = match.notes?.split(" | ")[0] || "";
-  if (match.eventType) return refineEventType(match.eventType, eventName);
-  if (match.notes) return guessEventTypeFromNotes(match.notes);
+  // Pure function of (eventType, notes) — up to ~18 regex tests per call and
+  // invoked per match per pass, so memoize on those two strings.
+  const key = `${match.eventType ?? ""} ${match.notes ?? ""}`;
+  const hit = eventTypeCache.get(key);
+  if (hit !== undefined) return hit;
+  return cacheSet(eventTypeCache, key, computeEventType(match.eventType, match.notes));
+}
+
+function computeEventType(eventType: string | undefined, notes: string | undefined): string {
+  const eventName = notes?.split(" | ")[0] || "";
+  if (eventType) return refineEventType(eventType, eventName);
+  if (notes) return guessEventTypeFromNotes(notes);
   return "Other";
 }
 
@@ -451,7 +487,9 @@ function sanitizeVenue(raw: string): string | null {
  *  venue stats and the venue filters so they all bucket venues identically. */
 export function getMatchVenue(match: MatchRecord): string {
   if (!match.venue) return "Unknown";
-  return sanitizeVenue(match.venue) || "Unknown";
+  let cleaned = venueCache.get(match.venue);
+  if (cleaned === undefined) cleaned = cacheSet(venueCache, match.venue, sanitizeVenue(match.venue));
+  return cleaned || "Unknown";
 }
 
 /** Distinct real venues across the given matches, sorted by match count (desc).
@@ -613,14 +651,20 @@ export interface PlayoffFinish {
 }
 
 function isPlayoffRound(roundInfo: string): boolean {
-  return /^Round P/i.test(roundInfo) ||
-    /^P\d/i.test(roundInfo) ||
-    /Top\s*8/i.test(roundInfo) ||
-    /Top\s*4/i.test(roundInfo) ||
-    /Finals?$/i.test(roundInfo) ||
-    /Semi/i.test(roundInfo) ||
-    /Playoff/i.test(roundInfo) ||
-    /Quarter/i.test(roundInfo);
+  const hit = playoffRoundCache.get(roundInfo);
+  if (hit !== undefined) return hit;
+  return cacheSet(
+    playoffRoundCache,
+    roundInfo,
+    /^Round P/i.test(roundInfo) ||
+      /^P\d/i.test(roundInfo) ||
+      /Top\s*8/i.test(roundInfo) ||
+      /Top\s*4/i.test(roundInfo) ||
+      /Finals?$/i.test(roundInfo) ||
+      /Semi/i.test(roundInfo) ||
+      /Playoff/i.test(roundInfo) ||
+      /Quarter/i.test(roundInfo),
+  );
 }
 
 export function computePlayoffFinishes(
@@ -730,7 +774,7 @@ export function computePlayoffFinishes(
     });
   }
 
-  return finishes.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+  return finishes.sort((a, b) => dateMs(b.eventDate) - dateMs(a.eventDate));
 }
 
 /** Whether one event's worth of matches produces a playoff placement — i.e. would
@@ -818,7 +862,7 @@ export function computeMinorEventFinishes(eventStats: EventStats[]): MinorEventF
     finishes.push({ type: finishType, eventName: event.eventName, eventDate: event.eventDate, format: event.format, eventType: raw, hero });
   }
 
-  return finishes.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+  return finishes.sort((a, b) => dateMs(b.eventDate) - dateMs(a.eventDate));
 }
 
 export function getEventName(match: MatchRecord): string {
@@ -830,18 +874,25 @@ export function getEventName(match: MatchRecord): string {
 }
 
 export function getRoundNumber(match: MatchRecord): number {
-  if (match.notes) {
-    // Handle "Round P{N}" for playoff rounds — sort after swiss rounds
-    const playoffMatch = match.notes.match(/Round\s+P(\d+)/i);
-    if (playoffMatch) return 1000 + parseInt(playoffMatch[1], 10);
-    const roundMatch = match.notes.match(/Round\s+(\d+)/i);
-    if (roundMatch) return parseInt(roundMatch[1], 10);
-    // Descriptive playoff labels sort after swiss — check full notes string
-    if (/Playoff|Skirmish/i.test(match.notes)) return 1000;
-    if (/Quarter|Top\s*8/i.test(match.notes)) return 1001;
-    if (/Semi|Top\s*4/i.test(match.notes)) return 1002;
-    if (/Finals?(?:\s|$|\|)/i.test(match.notes)) return 1003;
-  }
+  if (!match.notes) return 0;
+  // Pure function of the notes string; called twice per comparison in every
+  // chronological sort, so memoize.
+  const hit = roundCache.get(match.notes);
+  if (hit !== undefined) return hit;
+  return cacheSet(roundCache, match.notes, computeRoundNumber(match.notes));
+}
+
+function computeRoundNumber(notes: string): number {
+  // Handle "Round P{N}" for playoff rounds — sort after swiss rounds
+  const playoffMatch = notes.match(/Round\s+P(\d+)/i);
+  if (playoffMatch) return 1000 + parseInt(playoffMatch[1], 10);
+  const roundMatch = notes.match(/Round\s+(\d+)/i);
+  if (roundMatch) return parseInt(roundMatch[1], 10);
+  // Descriptive playoff labels sort after swiss — check full notes string
+  if (/Playoff|Skirmish/i.test(notes)) return 1000;
+  if (/Quarter|Top\s*8/i.test(notes)) return 1001;
+  if (/Semi|Top\s*4/i.test(notes)) return 1002;
+  if (/Finals?(?:\s|$|\|)/i.test(notes)) return 1003;
   return 0;
 }
 
@@ -964,7 +1015,7 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
         matches: sorted,
       };
     })
-    .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+    .sort((a, b) => dateMs(b.eventDate) - dateMs(a.eventDate));
 }
 
 // ── Tournament Analytics ──
@@ -1113,7 +1164,7 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
 
   // Sort events chronologically for timeline
   const chronological = [...events].sort((a, b) =>
-    new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+    dateMs(a.eventDate) - dateMs(b.eventDate)
   );
 
   for (const event of chronological) {

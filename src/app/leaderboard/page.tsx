@@ -685,10 +685,16 @@ function LeaderboardPageInner() {
         return [...visibleEntries].filter((e) => (e.longestLossStreak ?? 0) >= 2).sort((a, b) => (b.longestLossStreak ?? 0) - (a.longestLossStreak ?? 0) || b.totalMatches - a.totalMatches);
       case "globetrotter":
         return [...visibleEntries].filter((e) => (e.uniqueVenues ?? 0) >= 2).sort((a, b) => (b.uniqueVenues ?? 0) - (a.uniqueVenues ?? 0) || b.eventsPlayed - a.eventsPlayed);
-      case "leaderboardcount":
-        return [...visibleEntries].filter((e) => e.totalMatches >= 5).sort((a, b) => countQualifyingTabs(b) - countQualifyingTabs(a) || b.totalMatches - a.totalMatches);
-      case "powerlevel":
-        return [...visibleEntries].filter((e) => e.totalMatches >= 10).sort((a, b) => computePowerLevel(b) - computePowerLevel(a) || b.totalMatches - a.totalMatches);
+      case "leaderboardcount": {
+        // Decorate once: the comparator used to run 42 predicates per entry
+        // per comparison (~3.8M calls for a 3,800-entry sort).
+        const counts = new Map(visibleEntries.map((e) => [e.userId, countQualifyingTabs(e)]));
+        return [...visibleEntries].filter((e) => e.totalMatches >= 5).sort((a, b) => (counts.get(b.userId) ?? 0) - (counts.get(a.userId) ?? 0) || b.totalMatches - a.totalMatches);
+      }
+      case "powerlevel": {
+        const power = new Map(visibleEntries.map((e) => [e.userId, computePowerLevel(e)]));
+        return [...visibleEntries].filter((e) => e.totalMatches >= 10).sort((a, b) => (power.get(b.userId) ?? 0) - (power.get(a.userId) ?? 0) || b.totalMatches - a.totalMatches);
+      }
       case "kudos_total":
       case "kudos_props":
       case "kudos_good_sport":
@@ -818,6 +824,10 @@ function LeaderboardPageInner() {
     if (!user) return [];
     return computeUserRanks(visibleEntries, user.uid);
   }, [visibleEntries, user]);
+  const myEntry = useMemo(
+    () => (user ? visibleEntries.find((e) => e.userId === user.uid) : undefined),
+    [visibleEntries, user],
+  );
 
   const [myRanksOpen, setMyRanksOpen] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -1043,8 +1053,7 @@ function LeaderboardPageInner() {
           {myRanksOpen && (
             <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {myRanks.map((r) => {
-                const entry = visibleEntries.find((e) => e.userId === user.uid);
-                const stat = entry ? getStat(entry, r.tab as Tab) : null;
+                const stat = myEntry ? getStat(myEntry, r.tab as Tab) : null;
                 const style = ({ 1: { bg: "bg-fuchsia-400/15", text: "text-fuchsia-400", medal: "1st" }, 2: { bg: "bg-sky-400/15", text: "text-sky-400", medal: "2nd" }, 3: { bg: "bg-yellow-400/15", text: "text-yellow-400", medal: "3rd" }, 4: { bg: "bg-gray-300/15", text: "text-gray-300", medal: "4th" }, 5: { bg: "bg-amber-600/15", text: "text-amber-600", medal: "5th" }, 6: { bg: "bg-gray-400/10", text: "text-gray-400", medal: "6th" }, 7: { bg: "bg-gray-400/10", text: "text-gray-400", medal: "7th" }, 8: { bg: "bg-gray-400/10", text: "text-gray-400", medal: "8th" } } as Record<number, { bg: string; text: string; medal: string }>)[r.rank];
                 return (
                   <button

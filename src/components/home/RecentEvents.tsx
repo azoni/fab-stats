@@ -1,8 +1,8 @@
 "use client";
-import { useState, memo } from "react";
+import { useState, useMemo, memo } from "react";
 import Link from "next/link";
 import { MatchResult, type EventStats } from "@/types";
-import { computePlayoffFinishes } from "@/lib/stats";
+import { computePlayoffFinishes, dateMs } from "@/lib/stats";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { EventShareModal } from "@/components/events/EventShareCard";
 
@@ -47,16 +47,20 @@ export const RecentEvents = memo(function RecentEvents({ eventStats, playerName 
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [shareEvent, setShareEvent] = useState<EventStats | null>(null);
 
-  // Build placement lookup: "eventName::eventDate" → finish type
-  const finishes = computePlayoffFinishes(eventStats);
-  const placementMap = new Map<string, string>();
-  for (const f of finishes) {
-    placementMap.set(`${f.eventName}::${f.eventDate}`, f.type);
-  }
+  // Build placement lookup: "eventName::eventDate" → finish type. Memoized —
+  // this ran a full playoff pass on every expand/collapse click.
+  const placementMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of computePlayoffFinishes(eventStats)) {
+      map.set(`${f.eventName}::${f.eventDate}`, f.type);
+    }
+    return map;
+  }, [eventStats]);
 
-  const recent = [...eventStats]
-    .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime())
-    .slice(0, 5);
+  const recent = useMemo(
+    () => [...eventStats].sort((a, b) => dateMs(b.eventDate) - dateMs(a.eventDate)).slice(0, 5),
+    [eventStats],
+  );
 
   if (recent.length === 0) return null;
 

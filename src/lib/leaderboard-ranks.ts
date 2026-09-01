@@ -1,4 +1,6 @@
-import { getWeekStart, getMonthStart } from "./leaderboard";
+// Firebase-free source for the rolling windows (leaderboard.ts re-exports
+// these but also pulls the Firestore client in).
+import { getWeekStart, getMonthStart } from "./rolling-windows";
 import type { LeaderboardEntry } from "@/types";
 
 export interface LeaderboardRank {
@@ -280,6 +282,29 @@ const RANK_TABS: RankTab[] = [
 ];
 
 /** Compute the user's rank (1-indexed) for each specified tab. Returns a map of tabId → rank. */
+/**
+ * A single user's 1-indexed position in one tab WITHOUT copying and sorting
+ * the whole list: count the qualifying entries that would precede them. Ties
+ * (comparator 0) are resolved like the stable sort did — by input order — so
+ * the result is identical to `entries.filter(...).sort(...).findIndex(...)`.
+ * Returns null when the user does not qualify for the tab.
+ */
+function rankOfUser(entries: LeaderboardEntry[], userId: string, tab: RankTab): number | null {
+  const userIdx = entries.findIndex((e) => e.userId === userId);
+  if (userIdx === -1) return null;
+  const me = entries[userIdx];
+  if (!tab.filter(me)) return null;
+  let ahead = 0;
+  for (let i = 0; i < entries.length; i++) {
+    if (i === userIdx) continue;
+    const e = entries[i];
+    if (!tab.filter(e)) continue;
+    const cmp = tab.sort(e, me);
+    if (cmp < 0 || (cmp === 0 && i < userIdx)) ahead++;
+  }
+  return ahead + 1;
+}
+
 export function computeUserRanksByTab(
   entries: LeaderboardEntry[],
   userId: string,
@@ -290,11 +315,8 @@ export function computeUserRanksByTab(
 
   for (const tab of RANK_TABS) {
     if (!tabSet.has(tab.id)) continue;
-    const sorted = entries.filter(tab.filter).sort(tab.sort);
-    const idx = sorted.findIndex((e) => e.userId === userId);
-    if (idx >= 0) {
-      map.set(tab.id, idx + 1);
-    }
+    const rank = rankOfUser(entries, userId, tab);
+    if (rank !== null) map.set(tab.id, rank);
   }
 
   return map;
@@ -304,10 +326,9 @@ export function computeUserRanks(entries: LeaderboardEntry[], userId: string): L
   const ranks: LeaderboardRank[] = [];
 
   for (const tab of RANK_TABS) {
-    const sorted = entries.filter(tab.filter).sort(tab.sort);
-    const idx = sorted.findIndex((e) => e.userId === userId);
-    if (idx >= 0 && idx < 8) {
-      ranks.push({ tab: tab.id, tabLabel: tab.label, rank: (idx + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 });
+    const rank = rankOfUser(entries, userId, tab);
+    if (rank !== null && rank <= 8) {
+      ranks.push({ tab: tab.id, tabLabel: tab.label, rank: rank as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 });
     }
   }
 

@@ -3,6 +3,7 @@ import { useMemo, useState, memo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { HeroStats, OpponentStats, MatchRecord } from "@/types";
+import { dateMs } from "@/lib/stats";
 
 interface DashboardInsightsProps {
   heroStats: HeroStats[];
@@ -52,7 +53,7 @@ export const DashboardInsights = memo(function DashboardInsights({ heroStats, op
       counts.set(name, (counts.get(name) || 0) + 1);
     }
     const sorted = [...matches].sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime() || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      dateMs(b.date) - dateMs(a.date) || dateMs(b.createdAt) - dateMs(a.createdAt)
     );
     const seen = new Set<string>();
     const result: { name: string; date: string; result: string }[] = [];
