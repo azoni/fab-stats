@@ -7,7 +7,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 import { computeOverallStats, computeEventStats, computeOpponentStats, computePlayoffFinishes, computeMinorEventFinishes, getEventType } from "./stats";
 import { computeEloRating } from "./elo";
 import { isBlockedUser } from "./blocked-users";
@@ -556,6 +556,23 @@ const compactCache: Record<CompactTier, { entries: LeaderboardEntry[]; publicVie
   auth: null,
 };
 const compactInflight: Record<CompactTier, Promise<LeaderboardEntry[] | null> | null> = { guest: null, auth: null };
+// A self-sync that happened before the tier was loaded (the /import tab never
+// loads the leaderboard) is kept here and applied on the next load.
+const pendingOwn: Record<CompactTier, LeaderboardEntry | null> = { guest: null, auth: null };
+
+/** Merge one user's row into a tier's list; a snapshot row that is already
+ *  newer than `fresh` wins. Returns the same array when nothing changes. */
+function applyOwnRow(tier: CompactTier, entries: LeaderboardEntry[], fresh: LeaderboardEntry): LeaderboardEntry[] {
+  if (tier === "guest" && (fresh.isPublic !== true || fresh.hideFromGuests === true)) {
+    return entries.some((e) => e.userId === fresh.userId) ? entries.filter((e) => e.userId !== fresh.userId) : entries;
+  }
+  const idx = entries.findIndex((e) => e.userId === fresh.userId);
+  if (idx !== -1 && (entries[idx].updatedAt ?? "") >= (fresh.updatedAt ?? "")) return entries;
+  const next = entries.slice();
+  if (idx === -1) next.push(fresh);
+  else next[idx] = fresh;
+  return next;
+}
 
 async function loadCompactTier(tier: CompactTier): Promise<LeaderboardEntry[] | null> {
   const hit = compactCache[tier];
@@ -565,7 +582,27 @@ async function loadCompactTier(tier: CompactTier): Promise<LeaderboardEntry[] | 
     try {
       const raw = await readCompactLeaderboard(tier === "auth");
       if (!raw) return null;
-      const entries = sanitizeEntries(raw);
+      let entries = sanitizeEntries(raw);
+      // The raw scan always reflected the signed-in user's own latest doc on a
+      // fresh load; the snapshot lags a compactor cycle. Overlay their live doc
+      // (one read) so "my ranks" after an import are current on reload too.
+      const uid = tier === "auth" ? auth.currentUser?.uid : undefined;
+      if (uid) {
+        try {
+          const own = await getDoc(doc(leaderboardCollection(), uid));
+          if (own.exists()) {
+            const [fresh] = sanitizeEntries([own.data() as LeaderboardEntry]);
+            if (fresh) entries = applyOwnRow(tier, entries, fresh);
+          }
+        } catch {
+          /* rules/network — the snapshot row stands */
+        }
+      }
+      const stashed = pendingOwn[tier];
+      if (stashed) {
+        entries = applyOwnRow(tier, entries, stashed);
+        pendingOwn[tier] = null;
+      }
       compactCache[tier] = { entries, publicView: null, ts: Date.now() };
       return entries;
     } catch {
@@ -578,23 +615,19 @@ async function loadCompactTier(tier: CompactTier): Promise<LeaderboardEntry[] | 
   return p;
 }
 
-/** Replace (or add) one user's row in the compact caches after a self-sync. */
+/** Replace (or add) one user's row in the compact caches after a self-sync;
+ *  tiers not loaded yet remember it for their next load. */
 export function patchOwnCompactEntry(entry: LeaderboardEntry): void {
   if (!entry?.userId) return;
   const [fresh] = sanitizeEntries([{ ...entry }]);
   if (!fresh) return;
   for (const tier of ["guest", "auth"] as CompactTier[]) {
     const hit = compactCache[tier];
-    if (!hit) continue;
-    if (tier === "guest" && (fresh.isPublic !== true || fresh.hideFromGuests === true)) {
-      hit.entries = hit.entries.filter((e) => e.userId !== fresh.userId);
-    } else {
-      const idx = hit.entries.findIndex((e) => e.userId === fresh.userId);
-      const next = hit.entries.slice();
-      if (idx === -1) next.push(fresh);
-      else next[idx] = fresh;
-      hit.entries = next;
+    if (!hit) {
+      pendingOwn[tier] = fresh;
+      continue;
     }
+    hit.entries = applyOwnRow(tier, hit.entries, fresh);
     hit.publicView = null;
   }
 }

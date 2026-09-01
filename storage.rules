@@ -65,11 +65,15 @@ service firebase.storage {
       allow read, write: if false;
     }
 
-    // Profile photos: public read (they render on public profiles, the
-    // leaderboard and OG images), owner-only write. The compactor function
-    // (admin SDK, bypasses rules) migrates legacy inline photos here too.
+    // Profile photos: owner-only write; NO rules-level read. Every consumer
+    // holds a tokened download URL (getDownloadURL / the compactor's
+    // firebaseStorageDownloadTokens), which bypasses rules — so a hidden or
+    // private player's avatar stays reachable only through the Firestore docs
+    // that carry the token, exactly the gate the inline base64 photo had.
+    // The compactor function (admin SDK, bypasses rules) migrates legacy
+    // inline photos here too.
     match /profile-photos/{uid}/{fileName} {
-      allow read: if true;
+      allow read: if false;
       allow write: if signedIn()
         && request.auth.uid == uid
         && (

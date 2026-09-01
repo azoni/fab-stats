@@ -11,12 +11,12 @@ import {
   resolveProfileBackgroundPosition,
 } from "@/lib/profile-backgrounds";
 
-/** Preload an image and resolve when it's fully downloaded. */
-function preloadImage(url: string): Promise<void> {
+/** Preload an image; resolves true once downloaded, false if it failed. */
+function preloadImage(url: string): Promise<boolean> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = () => resolve(); // still apply even if load fails
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
     img.src = url;
   });
 }
@@ -36,10 +36,17 @@ async function applyProfileBackground(imageUrl?: string, focusPosition = "center
   const viewportWidth = Math.max(1024, Math.min(2560, Math.round(window.innerWidth * dpr)));
   const optimizedUrl = buildOptimizedImageUrl(imageUrl, viewportWidth, 66);
 
-  // Preload the image before applying — prevents flash of default background
-  await preloadImage(optimizedUrl);
+  // Preload the image before applying — prevents flash of default background.
+  // If the Image CDN transform fails (it returned 415s during a Netlify
+  // incident), fall back to the static file, which never went through the CDN
+  // before; that one is applied even if it fails to load, as before.
+  let finalUrl = optimizedUrl;
+  if (!(await preloadImage(optimizedUrl)) && optimizedUrl !== imageUrl) {
+    finalUrl = imageUrl;
+    await preloadImage(imageUrl);
+  }
 
-  const safeUrl = optimizedUrl.replace(/'/g, "\\'");
+  const safeUrl = finalUrl.replace(/'/g, "\\'");
   root.style.setProperty("--fab-user-bg-image", `url('${safeUrl}')`);
   root.style.setProperty("--fab-user-bg-overlay", "rgba(9, 8, 7, 0.62)");
   root.style.setProperty("--fab-user-bg-opacity", "1");
