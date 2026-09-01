@@ -81,7 +81,7 @@ export default function ComparePage() {
   const { profile, user, isGuest, loading: authLoading } = useAuth();
   // The page is sign-in only; don't pay the community scan (~2,300 docs) for
   // guests who only ever see the sign-in wall below.
-  const { entries, loading } = useLeaderboard(false, { enabled: !!user && !isGuest });
+  const { entries, loading } = useLeaderboard(false, { enabled: !!user && !isGuest, compact: true });
 
   const p2Param = searchParams.get("p2") || searchParams.get("p1") || "";
 

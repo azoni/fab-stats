@@ -12,7 +12,7 @@ import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
-import { computeMetaStats } from "@/lib/meta-stats";
+import { useCommunityMeta } from "@/hooks/useCommunityMeta";
 import { RecentEvents } from "@/components/home/RecentEvents";
 import { DashboardInsights } from "@/components/home/DashboardInsights";
 import { DashboardFilters } from "@/components/home/DashboardFilters";
@@ -45,7 +45,11 @@ export default function Dashboard() {
   const { matches, isLoaded, error: matchesError, refreshMatches } = useMatches();
   const { user, profile, isAdmin, refreshProfile } = useAuth();
   const { team: myTeam } = useTeamOnce(profile?.teamId || null);
-  const { entries: lbEntries } = useLeaderboard(true);
+  // Compact snapshot: the dashboard only needs rank/list fields (avatar ring,
+  // logged-out top players). The community meta the logged-out view renders
+  // comes precomputed from the same compactor.
+  const { entries: lbEntries } = useLeaderboard(true, { compact: true });
+  const communityMeta = useCommunityMeta(!!isLoaded && matches.length === 0);
   const communityCounts = useCommunityStats();
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
@@ -251,9 +255,6 @@ export default function Dashboard() {
     const tournamentEvents = filteredEventStats.filter(isTournamentEvent);
     return tournamentEvents.length > 0 ? computeTournamentAnalytics(tournamentEvents) : null;
   }, [filteredEventStats]);
-
-  // Community meta (compact — top 3 heroes for mini widget)
-  const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
 
 
   if (!isLoaded) {

@@ -1,8 +1,12 @@
 import type { LeaderboardEntry } from "@/types";
-import { allHeroes } from "@/lib/heroes";
-import { getWeekStart } from "@/lib/leaderboard";
+import { getWeekStart } from "./rolling-windows";
+import heroData from "./generated/hero-data.json";
 
-const validHeroNames = new Set(allHeroes.map((h) => h.name));
+// Relative, Firebase-free imports on purpose: netlify/functions/leaderboard-compactor.mts
+// runs computeMetaStats server-side to publish the guest home's meta snapshot.
+// The manifest's names are exactly allHeroes' names (overrides only touch
+// legalFormats), so no need to pull lib/heroes (and its Firestore hook) in.
+const validHeroNames = new Set((heroData.heroes as { name: string }[]).map((h) => h.name));
 
 export interface HeroMetaStats {
   hero: string;

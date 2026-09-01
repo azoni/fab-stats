@@ -65,6 +65,19 @@ service firebase.storage {
       allow read, write: if false;
     }
 
+    // Profile photos: public read (they render on public profiles, the
+    // leaderboard and OG images), owner-only write. The compactor function
+    // (admin SDK, bypasses rules) migrates legacy inline photos here too.
+    match /profile-photos/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if signedIn()
+        && request.auth.uid == uid
+        && (
+          request.resource == null
+          || validImageUpload(1024 * 1024)
+        );
+    }
+
     // Group icons: public read, authenticated write with size limits
     match /group-images/icons/{groupId}/{fileName} {
       allow read: if true;

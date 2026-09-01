@@ -1520,7 +1520,10 @@ service cloud.firestore {
     //   community/_players_auth  — full list incl. hideFromGuests players: authed read only
     // This enforces hideFromGuests at the rules layer instead of a client filter.
     match /community/{docId} {
-      allow read: if request.auth != null || docId != "_players_auth";
+      // Aggregator-built docs. Anything ending in "_auth" (or "_auth_<shard>")
+      // carries hideFromGuests players and is signed-in only:
+      // _players_auth, _lb_auth, _lb_auth_0…, _meta_home_auth.
+      allow read: if request.auth != null || !docId.matches('.*_auth(_[0-9]+)?$');
       allow write: if false;
     }
   }

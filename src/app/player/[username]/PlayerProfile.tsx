@@ -100,7 +100,9 @@ export default function PlayerProfile() {
   const username = decodeURIComponent(pathname.split("/").pop() || "");
   const [state, setState] = useState<PageState>({ status: "loading" });
   const { isAdmin, user: currentUser, isGuest, profile: myProfile, refreshProfile } = useAuth();
-  const { entries: lbEntries } = useLeaderboard();
+  // Only the rank badge + opted-in opponent names are read from the community
+  // list, so the compact snapshot (a few reads) replaces the ~2,500-doc scan.
+  const { entries: lbEntries } = useLeaderboard(false, { compact: true });
   const { isFavorited, toggleFavorite } = useFavorites();
   const { isFriend, hasSentRequest, hasReceivedRequest, getFriendshipForUser, sendRequest, acceptRequest } = useFriends();
   const creators = useCreators();

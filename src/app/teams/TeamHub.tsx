@@ -93,7 +93,7 @@ export default function TeamHub() {
   const { user, profile, isAdmin: isSiteAdmin, refreshProfile } = useAuth();
   const { teams: myTeams, primaryTeamId, loading: teamsListLoading } = useMyTeams();
   const { invites } = useTeamInvites();
-  const { entries: leaderboardEntries } = useLeaderboard(true);
+  const { entries: leaderboardEntries } = useLeaderboard(true, { compact: true });
 
   useEffect(() => { setMounted(true); }, []);
 
