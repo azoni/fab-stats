@@ -1,6 +1,6 @@
 import type { MatchRecord, HeroStats, OverallStats, OpponentStats, Achievement } from "@/types";
 import { MatchResult, GameFormat } from "@/types";
-import { computeEventStats, computePlayoffFinishes, getEventType } from "@/lib/stats";
+import { computeEventStats, computePlayoffFinishes, getEventType, type PlayoffFinish } from "@/lib/stats";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { HeroGuesserStats } from "@/lib/heroguesser/types";
 import type { MatchupManiaStats } from "@/lib/matchupmania/types";
@@ -28,6 +28,18 @@ export interface ExtraGameStats {
   gameDayStreak?: number;
 }
 
+/** Expensive per-evaluation derivations, computed at most once per context.
+ *  The context is built fresh for every evaluateAchievements /
+ *  getAchievementProgress call, so nothing here can go stale. Before this,
+ *  hasChampionFinish & co. re-ran computeEventStats + computePlayoffFinishes
+ *  over ALL matches on every call (~240 full passes per profile render), and
+ *  the six "Collector" achievements each re-ran all 180 core checks. */
+interface DerivedCache {
+  finishes?: PlayoffFinish[];
+  eventTypeStats?: Map<string, { count: number; wins: number; distinct: Set<string> }>;
+  coreEarned?: number;
+}
+
 interface CheckContext extends ExtraGameStats {
   matches: MatchRecord[];
   overall: OverallStats;
@@ -43,6 +55,38 @@ interface CheckContext extends ExtraGameStats {
   triviaStats?: TriviaStats;
   timelineStats?: TimelineStats;
   connectionsStats?: ConnectionsStats;
+  _derived?: DerivedCache;
+}
+
+function derived(ctx: CheckContext): DerivedCache {
+  if (!ctx._derived) ctx._derived = {};
+  return ctx._derived;
+}
+
+function getFinishes(ctx: CheckContext): PlayoffFinish[] {
+  const d = derived(ctx);
+  if (!d.finishes) d.finishes = computePlayoffFinishes(computeEventStats(ctx.matches));
+  return d.finishes;
+}
+
+function eventTypeStats(ctx: CheckContext, type: string): { count: number; wins: number; distinct: Set<string> } | undefined {
+  const d = derived(ctx);
+  if (!d.eventTypeStats) {
+    const map = new Map<string, { count: number; wins: number; distinct: Set<string> }>();
+    for (const m of ctx.matches) {
+      const t = getEventType(m);
+      let rec = map.get(t);
+      if (!rec) {
+        rec = { count: 0, wins: 0, distinct: new Set<string>() };
+        map.set(t, rec);
+      }
+      rec.count++;
+      if (m.result === MatchResult.Win) rec.wins++;
+      rec.distinct.add(`${m.date}|${m.venue || ""}`);
+    }
+    d.eventTypeStats = map;
+  }
+  return d.eventTypeStats.get(type);
 }
 
 interface AchievementProgress {
@@ -127,44 +171,32 @@ function tieredGameAchievements(
 
 // Helper: count matches by event type (uses refined classification, not raw field)
 function countEventType(ctx: CheckContext, type: string): number {
-  return ctx.matches.filter((m) => getEventType(m) === type).length;
+  return eventTypeStats(ctx, type)?.count ?? 0;
 }
 
 // Helper: count distinct events (by date + venue + eventType combos)
 function countDistinctEvents(ctx: CheckContext, type: string): number {
-  const events = new Set<string>();
-  for (const m of ctx.matches) {
-    if (getEventType(m) === type) {
-      events.add(`${m.date}|${m.venue || ""}`);
-    }
-  }
-  return events.size;
+  return eventTypeStats(ctx, type)?.distinct.size ?? 0;
 }
 
 // Helper: count wins by event type
 function countEventTypeWins(ctx: CheckContext, type: string): number {
-  return ctx.matches.filter((m) => getEventType(m) === type && m.result === MatchResult.Win).length;
+  return eventTypeStats(ctx, type)?.wins ?? 0;
 }
 
 // Helper: check if player won (champion finish) at a given event type
 function hasChampionFinish(ctx: CheckContext, eventType: string): boolean {
-  const eventStats = computeEventStats(ctx.matches);
-  const finishes = computePlayoffFinishes(eventStats);
-  return finishes.some((f) => f.type === "champion" && f.eventType === eventType);
+  return getFinishes(ctx).some((f) => f.type === "champion" && f.eventType === eventType);
 }
 
 // Helper: count champion finishes at a given event type
 function countChampionFinishes(ctx: CheckContext, eventType: string): number {
-  const eventStats = computeEventStats(ctx.matches);
-  const finishes = computePlayoffFinishes(eventStats);
-  return finishes.filter((f) => f.type === "champion" && f.eventType === eventType).length;
+  return getFinishes(ctx).filter((f) => f.type === "champion" && f.eventType === eventType).length;
 }
 
 // Helper: check if player has a placement finish at a given event type
 function hasPlacementFinish(ctx: CheckContext, eventType: string, placementType: string): boolean {
-  const eventStats = computeEventStats(ctx.matches);
-  const finishes = computePlayoffFinishes(eventStats);
-  return finishes.some((f) => f.type === placementType && f.eventType === eventType);
+  return getFinishes(ctx).some((f) => f.type === placementType && f.eventType === eventType);
 }
 
 // Helper: hero stats excluding "Unknown"
@@ -2337,6 +2369,14 @@ const TOTAL_TIERS: [number, Achievement["rarity"], string][] = [
   [125, "legendary", "Collector VI"],
 ];
 
+/** Number of core achievements earned — computed once per context instead of
+ *  once per Collector tier per check AND per progress (12× all 180 checks). */
+function coreEarnedCount(ctx: CheckContext): number {
+  const d = derived(ctx);
+  if (d.coreEarned === undefined) d.coreEarned = CORE_ACHIEVEMENTS.filter((a) => a.check(ctx)).length;
+  return d.coreEarned;
+}
+
 const META_ACHIEVEMENTS: AchievementDef[] = TOTAL_TIERS.map(([threshold, rarity, name], i) => ({
   id: `total_achievements_${threshold}`,
   name,
@@ -2346,8 +2386,8 @@ const META_ACHIEVEMENTS: AchievementDef[] = TOTAL_TIERS.map(([threshold, rarity,
   rarity,
   group: "total_achievements",
   tier: i + 1,
-  check: (ctx: CheckContext) => CORE_ACHIEVEMENTS.filter((a) => a.check(ctx)).length >= threshold,
-  progress: (ctx: CheckContext) => ({ current: CORE_ACHIEVEMENTS.filter((a) => a.check(ctx)).length, target: threshold }),
+  check: (ctx: CheckContext) => coreEarnedCount(ctx) >= threshold,
+  progress: (ctx: CheckContext) => ({ current: coreEarnedCount(ctx), target: threshold }),
 }));
 
 const ACHIEVEMENTS: AchievementDef[] = [...CORE_ACHIEVEMENTS, ...META_ACHIEVEMENTS];

@@ -121,7 +121,10 @@ async function loadDynamicPortraits() {
 }
 
 export function getHeroByName(name: string): HeroInfo | undefined {
-  return allHeroes.find((h) => h.name === name);
+  // Names are unique, so the Map lookup is exactly the old linear find — but
+  // O(1): the matchup grids resolve every pair through this on each filter
+  // toggle (~1M string compares at 154 heroes).
+  return heroMap.get(name);
 }
 
 /**

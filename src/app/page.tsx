@@ -7,7 +7,7 @@ import { ExternalLink, PlusCircle, UploadCloud } from "lucide-react";
 import { useMatches } from "@/hooks/useMatches";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, getMatchVenue, isTournamentEvent, type TournamentAnalytics } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, getMatchVenue, isTournamentEvent, dateMs, type TournamentAnalytics } from "@/lib/stats";
 import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -175,9 +175,9 @@ export default function Dashboard() {
   }, [heroStats]);
 
   const sortedByDateDesc = useMemo(() =>
-    [...deferredMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    [...deferredMatches].sort((a, b) => dateMs(b.date) - dateMs(a.date)
       || getRoundNumber(b) - getRoundNumber(a)
-      || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      || dateMs(b.createdAt) - dateMs(a.createdAt)),
     [deferredMatches]
   );
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);

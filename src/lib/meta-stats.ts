@@ -91,9 +91,12 @@ export function computeMetaStats(
         // Date range filtering: skip entries without dates, proportionally scale matches
         let effectiveMatches = hb.matches;
         let effectiveWins = hb.wins;
+        // Computed once per breakdown and reused for the player-date keys below
+        // (it used to be filtered twice per breakdown).
+        let datesInRange: string[] | null = null;
         if (isDateRange) {
           if (!hb.dates || hb.dates.length === 0) continue; // Can't verify dates — skip
-          const datesInRange = hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr));
+          datesInRange = hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr));
           if (datesInRange.length === 0) continue;
           // dates is unique dates (Set), so use proportional scaling for match/win counts
           const fraction = datesInRange.length / hb.dates.length;
@@ -109,9 +112,7 @@ export function computeMetaStats(
         // Track unique player-format-event/date pairs so All Formats matches
         // the sum of explicit format buckets.
         if (hb.dates) {
-          const datesToAdd = isDateRange
-            ? hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr))
-            : hb.dates;
+          const datesToAdd = isDateRange ? datesInRange! : hb.dates;
           for (const d of datesToAdd) cur.playerDates.add(`${entry.userId}|${hb.format}|${hb.eventType}|${d}`);
         } else if (!isDateRange) {
           cur.playerDates.add(`${entry.userId}|${hb.format}|${hb.eventType}|${hb.hero}`);
