@@ -26,7 +26,7 @@ npm run format:check      # Check formatting without writing
 
 ## Rules — Do This
 
-- **Always use UTC for game dates.** `getTodayDateStr()` from `src/lib/fabdoku/puzzle-generator.ts` is canonical. Use `getUTCFullYear()`, `getUTCMonth()`, `getUTCDate()` — never local-time variants for game logic.
+- **Always use UTC for game dates.** `getTodayDateStr()` from `src/lib/games/date.ts` is canonical (re-exported by `src/lib/fabdoku/puzzle-generator.ts`, but import from `games/date` unless you also need the puzzle pools — the generator drags the frozen pools + card manifest along). Use `getUTCFullYear()`, `getUTCMonth()`, `getUTCDate()` — never local-time variants for game logic.
 - **Run `npx tsc --noEmit` after every change.** It catches most bugs in ~5 seconds.
 - **Use the ref pattern for callbacks in useEffect.** Keep `react-hooks/exhaustive-deps` clean — `npm run lint` flags violations (Next 16 no longer lints during `next build`, and CI runs only tsc, so lint drift ships silently unless you run it). If a callback is used inside a useEffect, access it via a ref:
   ```tsx
@@ -89,6 +89,8 @@ FaBdoku (hero + card modes), HeroGuesser, and BruteBrawl pick daily answers by i
 3. `npx tsx scripts/verify-frozen-pool.ts compare fixtures.json` — every pre-cutover date must be byte-identical.
 
 Also on every bump: review `LL_OVERRIDES`/`FORMAT_ADD_OVERRIDES` in `src/lib/heroes.ts` (a stale replace-override clobbers corrected upstream data), and NEVER re-run `scripts/generate-word-bank.js` (it reshuffles every historical crossword).
+
+**Card manifests (do this FIRST after the bump, before the pool steps):** the client never imports `@flesh-and-blood/cards` directly — it is a single 8.8 MB bundle. `src/lib/heroes.ts` and `src/lib/cards.ts` read `src/lib/generated/{hero,card}-data.json`, produced by `npx tsx scripts/gen-card-manifests.ts` (`--check` exits 1 if the committed files drift from the installed package). Forgetting to regenerate means new sets/heroes silently never appear; the pool generator and verifier read through these manifests, so regenerate before capturing/comparing pools.
 
 ## Game Data Isolation
 

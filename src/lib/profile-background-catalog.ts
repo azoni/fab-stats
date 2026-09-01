@@ -12,7 +12,6 @@ import {
   writeBatch,
   type QueryConstraint,
 } from "firebase/firestore";
-import { deleteObject, getStorage, ref as storageRef } from "firebase/storage";
 import { app, auth, db } from "@/lib/firebase";
 import {
   DEFAULT_BACKGROUND_ID,
@@ -602,6 +601,10 @@ export async function updateProfileBackgroundCatalogEntry(
 
 async function deleteStorageObjectIfPresent(bucket: string, objectPath: string): Promise<void> {
   try {
+    // Loaded on demand: this module is mounted by the root layout (background
+    // controller) but only the admin delete path touches Storage, so a static
+    // import would ship the Storage SDK in every route.
+    const { deleteObject, getStorage, ref: storageRef } = await import("firebase/storage");
     const storage = getStorage(app, `gs://${bucket}`);
     await deleteObject(storageRef(storage, objectPath));
   } catch (error) {

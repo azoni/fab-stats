@@ -4,7 +4,7 @@
  * weekend costs nothing). Keys are never purchasable.
  */
 import type { DelveCharacter } from "./types";
-import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
+import { getTodayDateStr } from "@/lib/games/date";
 import { KEYS_PER_DAY, KEYS_BANK_CAP } from "./balance";
 
 function daysBetweenUtc(fromDate: string, toDate: string): number {

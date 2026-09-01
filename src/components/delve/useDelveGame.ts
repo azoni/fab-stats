@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameFx } from "@/components/games/fx";
-import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
+import { getTodayDateStr } from "@/lib/games/date";
 import { dateToSeed } from "@/lib/games/seeded-random";
 import type {
   DelveCharacter,

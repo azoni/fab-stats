@@ -2,14 +2,16 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMatchesByUserId, updateProfile } from "@/lib/firestore-storage";
-import { updateLeaderboardEntry } from "@/lib/leaderboard";
-import { linkMatchesWithOpponents } from "@/lib/match-linking";
-import { computeH2HForUser } from "@/lib/h2h";
 
 /**
  * Detects the `needsRecompute` flag set by server-side auto-sync
  * and triggers leaderboard/linking recomputation on the client.
  * Runs once per session when the profile loads with the flag set.
+ *
+ * The recompute modules (leaderboard, match-linking, h2h → stats, heroes)
+ * are imported on demand: this hook mounts in the root layout, and a static
+ * import would ship all of them in every route's shared chunk for a path
+ * that runs only after an admin auto-sync.
  */
 export function useAutoSyncRecompute() {
   const { user, profile } = useAuth();
@@ -25,14 +27,19 @@ export function useAutoSyncRecompute() {
     updateProfile(user.uid, { needsRecompute: false }).catch(() => {});
 
     // Trigger full recomputation in the background
-    getMatchesByUserId(user.uid)
-      .then((allMatches) => {
+    Promise.all([
+      getMatchesByUserId(user.uid),
+      import("@/lib/leaderboard"),
+      import("@/lib/match-linking"),
+      import("@/lib/h2h"),
+    ])
+      .then(([allMatches, leaderboard, matchLinking, h2h]) => {
         // Leaderboard update
-        updateLeaderboardEntry(profile, allMatches).catch(() => {});
+        leaderboard.updateLeaderboardEntry(profile, allMatches).catch(() => {});
         // Match linking
-        linkMatchesWithOpponents(user.uid, allMatches).catch(() => {});
+        matchLinking.linkMatchesWithOpponents(user.uid, allMatches).catch(() => {});
         // H2H
-        computeH2HForUser(user.uid, allMatches).catch(() => {});
+        h2h.computeH2HForUser(user.uid, allMatches).catch(() => {});
         // Community hero matchups deliberately NOT updated here: the counters
         // are increment-based, so re-adding the full history double-counts.
         // Auto-synced matches are folded in by the admin "Backfill hero

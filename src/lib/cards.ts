@@ -1,67 +1,35 @@
-import { cards } from "@flesh-and-blood/cards";
-import { Type } from "@flesh-and-blood/types";
 import type { CardInfo } from "@/types";
+import cardData from "./generated/card-data.json";
 
 const CARD_IMAGE_CDN = "https://d2wlb52bya4y8z.cloudfront.net/media/cards/large";
 
-const INCLUDED_TYPES = new Set<string>([
-  Type.Action,
-  Type.Equipment,
-  Type.Weapon,
-  Type.Instant,
-  Type.DefenseReaction,
-  Type.AttackReaction,
-]);
+// The playable-card pool comes from a build-time manifest
+// (scripts/gen-card-manifests.ts) rather than the whole @flesh-and-blood/cards
+// package — the package is a single 8.8 MB bundle. The manifest holds the same
+// records the old module-eval filter produced (deduped by cardIdentifier, in
+// package order); only the two CDN URLs are rebuilt here from their ids so the
+// file does not repeat the prefixes 4,700 times. REGENERATE ON EVERY PACKAGE
+// BUMP: npx tsx scripts/gen-card-manifests.ts
+
+type CardManifestEntry = Omit<CardInfo, "imageUrl" | "imageUrlFallback"> & {
+  img: string;
+  tcg?: string;
+};
 
 /** A TCGplayer card scan (portrait, card-ratio) to fall back on when the community
  *  image CDN has no render yet — chiefly the newest sets (Omens of the Third Age,
  *  Mastery Pack: Warrior, …). Derived from the card's TCGplayer product id. */
-function tcgplayerImage(card: { printings?: { tcgplayer?: { productId?: string } }[] }): string | undefined {
-  for (const p of card.printings || []) {
-    const id = p.tcgplayer?.productId;
-    if (id) return `https://tcgplayer-cdn.tcgplayer.com/product/${id}_in_1000x1000.jpg`;
-  }
-  return undefined;
+function tcgplayerImage(productId: string | undefined): string | undefined {
+  return productId ? `https://tcgplayer-cdn.tcgplayer.com/product/${productId}_in_1000x1000.jpg` : undefined;
 }
 
-/** Map raw type enums to display-friendly names. */
-function getDisplayType(types: string[]): string {
-  if (types.includes(Type.DefenseReaction)) return "Defense Reaction";
-  if (types.includes(Type.AttackReaction)) return "Attack Reaction";
-  if (types.includes(Type.Equipment)) return "Equipment";
-  if (types.includes(Type.Weapon)) return "Weapon";
-  if (types.includes(Type.Instant)) return "Instant";
-  return "Action";
-}
+const cardPool: CardInfo[] = (cardData.cards as CardManifestEntry[]).map(({ img, tcg, ...rest }) => ({
+  ...rest,
+  imageUrl: img ? `${CARD_IMAGE_CDN}/${img}.webp` : "",
+  imageUrlFallback: tcgplayerImage(tcg),
+}));
 
-const cardPool = cards.filter((c) =>
-  c.types.some((t) => INCLUDED_TYPES.has(t))
-);
-
-const cardMap = new Map<string, CardInfo>();
-for (const card of cardPool) {
-  // Use cardIdentifier as unique key (handles pitch variants)
-  if (cardMap.has(card.cardIdentifier)) continue;
-
-  const imageId = card.defaultImage || "";
-  cardMap.set(card.cardIdentifier, {
-    name: card.name,
-    cardIdentifier: card.cardIdentifier,
-    types: [getDisplayType(card.types.map(String))],
-    classes: (card.classes || []).map(String),
-    talents: (card.talents || []).map(String),
-    keywords: (card.keywords || []).map(String),
-    pitch: card.pitch,
-    cost: card.cost,
-    power: card.power,
-    defense: card.defense,
-    legalFormats: (card.legalFormats || []).map(String),
-    imageUrl: imageId ? `${CARD_IMAGE_CDN}/${imageId}.webp` : "",
-    imageUrlFallback: tcgplayerImage(card),
-  });
-}
-
-export const allCards: CardInfo[] = Array.from(cardMap.values()).sort(
+export const allCards: CardInfo[] = cardPool.sort(
   (a, b) => a.name.localeCompare(b.name) || (a.pitch ?? 0) - (b.pitch ?? 0)
 );
 

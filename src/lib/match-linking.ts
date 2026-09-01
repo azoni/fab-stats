@@ -3,8 +3,12 @@ import {
   getMatchesByUserId,
   updateOpponentHeroForUser,
 } from "@/lib/firestore-storage";
-import { getHeroByName } from "@/lib/heroes";
 import { MatchResult, type MatchRecord } from "@/types";
+
+// The hero lookup is imported lazily: this module sits on the root layout's
+// import path (AutoSyncRecompute) and the hero table is only consulted inside
+// the async review pre-fill, so a static import would put it in every route.
+const loadHeroLookup = () => import("@/lib/heroes").then((m) => m.getHeroByName);
 
 // Cap an opponent's history read during review pre-fill. Their recent matches
 // (ordered by createdAt desc) include the event you just played, so a bound of
@@ -203,6 +207,7 @@ export async function resolveOpponentHeroesForReview(
   if (gemIds.length === 0) return result;
 
   const concurrency = Math.max(1, Math.min(opts?.concurrency ?? 6, gemIds.length));
+  const getHeroByName = await loadHeroLookup();
   // Shared cursor. JS is single-threaded so `cursor++` between awaits is atomic,
   // but a local read makes the per-worker claim explicit and bound-safe.
   let cursor = 0;
