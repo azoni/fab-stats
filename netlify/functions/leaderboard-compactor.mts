@@ -19,7 +19,8 @@
 //     base64 profile photos to Storage (a photo is ~15 KB — more than the rest
 //     of a row — and ~1,000 entries carried one), publish rows + meta docs.
 //   INCREMENTAL: leaderboard docs with updatedAt > last run, merged into the
-//     previous rows. Deleted docs linger until the next full run (≤6 h).
+//     previous rows. A live count() shortfall (a doc was deleted) forces a
+//     full rebuild, so removed accounts drop out within one cycle.
 //
 // First deploy: nothing is published until every base64 photo has been moved
 // (bounded per run), so clients keep the raw scan until the snapshot is
@@ -67,6 +68,10 @@ interface State {
   lastFullAt?: string;
   lastIncrementalAt?: string;
   photosPending?: number;
+  /** Raw collection size at the last publish — incremental runs compare it
+   *  against a live count() to notice deleted docs (which no updatedAt query
+   *  can return) and rebuild instead of republishing the stale row. */
+  docCount?: number;
   lastRun?: Record<string, unknown>;
 }
 
@@ -312,12 +317,13 @@ async function runFull(): Promise<Record<string, unknown>> {
     lastFullAt: pub.updatedAt,
     lastIncrementalAt: pub.updatedAt,
     photosPending: photos.pending,
+    docCount: snap.size,
     lastRun: result,
   });
   return result;
 }
 
-async function runIncremental(sinceIso: string): Promise<Record<string, unknown>> {
+async function runIncremental(sinceIso: string, state: State): Promise<Record<string, unknown>> {
   const t0 = Date.now();
   const db = getAdminDb();
   const changedSnap = await db.collection("leaderboard").where("updatedAt", ">", sinceIso).get();
@@ -327,6 +333,21 @@ async function runIncremental(sinceIso: string): Promise<Record<string, unknown>
     if (!data.userId || BLOCKED_USER_IDS.has(data.userId)) continue;
     changed.push(data);
   }
+
+  // Deletions (account removal, admin cleanup) never appear in an updatedAt
+  // query. Compare the live document count with what the snapshot expects; a
+  // shortfall means something vanished → rebuild from the collection (a few
+  // billed reads via the aggregation) instead of republishing the stale row.
+  const previous = await readPreviousRows();
+  if (!previous) return runFull();
+  const liveCount = (await db.collection("leaderboard").count().get()).data().count;
+  const addedNow = changed.filter((d) => !previous.has(d.userId)).length;
+  const expected = (state.docCount ?? previous.size) + addedNow;
+  if (liveCount < expected) {
+    console.log(`[leaderboard-compactor] ${expected - liveCount} doc(s) disappeared since the last publish — full rebuild`);
+    return runFull();
+  }
+
   const now = new Date().toISOString();
   if (changed.length === 0) {
     // Nothing to republish, but let clients know the snapshot is still being
@@ -338,18 +359,15 @@ async function runIncremental(sinceIso: string): Promise<Record<string, unknown>
     }
     await batch.commit();
     const result = { mode: "incremental", changed: 0, ms: Date.now() - t0 };
-    await saveState({ lastIncrementalAt: now, lastRun: result });
+    await saveState({ lastIncrementalAt: now, docCount: liveCount, lastRun: result });
     return result;
   }
-
-  const previous = await readPreviousRows();
-  if (!previous) return runFull();
 
   const photos = await externalizePhotos(changed);
   for (const d of changed) previous.set(d.userId, toCompactRow(withHeroCompletion(d)));
   const pub = await publishRows([...previous.values()]);
   const result = { mode: "incremental", changed: changed.length, rows: previous.size, ...pub, ...photos, ms: Date.now() - t0 };
-  await saveState({ lastIncrementalAt: pub.updatedAt, lastRun: result });
+  await saveState({ lastIncrementalAt: pub.updatedAt, docCount: liveCount, lastRun: result });
   return result;
 }
 
@@ -372,7 +390,7 @@ export default async function handler(req: Request) {
     const result =
       mode === "full" || staleFull || !state.lastIncrementalAt
         ? await runFull()
-        : await runIncremental(state.lastIncrementalAt);
+        : await runIncremental(state.lastIncrementalAt, state);
     console.log("[leaderboard-compactor] Done:", JSON.stringify(result));
     return new Response(JSON.stringify({ ok: true, result }), {
       status: 200,

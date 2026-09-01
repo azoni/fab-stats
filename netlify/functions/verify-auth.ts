@@ -2,11 +2,11 @@
  * Verify a Firebase ID token. Returns the user's UID and email if valid, or
  * null if invalid/missing.
  *
- * Verification is local: firebase-admin checks the JWT's signature against
- * Google's public keys (cached in-process), audience, issuer and expiry. The
- * previous implementation POSTed every token to the Identity Toolkit REST API
- * (accounts:lookup), an extra 100–300 ms network hop on every authenticated
- * function call; that path is kept only as a fallback for environments
+ * firebase-admin checks the JWT's signature against Google's public keys
+ * (cached in-process), audience, issuer and expiry locally, then confirms the
+ * account is not disabled/deleted/revoked (checkRevoked). The previous
+ * implementation POSTed every token to the Identity Toolkit REST API
+ * (accounts:lookup); that path is kept only as a fallback for environments
  * without a service account.
  *
  * Usage in Netlify functions:
@@ -38,11 +38,15 @@ export async function verifyFirebaseToken(req: Request): Promise<FirebaseAuthRes
 
   if (app) {
     try {
-      const decoded = await getAuth(app).verifyIdToken(idToken);
+      // checkRevoked=true keeps the pre-change semantics: accounts:lookup
+      // rejected disabled/deleted accounts immediately, and so does this
+      // (one admin-side user lookup per call; malformed/expired tokens still
+      // fail locally before any network call).
+      const decoded = await getAuth(app).verifyIdToken(idToken, true);
       if (!decoded.uid) return null;
       return { uid: decoded.uid, email: decoded.email || null };
     } catch {
-      return null; // invalid, expired, or wrong-project token
+      return null; // invalid, expired, revoked, disabled, or wrong-project token
     }
   }
 

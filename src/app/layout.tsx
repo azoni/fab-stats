@@ -11,6 +11,7 @@ import { LayoutShell } from "@/components/auth/LayoutShell";
 import { GuestBanner } from "@/components/auth/GuestBanner";
 import { SiteBanner } from "@/components/layout/SiteBanner";
 import { ProfileBackgroundController } from "@/components/layout/ProfileBackgroundController";
+import { ImageCdnFallback } from "@/components/layout/ImageCdnFallback";
 import { SupportFab } from "@/components/support/SupportFab";
 import { WhatsNewModal } from "@/components/layout/WhatsNewModal";
 import { SonnerProvider } from "@/components/ui/sonner-provider";
@@ -168,6 +169,7 @@ export default function RootLayout({
           </a>
           <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
+          <ImageCdnFallback />
           <Navbar />
           <MobileTopHeader />
           <main id="main-content" className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 md:pl-64 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8">
