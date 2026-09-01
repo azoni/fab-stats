@@ -236,21 +236,7 @@ export function generateDailyPuzzle(dateStr: string): DailyPuzzle {
   return puzzle;
 }
 
-/** Get today's date string in YYYY-MM-DD format (UTC so puzzle resets at the same time for all players). */
-export function getTodayDateStr(): string {
-  const now = new Date();
-  const y = now.getUTCFullYear();
-  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(now.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-/** Get yesterday's date string in YYYY-MM-DD format (UTC). */
-export function getYesterdayDateStr(): string {
-  const now = new Date();
-  now.setUTCDate(now.getUTCDate() - 1);
-  const y = now.getUTCFullYear();
-  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(now.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+// The UTC date helpers moved to lib/games/date.ts (this module drags the frozen
+// pools + card manifest along, which date-only callers should not pay for).
+// Re-exported so existing puzzle-side imports keep working.
+export { getTodayDateStr, getYesterdayDateStr } from "@/lib/games/date";

@@ -1,48 +1,16 @@
-import { cards } from "@flesh-and-blood/cards";
-import { Type } from "@flesh-and-blood/types";
 import type { HeroInfo } from "@/types";
+import heroData from "./generated/hero-data.json";
 
-const CARD_IMAGE_CDN = "https://d2wlb52bya4y8z.cloudfront.net/media/cards/large";
-
-function getHeroImageUrl(card: (typeof cards)[number]): string {
-  const printings = card.printings || [];
-  const candidates = printings
-    .map((p: { image?: string }) => p.image)
-    .filter((i): i is string =>
-      !!i && !i.includes("BACK") && !i.includes("_V2") && !i.includes("-MV") && !i.includes("-RF") && !i.includes("MARVEL")
-    );
-  // Prefer defaultImage if it's among the clean candidates
-  const best = card.defaultImage && candidates.includes(card.defaultImage)
-    ? card.defaultImage
-    : candidates[0] || card.defaultImage || "";
-  return best ? `${CARD_IMAGE_CDN}/${best}.webp` : "";
-}
-
-const heroCards = cards.filter((card) =>
-  card.types.includes(Type.Hero)
-);
-
+// Hero data comes from a build-time manifest (scripts/gen-card-manifests.ts)
+// instead of the whole @flesh-and-blood/cards package: the package is a single
+// 8.8 MB JS bundle that cannot be tree-shaken, and this module is reachable
+// from nearly every route. The manifest holds exactly the HeroInfo records the
+// old module-eval filter produced (reprints already merged), pre-sort and
+// pre-override. REGENERATE ON EVERY PACKAGE BUMP:
+//   npx tsx scripts/gen-card-manifests.ts
 const heroMap = new Map<string, HeroInfo>();
-for (const card of heroCards) {
-  const existing = heroMap.get(card.name);
-  if (existing) {
-    // Merge legal formats from duplicate entries (reprints)
-    for (const f of (card.legalFormats || []).map(String)) {
-      if (!existing.legalFormats.includes(f)) existing.legalFormats.push(f);
-    }
-  } else {
-    heroMap.set(card.name, {
-      name: card.name,
-      cardIdentifier: card.cardIdentifier,
-      classes: (card.classes || []).map(String),
-      talents: (card.talents || []).map(String),
-      legalFormats: (card.legalFormats || []).map(String),
-      life: card.life,
-      intellect: card.intellect,
-      young: card.young,
-      imageUrl: getHeroImageUrl(card),
-    });
-  }
+for (const hero of heroData.heroes as HeroInfo[]) {
+  heroMap.set(hero.name, hero);
 }
 
 // Override format data for heroes where the card package is out of date.

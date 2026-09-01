@@ -6,7 +6,7 @@
  * on merge, so a lost trailing write self-heals on next load.
  */
 import type { DelveCharacter, DelveStats, RunState, ClassId, ItemRoll, MaterialId, Rarity } from "./types";
-import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
+import { getTodayDateStr } from "@/lib/games/date";
 import { xpToNext, LEVEL_CAP_V01, DEATH_MARKS_KEPT_PCT, KEYS_PER_DAY, STASH_CAP, SALVAGE_YIELD } from "./balance";
 
 export const LS_CHARACTER = "delve-character-v1";

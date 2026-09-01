@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { submitFeedback } from "@/lib/feedback";
-import { getAdminUid } from "@/lib/admin";
+import { getAdminUid } from "@/lib/admin-check";
 import { MessageCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";

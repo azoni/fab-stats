@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/hooks/useConversations";
-import { getAdminUid } from "@/lib/admin";
+import { getAdminUid } from "@/lib/admin-check";
 import { InboxIcon as InboxHeaderIcon } from "@/components/icons/NavIcons";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHero } from "@/components/ui/PageHero";

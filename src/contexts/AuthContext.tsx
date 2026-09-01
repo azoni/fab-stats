@@ -23,7 +23,7 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getProfile, importMatchesFirestore } from "@/lib/firestore-storage";
-import { checkIsAdmin } from "@/lib/admin";
+import { checkIsAdmin } from "@/lib/admin-check";
 import { setActivityUsername } from "@/lib/activity-log";
 import { getAllMatches, clearAllData } from "@/lib/storage";
 import type { UserProfile } from "@/types";
