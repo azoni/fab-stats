@@ -446,12 +446,21 @@ export async function updateLeaderboardEntry(
 
 // ── Cached one-time fetch (replaces real-time subscription) ──
 
-let cachedEntries: LeaderboardEntry[] | null = null;
-let cacheTimestamp = 0;
+// Two scan tiers: guest (rules force the isPublic + hideFromGuests filters) and
+// signed-in (one unfiltered scan). The signed-in "public only" view is derived
+// from the unfiltered scan — it used to be its own where(isPublic==true) scan,
+// so a session that visited home (all) and then /leaderboard, /player or
+// /compare (public) re-read ~2,500 of the same docs.
 let cachedEntriesGuest: LeaderboardEntry[] | null = null;
 let cacheTimestampGuest = 0;
 let cachedEntriesAll: LeaderboardEntry[] | null = null;
 let cacheTimestampAll = 0;
+let cachedEntriesPublic: LeaderboardEntry[] | null = null;
+let cachedEntriesPublicSource: LeaderboardEntry[] | null = null;
+// Concurrent callers (a page hook + the navbar popover mounting together)
+// share one in-flight scan instead of each issuing their own.
+let inflightAll: Promise<LeaderboardEntry[]> | null = null;
+let inflightGuest: Promise<LeaderboardEntry[]> | null = null;
 // 30 minutes — every entry point full-scans ~3.7k leaderboard docs, so the
 // in-memory cache window is the main quota lever (leaderboards move slowly).
 const CACHE_TTL = 30 * 60_000;
@@ -510,6 +519,38 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
   });
 }
 
+async function scanGuestEntries(): Promise<LeaderboardEntry[]> {
+  if (inflightGuest) return inflightGuest;
+  inflightGuest = (async () => {
+    try {
+      // Guest queries must include the hideFromGuests filter to satisfy Firestore rules
+      const q = query(leaderboardCollection(), where("isPublic", "==", true), where("hideFromGuests", "==", false));
+      const snapshot = await getDocs(q);
+      cachedEntriesGuest = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
+      cacheTimestampGuest = Date.now();
+      return cachedEntriesGuest;
+    } finally {
+      inflightGuest = null;
+    }
+  })();
+  return inflightGuest;
+}
+
+async function scanAllEntries(): Promise<LeaderboardEntry[]> {
+  if (inflightAll) return inflightAll;
+  inflightAll = (async () => {
+    try {
+      const snapshot = await getDocs(leaderboardCollection());
+      cachedEntriesAll = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
+      cacheTimestampAll = Date.now();
+      return cachedEntriesAll;
+    } finally {
+      inflightAll = null;
+    }
+  })();
+  return inflightAll;
+}
+
 export async function getLeaderboardEntries(includePrivate = false, isAuthenticated = true): Promise<LeaderboardEntry[]> {
   const now = Date.now();
 
@@ -517,45 +558,34 @@ export async function getLeaderboardEntries(includePrivate = false, isAuthentica
   // guest can't satisfy the per-doc hideFromGuests rule, so Firestore denies
   // the whole query — pages passing includePrivate=true (home, /meta,
   // /activity) silently rendered EMPTY community data for guests.
-  if (includePrivate && isAuthenticated) {
-    if (cachedEntriesAll && now - cacheTimestampAll < CACHE_TTL) {
-      return cachedEntriesAll;
-    }
-    const snapshot = await getDocs(leaderboardCollection());
-    cachedEntriesAll = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
-    cacheTimestampAll = now;
-    return cachedEntriesAll;
-  }
-
-  // Guest queries must include hideFromGuests filter to satisfy Firestore rules
   if (!isAuthenticated) {
     if (cachedEntriesGuest && now - cacheTimestampGuest < CACHE_TTL) {
       return cachedEntriesGuest;
     }
-    const q = query(leaderboardCollection(), where("isPublic", "==", true), where("hideFromGuests", "==", false));
-    const snapshot = await getDocs(q);
-    cachedEntriesGuest = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
-    cacheTimestampGuest = now;
-    return cachedEntriesGuest;
+    return scanGuestEntries();
   }
 
-  if (cachedEntries && now - cacheTimestamp < CACHE_TTL) {
-    return cachedEntries;
+  const all =
+    cachedEntriesAll && now - cacheTimestampAll < CACHE_TTL ? cachedEntriesAll : await scanAllEntries();
+  if (includePrivate) return all;
+
+  // Public-only view of the same scan (same predicate as the former
+  // where("isPublic", "==", true) query). Memoized per scan so callers get a
+  // stable array identity between renders.
+  if (!cachedEntriesPublic || cachedEntriesPublicSource !== all) {
+    cachedEntriesPublic = all.filter((e) => e.isPublic === true);
+    cachedEntriesPublicSource = all;
   }
-  const q = query(leaderboardCollection(), where("isPublic", "==", true));
-  const snapshot = await getDocs(q);
-  cachedEntries = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
-  cacheTimestamp = now;
-  return cachedEntries;
+  return cachedEntriesPublic;
 }
 
 export function invalidateLeaderboardCache() {
   cachedEntriesGuest = null;
   cacheTimestampGuest = 0;
-  cachedEntries = null;
-  cacheTimestamp = 0;
   cachedEntriesAll = null;
   cacheTimestampAll = 0;
+  cachedEntriesPublic = null;
+  cachedEntriesPublicSource = null;
 }
 
 /** Look up a userId from leaderboard by stale username or display name. */

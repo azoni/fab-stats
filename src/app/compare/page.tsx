@@ -78,8 +78,10 @@ function findCommonOpponents(p1Stats: OpponentStats[], p2Stats: OpponentStats[])
 
 export default function ComparePage() {
   const searchParams = useSearchParams();
-  const { entries, loading } = useLeaderboard();
-  const { profile, user, isGuest } = useAuth();
+  const { profile, user, isGuest, loading: authLoading } = useAuth();
+  // The page is sign-in only; don't pay the community scan (~2,300 docs) for
+  // guests who only ever see the sign-in wall below.
+  const { entries, loading } = useLeaderboard(false, { enabled: !!user && !isGuest });
 
   const p2Param = searchParams.get("p2") || searchParams.get("p1") || "";
 
@@ -115,7 +117,7 @@ export default function ComparePage() {
     window.history.replaceState(null, "", `?${params.toString()}`);
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="space-y-4">
         <div className="h-8 w-64 bg-fab-surface rounded animate-pulse" />

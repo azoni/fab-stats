@@ -438,7 +438,7 @@ export async function decrementCommunityHeroMatchups(
     await batch.commit().catch(() => {});
   }
 
-  cachedData = null;
+  invalidateMatchupCaches();
 }
 
 // ── Adjust: Hero edit on a single match ──
@@ -522,7 +522,7 @@ export async function adjustHeroMatchupOnEdit(
   }
 
   // Invalidate cache so next read picks up the change
-  cachedData = null;
+  invalidateMatchupCaches();
 }
 
 /**
@@ -605,7 +605,7 @@ export async function adjustOpponentHeroMatchupOnEdit(
     }
   }
 
-  cachedData = null;
+  invalidateMatchupCaches();
 }
 
 /** Map a match result to [hero1WinsDelta, hero2WinsDelta, drawsDelta].
@@ -675,9 +675,64 @@ function findFormatEventTypeStats(
   return findEventTypeStats(formatMap, eventType);
 }
 
-// Simple in-memory cache
-let cachedData: { key: string; data: CommunityMatchupCell[]; ts: number } | null = null;
+// In-memory caches. The RAW docs are cached per month-set (several slots),
+// because format / rated / eventType are applied client-side to the same
+// docs — a single result slot keyed on all four meant every filter click on
+// /matchups (and every hop between /meta, /matchups and matchupmania, which
+// ask for different month sets) re-read the collection: 9,533 docs for the
+// all-time view.
 const CACHE_TTL = 15 * 60_000; // 15 minutes
+const RAW_CACHE_SLOTS = 8;
+const rawDocCache = new Map<string, { docs: HeroMatchupDoc[]; ts: number }>();
+const rawInflight = new Map<string, Promise<HeroMatchupDoc[]>>();
+const resultCache = new Map<string, { data: CommunityMatchupCell[]; ts: number }>();
+
+/** Drop every cached read after a write to heroMatchups (imports, edits, rebuilds). */
+export function invalidateMatchupCaches(): void {
+  rawDocCache.clear();
+  resultCache.clear();
+}
+
+async function fetchMatchupDocs(months: string[]): Promise<HeroMatchupDoc[]> {
+  const key = months.join(",");
+  const hit = rawDocCache.get(key);
+  if (hit && Date.now() - hit.ts < CACHE_TTL) return hit.docs;
+  const pending = rawInflight.get(key);
+  if (pending) return pending;
+
+  const p = (async () => {
+    try {
+      const col = collection(db, "heroMatchups");
+      let docs: HeroMatchupDoc[];
+      if (months.length === 0) {
+        // All time — fetch all docs
+        const snap = await getDocs(col);
+        docs = snap.docs.map((d) => d.data() as HeroMatchupDoc);
+      } else if (months.length <= 30) {
+        // Firestore `in` supports up to 30 values
+        const q = query(col, where("month", "in", months));
+        const snap = await getDocs(q);
+        docs = snap.docs.map((d) => d.data() as HeroMatchupDoc);
+      } else {
+        // Fallback: fetch all and filter client-side
+        const monthSet = new Set(months);
+        const snap = await getDocs(col);
+        docs = snap.docs.map((d) => d.data() as HeroMatchupDoc).filter((d) => monthSet.has(d.month));
+      }
+      if (rawDocCache.size >= RAW_CACHE_SLOTS) {
+        // Evict the oldest slot (Map iteration is insertion-ordered).
+        const oldest = rawDocCache.keys().next().value;
+        if (oldest !== undefined) rawDocCache.delete(oldest);
+      }
+      rawDocCache.set(key, { docs, ts: Date.now() });
+      return docs;
+    } finally {
+      rawInflight.delete(key);
+    }
+  })();
+  rawInflight.set(key, p);
+  return p;
+}
 
 /**
  * Fetch aggregated community hero matchup data.
@@ -749,28 +804,12 @@ export async function getCommunityHeroMatchups(
   eventType?: string,
 ): Promise<CommunityMatchupCell[]> {
   const cacheKey = `${months.join(",")}_${format || ""}_${rated || ""}_${eventType || ""}`;
-  if (cachedData && cachedData.key === cacheKey && Date.now() - cachedData.ts < CACHE_TTL) {
-    return cachedData.data;
+  const cachedResult = resultCache.get(cacheKey);
+  if (cachedResult && Date.now() - cachedResult.ts < CACHE_TTL) {
+    return cachedResult.data;
   }
 
-  const col = collection(db, "heroMatchups");
-  let docs: HeroMatchupDoc[] = [];
-
-  if (months.length === 0) {
-    // All time — fetch all docs
-    const snap = await getDocs(col);
-    docs = snap.docs.map((d) => d.data() as HeroMatchupDoc);
-  } else if (months.length <= 30) {
-    // Firestore `in` supports up to 30 values
-    const q = query(col, where("month", "in", months));
-    const snap = await getDocs(q);
-    docs = snap.docs.map((d) => d.data() as HeroMatchupDoc);
-  } else {
-    // Fallback: fetch all and filter client-side
-    const monthSet = new Set(months);
-    const snap = await getDocs(col);
-    docs = snap.docs.map((d) => d.data() as HeroMatchupDoc).filter((d) => monthSet.has(d.month));
-  }
+  const docs = await fetchMatchupDocs(months);
 
   // Aggregate across months per hero pair
   const pairMap = new Map<string, CommunityMatchupCell>();
@@ -810,6 +849,10 @@ export async function getCommunityHeroMatchups(
 
   const result = [...pairMap.values()].filter((c) => c.total > 0);
 
-  cachedData = { key: cacheKey, data: result, ts: Date.now() };
+  if (resultCache.size >= 32) {
+    const oldest = resultCache.keys().next().value;
+    if (oldest !== undefined) resultCache.delete(oldest);
+  }
+  resultCache.set(cacheKey, { data: result, ts: Date.now() });
   return result;
 }
