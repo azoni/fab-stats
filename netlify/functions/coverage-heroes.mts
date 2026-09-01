@@ -15,6 +15,7 @@
  */
 import { getAdminDb } from "./firebase-admin.ts";
 import { verifyFirebaseToken } from "./verify-auth.ts";
+import { readCoverageIndexBlob } from "./lib/coverage-index.ts";
 import {
   buildCoverageIndex,
   findOpponentHero,
@@ -45,6 +46,13 @@ async function getIndex(): Promise<{ index: CoverageIndex; size: number }> {
   if (indexInFlight) return indexInFlight;
   indexInFlight = (async () => {
     try {
+      // Prefer the blob auto-scrape publishes (one object read + one count);
+      // the full collection scan is only the fallback.
+      const blob = await readCoverageIndexBlob();
+      if (blob) {
+        cachedIndex = { ...blob, ts: Date.now() };
+        return cachedIndex;
+      }
       const db = getAdminDb();
       const snap = await db.collection("coverage-matches").get();
       const matches = snap.docs.map((d) => d.data() as CoverageMatch);

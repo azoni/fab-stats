@@ -9,18 +9,40 @@ import { computeMetaStats } from "./meta-stats";
 import { MatchResult, type MatchRecord, type LeaderboardEntry } from "./fab-types";
 
 // Warm-instance leaderboard cache so meta queries don't rescan ~2,500 docs each call.
+// Projected to the fields computeMetaStats(period "all") reads — a heavy
+// player's doc carries ~50 KB of venue/top-8 data this tool never touches.
 let lbCache: { list: LeaderboardEntry[]; ts: number } | null = null;
 async function getLeaderboard(db: Firestore): Promise<LeaderboardEntry[]> {
   if (lbCache && Date.now() - lbCache.ts < 5 * 60 * 1000) return lbCache.list;
-  const snap = await db.collection("leaderboard").get();
+  const snap = await db
+    .collection("leaderboard")
+    .select("userId", "isPublic", "totalMatches", "totalWins", "heroBreakdown", "heroBreakdownDetailed", "weeklyHeroBreakdown", "monthlyHeroBreakdown")
+    .get();
   const list = snap.docs.map((d) => d.data() as LeaderboardEntry);
   lbCache = { list, ts: Date.now() };
   return list;
 }
 
+// One question routinely calls get_my_stats AND get_matchup, each of which
+// re-read the user's whole match history (2,000+ docs for heavy users). Share
+// the read across the tools of a request (and the next minute of follow-ups).
+const USER_MATCHES_TTL = 60_000;
+const userMatchesCache = new Map<string, { ts: number; promise: Promise<MatchRecord[]> }>();
 async function getUserMatches(db: Firestore, uid: string): Promise<MatchRecord[]> {
-  const snap = await db.collection(`users/${uid}/matches`).orderBy("createdAt", "desc").get();
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as MatchRecord);
+  const hit = userMatchesCache.get(uid);
+  if (hit && Date.now() - hit.ts < USER_MATCHES_TTL) return hit.promise;
+  const promise = db
+    .collection(`users/${uid}/matches`)
+    .orderBy("createdAt", "desc")
+    .get()
+    .then((snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }) as MatchRecord));
+  userMatchesCache.set(uid, { ts: Date.now(), promise });
+  promise.catch(() => userMatchesCache.delete(uid));
+  if (userMatchesCache.size > 200) {
+    const oldest = userMatchesCache.keys().next().value;
+    if (oldest !== undefined) userMatchesCache.delete(oldest);
+  }
+  return promise;
 }
 
 const searchKnowledge: Tool = {

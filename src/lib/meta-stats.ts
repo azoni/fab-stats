@@ -96,10 +96,11 @@ export function computeMetaStats(
         let datesInRange: string[] | null = null;
         if (isDateRange) {
           if (!hb.dates || hb.dates.length === 0) continue; // Can't verify dates — skip
-          datesInRange = hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr));
-          if (datesInRange.length === 0) continue;
+          const inRange = hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr));
+          if (inRange.length === 0) continue;
+          datesInRange = inRange;
           // dates is unique dates (Set), so use proportional scaling for match/win counts
-          const fraction = datesInRange.length / hb.dates.length;
+          const fraction = inRange.length / hb.dates.length;
           effectiveMatches = Math.round(hb.matches * fraction);
           effectiveWins = Math.round(hb.wins * fraction);
         }

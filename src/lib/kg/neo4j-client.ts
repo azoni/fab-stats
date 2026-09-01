@@ -132,6 +132,69 @@ export async function upsertRelation(
   await runCypher(query, { fromId, toId, props: cleanProps });
 }
 
+/** Batch size for UNWIND writes — well under Aura's transaction memory limits. */
+const BATCH_ROWS = 500;
+
+function cleanProps(properties: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(properties).filter(([, v]) => v !== undefined));
+}
+
+/**
+ * Batched upsertNode: one round trip per BATCH_ROWS nodes via UNWIND, with the
+ * same MERGE-on-id + SET semantics as upsertNode. The nightly sync used to
+ * open a session and await one MERGE per node/edge — thousands of serial
+ * round trips to Aura.
+ */
+export async function upsertNodes(
+  type: EntityType,
+  rows: { id: string; properties?: Record<string, unknown> }[],
+): Promise<void> {
+  for (let i = 0; i < rows.length; i += BATCH_ROWS) {
+    const chunk = rows.slice(i, i + BATCH_ROWS).map((r) => ({
+      id: r.id,
+      uri: entityUri(type, r.id),
+      props: cleanProps(r.properties ?? {}),
+    }));
+    await runCypher(
+      `
+      UNWIND $rows AS row
+      MERGE (n:${type} {id: row.id})
+      SET n.uri = row.uri, n += row.props
+    `,
+      { rows: chunk },
+    );
+  }
+}
+
+/**
+ * Batched upsertRelation (same MATCH/MATCH/MERGE/SET semantics). Rows whose
+ * endpoints do not exist are silently skipped, exactly like the single form.
+ */
+export async function upsertRelations(
+  fromType: EntityType,
+  relType: RelationType,
+  toType: EntityType,
+  rows: { fromId: string; toId: string; properties?: Record<string, unknown> }[],
+): Promise<void> {
+  for (let i = 0; i < rows.length; i += BATCH_ROWS) {
+    const chunk = rows.slice(i, i + BATCH_ROWS).map((r) => ({
+      fromId: r.fromId,
+      toId: r.toId,
+      props: cleanProps(r.properties ?? {}),
+    }));
+    await runCypher(
+      `
+      UNWIND $rows AS row
+      MATCH (a:${fromType} {id: row.fromId})
+      MATCH (b:${toType} {id: row.toId})
+      MERGE (a)-[r:${relType}]->(b)
+      SET r += row.props
+    `,
+      { rows: chunk },
+    );
+  }
+}
+
 /**
  * Create constraints + indexes used by the KG. Idempotent — safe to call
  * at the start of every sync run.
