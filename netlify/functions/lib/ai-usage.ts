@@ -66,7 +66,8 @@ export async function getUsage(db: Firestore): Promise<AiUsage> {
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
   const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
 
-  const snap = await db.collection("aiTraces").where("ts", ">=", monthStart).limit(5000).get();
+  // Only the two fields summed below — traces carry the full question/answer.
+  const snap = await db.collection("aiTraces").where("ts", ">=", monthStart).select("ts", "costUsd").limit(5000).get();
   let monthSpend = 0;
   let todayCount = 0;
   let todaySpend = 0;

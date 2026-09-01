@@ -4,6 +4,7 @@
 
 import type { Config } from "@netlify/functions";
 import { getAdminDb } from "./firebase-admin.ts";
+import { writeCoverageIndexBlob } from "./lib/coverage-index.ts";
 
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -214,14 +215,13 @@ async function saveEvent(
 }
 
 async function rebuildSummaries(
+  matches: FirebaseFirestore.DocumentData[],
 ): Promise<number> {
   const db = getAdminDb();
-  const snap = await db.collection("coverage-matches").get();
 
   const pairMap = new Map<string, Record<string, unknown>>();
 
-  for (const doc of snap.docs) {
-    const m = doc.data();
+  for (const m of matches) {
     if (!m.player1Hero || !m.player2Hero) continue;
 
     const sorted = [m.player1Hero, m.player2Hero].sort();
@@ -521,10 +521,18 @@ export default async function handler() {
       }
     }
 
-    // Rebuild summaries if we got new data
+    // Rebuild summaries + the lookup index blob if we got new data (one
+    // collection read shared by both).
     if (newMatches > 0) {
-      const summaryCount = await rebuildSummaries();
+      const allMatches = (await getAdminDb().collection("coverage-matches").get()).docs.map((d) => d.data());
+      const summaryCount = await rebuildSummaries(allMatches);
       console.log(`[auto-scrape] Rebuilt ${summaryCount} matchup summaries`);
+      try {
+        const keys = await writeCoverageIndexBlob(allMatches);
+        console.log(`[auto-scrape] Published coverage index blob (${keys} player-date keys)`);
+      } catch (err) {
+        console.error("[auto-scrape] Coverage index blob failed (coverage-heroes falls back to the scan):", err);
+      }
     }
 
     // Save scrape status for admin dashboard
