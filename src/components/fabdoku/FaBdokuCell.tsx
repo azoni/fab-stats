@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
+import { cdnImageUrl, swapToOriginalOnce } from "@/lib/image-cdn";
 import { CountUp } from "@/components/games/fx";
 
 function PlusIcon({ className }: { className?: string }) {
@@ -103,11 +104,13 @@ export function FaBdokuCell({
     >
       {showImg ? (
         <img
-          src={getHeroPortraitUrl(heroName) || hero.imageUrl}
+          src={cdnImageUrl(getHeroPortraitUrl(heroName) || hero.imageUrl, { w: 240, q: 72 })}
           alt={heroName}
           className="w-full h-full object-cover object-top"
           onError={(e) => {
             const img = e.target as HTMLImageElement;
+            // CDN thumbnail → untransformed portrait → card art → text cell
+            if (swapToOriginalOnce(img, getHeroPortraitUrl(heroName) || hero.imageUrl)) return;
             if (hero.imageUrl && img.src !== hero.imageUrl) {
               img.src = hero.imageUrl;
             } else {

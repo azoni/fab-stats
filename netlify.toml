@@ -11,6 +11,13 @@
   # no nav/hub entry, robots noindex; reachable only by direct URL for testing.
   # The hub card + announcement come when it's ready for players.
   NEXT_PUBLIC_FEATURE_DELVE = "true"
+  # Route hero portraits / backgrounds through the Netlify Image CDN
+  # (src/lib/image-cdn.ts). Unset locally: `next dev` has no /.netlify/images.
+  NEXT_PUBLIC_IMAGE_CDN = "1"
+
+# Remote hosts the Image CDN may fetch from (hero portraits + card art).
+[images]
+  remote_images = ["https://dgmi4fxzalveh.cloudfront.net/.*", "https://d2wlb52bya4y8z.cloudfront.net/.*"]
 
 [functions]
   included_files = ["node_modules/@resvg/resvg-js-*/**", "netlify/functions/fonts/*"]
@@ -254,6 +261,20 @@
   for = "*.jpg"
   [headers.values]
     Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+# SVGs (favicon + the 5 preloaded nav icons) were revalidating on every hard
+# navigation — 7 days with a long stale window.
+[[headers]]
+  for = "*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=2592000"
+
+# Profile key-art backgrounds are versioned in their filenames (…-v1/-v2) and
+# up to 938 KB each; returning visitors were refetching them daily.
+[[headers]]
+  for = "/backgrounds/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=2592000"
 
 # HTML — always revalidate
 [[headers]]

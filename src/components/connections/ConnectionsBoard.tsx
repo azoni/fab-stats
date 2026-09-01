@@ -3,6 +3,7 @@ import { useState, useCallback, useMemo } from "react";
 import type { ConnectionsPuzzle, ConnectionsGuess } from "@/lib/connections/types";
 import { MAX_MISTAKES } from "@/lib/connections/puzzle-generator";
 import { getHeroByName, getHeroPortraitUrl, resolveHeroName } from "@/lib/heroes";
+import { heroThumbUrl, swapToOriginalOnce } from "@/lib/image-cdn";
 import { useGameFx } from "@/components/games/fx";
 
 const DIFFICULTY_COLORS: Record<number, { bg: string; text: string; border: string }> = {
@@ -72,12 +73,15 @@ function SolvedGroup({
           {portraits.map((p) => (
             <img
               key={p.word}
-              src={p.url}
+              src={heroThumbUrl(p.url)}
               alt={p.word}
               title={p.word}
               loading="lazy"
               className="h-8 w-8 rounded-full border border-fab-border object-cover object-top ring-2 ring-fab-bg"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              onError={(e) => {
+                if (swapToOriginalOnce(e.currentTarget as HTMLImageElement, p.url)) return;
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
             />
           ))}
         </div>

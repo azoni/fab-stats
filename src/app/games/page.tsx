@@ -7,6 +7,7 @@ import { VISIBLE_GAMES, GAME_CATEGORIES } from "@/lib/games";
 import { AllGamesShareCard } from "@/components/games/AllGamesShareCard";
 import { CountUp } from "@/components/games/fx";
 import { getHeroPortraitUrl } from "@/lib/heroes";
+import { cdnImageUrl, swapToOriginalOnce } from "@/lib/image-cdn";
 import { getTodayDateStr, completedOn, computeOverallStreak } from "@/lib/games/streak";
 import { localPlayedDates, mergeLocalDatesToServer, computeStreakFromDates } from "@/lib/games/activity";
 import { StreakCalendar } from "@/components/games/StreakCalendar";
@@ -160,13 +161,16 @@ export default function GamesPage() {
                     {/* Right-bleed hero art (decorative), brightening on hover */}
                     {accent && (
                       <img
-                        src={accent}
+                        src={cdnImageUrl(accent, { w: 320, q: 60 })}
                         alt=""
                         aria-hidden
                         loading="lazy"
                         className="pointer-events-none absolute -right-2 top-1/2 h-[128%] w-28 -translate-y-1/2 object-cover object-top opacity-[0.13] grayscale transition-all duration-300 group-hover:opacity-25 group-hover:grayscale-0"
                         style={{ maskImage: "linear-gradient(270deg,#000,transparent 92%)", WebkitMaskImage: "linear-gradient(270deg,#000,transparent 92%)" }}
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                        onError={(e) => {
+                          if (swapToOriginalOnce(e.currentTarget as HTMLImageElement, accent)) return;
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
                       />
                     )}
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />

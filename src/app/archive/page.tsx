@@ -6,6 +6,7 @@ import { Archive, ExternalLink, Search } from "lucide-react";
 import { PageHero } from "@/components/ui/PageHero";
 import { useHistoricalEvents } from "@/hooks/useHistoricalEvents";
 import { getHeroPortraitUrl } from "@/lib/heroes";
+import { heroThumbUrl, swapToOriginalOnce } from "@/lib/image-cdn";
 import type { HistoricalEvent, HistoricalPlacement } from "@/types";
 
 function HeroThumb({ hero }: { hero: string }) {
@@ -14,11 +15,12 @@ function HeroThumb({ hero }: { hero: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={url}
+      src={heroThumbUrl(url)}
       alt={hero}
       className="h-7 w-7 shrink-0 rounded-full border border-fab-border object-cover"
       loading="lazy"
       onError={(e) => {
+        if (swapToOriginalOnce(e.target as HTMLImageElement, url)) return;
         (e.target as HTMLImageElement).style.display = "none";
       }}
     />
