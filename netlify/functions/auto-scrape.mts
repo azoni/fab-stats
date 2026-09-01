@@ -534,7 +534,9 @@ export default async function handler() {
       newEvents,
       newMatches,
       newDecklists,
-      totalEventsChecked: tournamentUrls.length,
+      // Was `tournamentUrls.length` — a variable that never existed, so every
+      // run threw here and the status doc was never written.
+      totalEventsChecked: tournaments.reduce((n, t) => n + t.coverageUrls.length, 0),
     });
 
     console.log(`[auto-scrape] Done. ${newDecklists} decklists, ${newEvents} events, ${newMatches} matches.`);

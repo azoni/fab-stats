@@ -27,10 +27,49 @@ function isLikelyHeroName(name: string): boolean {
   return true;
 }
 
+/**
+ * One-doc read of community/_meta_summary, which community-aggregator
+ * publishes from the whole guest-visible leaderboard (it used to be a 500-doc
+ * runQuery on every /meta view — 500 billed reads and a 200–400 KB round trip
+ * before the first byte). Falls back to the scan only when the doc is absent.
+ */
+async function fetchMetaSummary(projectId: string, apiKey: string): Promise<MetaData | null> {
+  const res = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/community/_meta_summary?key=${apiKey}`,
+  );
+  if (!res.ok) return null;
+  const f = (await res.json())?.fields;
+  if (!f) return null;
+  // deno-lint-ignore no-explicit-any
+  const num = (v: any) => Number(v?.integerValue ?? v?.doubleValue ?? 0);
+  // deno-lint-ignore no-explicit-any
+  const agg = (v: any): HeroAgg | null => {
+    const m = v?.mapValue?.fields;
+    if (!m?.hero?.stringValue) return null;
+    return { hero: m.hero.stringValue, matches: num(m.matches), wins: num(m.wins), players: num(m.players) };
+  };
+  const totalPlayers = num(f.totalPlayers);
+  if (!totalPlayers) return null;
+  return {
+    totalPlayers,
+    totalMatches: num(f.totalMatches),
+    totalHeroes: num(f.totalHeroes),
+    mostPlayed: agg(f.mostPlayed),
+    bestWinRate: agg(f.bestWinRate),
+  };
+}
+
 async function fetchMetaData(): Promise<MetaData | null> {
   const projectId = Deno.env.get("NEXT_PUBLIC_FIREBASE_PROJECT_ID");
   const apiKey = Deno.env.get("NEXT_PUBLIC_FIREBASE_API_KEY");
   if (!projectId || !apiKey) return null;
+
+  try {
+    const summary = await fetchMetaSummary(projectId, apiKey);
+    if (summary) return summary;
+  } catch {
+    // fall through to the scan
+  }
 
   try {
     const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`;
@@ -143,6 +182,10 @@ export default async function handler(
   _request: Request,
   context: { next: () => Promise<Response> }
 ) {
+  // Start the data read in parallel with the origin fetch instead of after it —
+  // it used to add its full latency to every /meta TTFB.
+  const metaPromise = fetchMetaData().catch(() => null);
+
   let response: Response;
   try {
     response = await context.next();
@@ -164,7 +207,7 @@ export default async function handler(
   }
 
   try {
-  const meta = await fetchMetaData();
+  const meta = await metaPromise;
 
   const title = "Community Meta | FaB Stats";
 

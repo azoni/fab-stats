@@ -19,7 +19,10 @@
 [images]
   remote_images = ["https://dgmi4fxzalveh.cloudfront.net/.*", "https://d2wlb52bya4y8z.cloudfront.net/.*"]
 
-[functions]
+# Only og-image renders with satori + resvg. Scoping the native binary + WOFF
+# fonts to it keeps ~4–5 MB out of the other 30 function bundles (log-visit,
+# cosmetics-wallet, ... were unzipping resvg on every cold start).
+[functions."og-image"]
   included_files = ["node_modules/@resvg/resvg-js-*/**", "netlify/functions/fonts/*"]
 
 # Edge function rewrites OG meta tags with actual username
