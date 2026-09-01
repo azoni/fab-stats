@@ -55,6 +55,7 @@ const FULL_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const SHARD_BYTES = 800_000;
 /** Photo uploads per run are bounded by wall-clock so a run never times out. */
 const PHOTO_BUDGET_MS = 20_000;
+const PHOTO_WORKERS = 5;
 
 const IDX_USER = COMPACT_FIELDS.indexOf("userId");
 const IDX_PUBLIC = COMPACT_FIELDS.indexOf("isPublic");
@@ -121,10 +122,11 @@ async function externalizePhotos(docs: LbDoc[]): Promise<{ migrated: number; pen
   const deadline = Date.now() + PHOTO_BUDGET_MS;
   let migrated = 0;
   let failed = 0;
-  let i = 0;
-  for (; i < candidates.length; i++) {
-    if (Date.now() > deadline) break;
-    const d = candidates[i];
+  let cursor = 0;
+
+  // One profile read + one upload + two writes is ~0.7 s serial; a few
+  // workers in parallel clear the backlog in a run or two instead of hours.
+  async function migrateOne(d: LbDoc): Promise<void> {
     try {
       const profRef = db.doc(`users/${d.userId}/profile/main`);
       const profSnap = await profRef.get();
@@ -134,7 +136,7 @@ async function externalizePhotos(docs: LbDoc[]): Promise<{ migrated: number; pen
         url = await uploadPhoto(d.userId, profPhoto);
         if (!url) {
           failed++;
-          continue;
+          return;
         }
         await profRef.set({ photoUrl: url }, { merge: true });
       } else if (typeof profPhoto === "string" && profPhoto) {
@@ -149,7 +151,21 @@ async function externalizePhotos(docs: LbDoc[]): Promise<{ migrated: number; pen
       console.warn(`[leaderboard-compactor] photo migration failed for ${d.userId}:`, err);
     }
   }
-  return { migrated, pending: candidates.length - i, failed };
+
+  async function worker(): Promise<void> {
+    for (;;) {
+      if (Date.now() > deadline) return;
+      const idx = cursor++;
+      if (idx >= candidates.length) return;
+      await migrateOne(candidates[idx]);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(PHOTO_WORKERS, candidates.length) }, worker));
+  // Everything not claimed by a worker is still pending (failed ones were
+  // attempted and are not retried this run).
+  const attempted = Math.min(cursor, candidates.length);
+  return { migrated, pending: candidates.length - attempted, failed };
 }
 
 // ── Row packing / publishing ─────────────────────────────────────────────
