@@ -5,6 +5,7 @@ import type { DailyPuzzle } from "@/lib/shadowstrike/puzzle-generator";
 import { CARD_BANK, type ShadowStrikeCard } from "@/lib/shadowstrike/card-bank";
 import { TOTAL_PAIRS, HINT_FAIL_THRESHOLD } from "@/lib/shadowstrike/puzzle-generator";
 import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
+import { cdnImageUrl, swapToOriginalOnce } from "@/lib/image-cdn";
 import { allCards } from "@/lib/cards";
 
 // Real FaB art for the tiles. Heroes → portrait art; other cards → art only on an
@@ -97,12 +98,15 @@ export function ShadowStrikeBoard({
                   </div>
                   {art.url && (
                     <img
-                      src={art.url}
+                      src={cdnImageUrl(art.url, { w: 240, q: 70 })}
                       alt={card.label}
                       className="absolute inset-0 h-full w-full object-cover"
                       style={{ objectPosition: art.portrait ? "center top" : "center 20%" }}
                       loading="lazy"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                      onError={(e) => {
+                        if (swapToOriginalOnce(e.currentTarget as HTMLImageElement, art.url)) return;
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
                     />
                   )}
                   <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/85 to-transparent px-1 pb-0.5 pt-2 text-center text-[8px] font-semibold leading-tight text-white">

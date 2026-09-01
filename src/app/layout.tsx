@@ -43,6 +43,9 @@ const cinzel = Cinzel({
   variable: "--font-cinzel",
   subsets: ["latin"],
   weight: ["500", "600", "700", "800"],
+  // Only the profile customize drawer heading uses it — no reason to preload
+  // 26 KB at font priority on every page; the @font-face still loads on use.
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -127,6 +130,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Every page's first data request goes to origins the browser only
+            discovers after the JS bundles run; warming them in parallel with
+            the download saves a DNS+TCP+TLS round trip each on cold visits. */}
+        <link rel="preconnect" href="https://firestore.googleapis.com" />
+        <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+        <link rel="dns-prefetch" href="https://securetoken.googleapis.com" />
+        <link rel="dns-prefetch" href="https://dgmi4fxzalveh.cloudfront.net" />
+        <link rel="dns-prefetch" href="https://d2wlb52bya4y8z.cloudfront.net" />
+        <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem('fab-theme');var m={arcana:'rosetta',ironheart:'rosetta',chromatic:'rosetta',grimoire:'rosetta'};if(m[t]){t=m[t];localStorage.setItem('fab-theme',t)}var ok={leyline:1,rosetta:1,daylight:1};if(!ok[t]){localStorage.removeItem('fab-theme');t='rosetta'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','rosetta')}`,

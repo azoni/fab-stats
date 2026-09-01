@@ -9,6 +9,7 @@ import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { getHeroPortraitUrl, resolveHeroName } from "@/lib/heroes";
+import { heroThumbUrl, swapToOriginalOnce } from "@/lib/image-cdn";
 import type { UserProfile } from "@/types";
 
 /** DiscoverLink types double as the link-filter ids. */
@@ -157,11 +158,12 @@ function PlayerRow({ p, hero, links }: { p: DirectoryPlayer; hero?: string; link
             {hero && portrait && (
               <span className="flex min-w-0 items-center gap-1">
                 <img
-                  src={portrait}
+                  src={heroThumbUrl(portrait)}
                   alt=""
                   loading="lazy"
                   className="h-5 w-5 shrink-0 rounded-full border border-fab-border object-cover"
                   onError={(e) => {
+                    if (swapToOriginalOnce(e.currentTarget, portrait)) return;
                     e.currentTarget.style.display = "none";
                   }}
                 />

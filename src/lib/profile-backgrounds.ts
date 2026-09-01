@@ -1,3 +1,5 @@
+import { IMAGE_CDN_ENABLED, cdnImageUrl } from "@/lib/image-cdn";
+
 export type ProfileBackgroundKind = "key-art" | "playmat" | "hero-art";
 export type ProfileBackgroundUnlockType = "achievement" | "supporter" | "manual";
 
@@ -107,23 +109,25 @@ export function resolveBackgroundPositionForImage(imageUrl?: string | null): str
   );
 }
 
+// Widths are snapped to a short ladder so the CDN cache serves a handful of
+// variants per background instead of one per viewport.
+const OPTIMIZED_WIDTHS = [240, 360, 640, 1080, 1200, 1600, 2048, 2560];
+
+/**
+ * Resized/re-encoded URL for a same-origin background (the 15 fab-official
+ * key-art files are 335–938 KB each; the theme picker draws eight of them at
+ * 360 px). Goes through the Netlify Image CDN on deployed builds and returns
+ * the raw path in local dev — see lib/image-cdn.ts. Remote URLs (catalog
+ * uploads in Storage) pass through unchanged.
+ */
 export function buildOptimizedImageUrl(imageUrl: string, width: number, quality = 68): string {
   if (!imageUrl) return imageUrl;
   // Non-local images should pass through unchanged.
   if (!imageUrl.startsWith("/")) return imageUrl;
+  if (!IMAGE_CDN_ENABLED) return imageUrl;
 
-  // This app deploys as static export on Netlify (`publish = "out"`),
-  // where `/_next/image` is not available. Keep direct local URLs by default.
-  // If you move to a serverful Next runtime later, set:
-  // NEXT_PUBLIC_USE_NEXT_IMAGE_ENDPOINT=1
-  if (process.env.NEXT_PUBLIC_USE_NEXT_IMAGE_ENDPOINT !== "1") {
-    return imageUrl;
-  }
-
-  // Must match Next image optimizer allowed widths.
-  const allowedWidths = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840];
-  const requestedWidth = Math.max(16, Math.min(3840, Math.round(width)));
-  const safeWidth = allowedWidths.find((w) => w >= requestedWidth) ?? allowedWidths[allowedWidths.length - 1];
+  const requestedWidth = Math.max(16, Math.min(2560, Math.round(width)));
+  const safeWidth = OPTIMIZED_WIDTHS.find((w) => w >= requestedWidth) ?? OPTIMIZED_WIDTHS[OPTIMIZED_WIDTHS.length - 1];
   const safeQuality = Math.max(35, Math.min(100, Math.round(quality)));
-  return `/_next/image?url=${encodeURIComponent(imageUrl)}&w=${safeWidth}&q=${safeQuality}`;
+  return cdnImageUrl(imageUrl, { w: safeWidth, q: safeQuality, fm: "webp" });
 }

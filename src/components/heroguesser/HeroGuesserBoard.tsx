@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import type { HeroGuess } from "@/lib/heroguesser/types";
 import type { HeroInfo } from "@/types";
 import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
+import { heroThumbUrl, swapToOriginalOnce } from "@/lib/image-cdn";
 import { getPoolHero } from "@/lib/heroguesser/puzzle-generator";
 import { useGameFx } from "@/components/games/fx";
 
@@ -148,7 +149,12 @@ export function HeroGuesserBoard({
                   onClick={() => selectHero(h.name)}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${idx === highlightIndex ? "bg-fab-gold/15 text-fab-gold" : "hover:bg-fab-surface-hover"}`}
                 >
-                  <img src={getHeroPortraitUrl(h.name) || h.imageUrl} alt="" className="w-6 h-6 rounded object-cover" />
+                  <img
+                    src={heroThumbUrl(getHeroPortraitUrl(h.name) || h.imageUrl)}
+                    alt=""
+                    className="w-6 h-6 rounded object-cover"
+                    onError={(e) => { swapToOriginalOnce(e.currentTarget, getHeroPortraitUrl(h.name) || h.imageUrl); }}
+                  />
                   <span className="text-xs text-fab-text">{h.name}</span>
                   <span className="text-[9px] text-fab-dim ml-auto">{h.classes.join(", ")}</span>
                 </button>
@@ -194,9 +200,10 @@ export function HeroGuesserBoard({
           <div key={i} className="grid grid-cols-[1fr_repeat(6,minmax(0,1fr))] gap-1">
             <div className="flex items-center gap-1.5 min-w-0">
               <img
-                src={getHeroPortraitUrl(guess.heroName) || getHeroByName(guess.heroName)?.imageUrl}
+                src={heroThumbUrl(getHeroPortraitUrl(guess.heroName) || getHeroByName(guess.heroName)?.imageUrl)}
                 alt=""
                 className={`w-7 h-7 rounded-md object-cover object-top shrink-0 border border-fab-border/60 ${isLatest ? "game-pop" : ""}`}
+                onError={(e) => { swapToOriginalOnce(e.currentTarget, getHeroPortraitUrl(guess.heroName) || getHeroByName(guess.heroName)?.imageUrl); }}
               />
               <span className="text-[10px] text-fab-text font-medium truncate">{guess.heroName}</span>
             </div>
