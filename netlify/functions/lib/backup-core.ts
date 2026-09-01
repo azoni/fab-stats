@@ -15,7 +15,8 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
 const PROJECT_ID = "fab-stats-fc757";
 const BUCKET = "fab-stats-fc757.firebasestorage.app";
 const PREFIX = "firestore-backups/";
-const RETENTION_DAYS = 14;
+// Three weekly snapshots (the scheduled export runs Sundays).
+const RETENTION_DAYS = 21;
 /** Non-forced runs skip if a successful export started within this window. */
 const MIN_INTERVAL_HOURS = 20;
 

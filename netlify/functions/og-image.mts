@@ -400,10 +400,46 @@ function isLikelyHeroName(name: string): boolean {
   return true;
 }
 
+/** One-doc read of community/_meta_summary (published by community-aggregator
+ *  from the whole guest-visible leaderboard). The 500-doc scan below is only
+ *  the fallback for when the doc has not been written yet. */
+async function fetchMetaSummary(projectId: string, apiKey: string): Promise<MetaPageData | null> {
+  const res = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/community/_meta_summary?key=${apiKey}`,
+  );
+  if (!res.ok) return null;
+  const f = (await res.json())?.fields;
+  if (!f) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const num = (v: any) => Number(v?.integerValue ?? v?.doubleValue ?? 0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const agg = (v: any): MetaHeroAgg | null => {
+    const m = v?.mapValue?.fields;
+    if (!m?.hero?.stringValue) return null;
+    return { hero: m.hero.stringValue, matches: num(m.matches), wins: num(m.wins), players: num(m.players) };
+  };
+  const totalPlayers = num(f.totalPlayers);
+  if (!totalPlayers) return null;
+  return {
+    totalPlayers,
+    totalMatches: num(f.totalMatches),
+    totalHeroes: num(f.totalHeroes),
+    mostPlayed: agg(f.mostPlayed),
+    bestWinRate: agg(f.bestWinRate),
+  };
+}
+
 async function fetchMetaData(): Promise<MetaPageData | null> {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
   if (!projectId || !apiKey) return null;
+
+  try {
+    const summary = await fetchMetaSummary(projectId, apiKey);
+    if (summary) return summary;
+  } catch {
+    // fall through to the scan
+  }
 
   try {
     const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`;
@@ -1387,6 +1423,9 @@ export default async function handler(req: Request) {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        // `durable` shares one render across Netlify's CDN nodes instead of
+        // re-rendering (satori + resvg + Firestore reads) per node.
+        "Netlify-CDN-Cache-Control": "public, durable, s-maxage=3600, stale-while-revalidate=86400",
       },
     });
   } catch (err) {

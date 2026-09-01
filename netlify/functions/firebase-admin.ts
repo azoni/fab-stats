@@ -9,9 +9,7 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 let _db: Firestore | null = null;
 
-export function getAdminDb(): Firestore {
-  if (_db) return _db;
-
+export function getAdminApp(): App {
   if (getApps().length === 0) {
     const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT env var is not set");
@@ -19,7 +17,12 @@ export function getAdminDb(): Firestore {
     const serviceAccount = JSON.parse(raw);
     initializeApp({ credential: cert(serviceAccount) });
   }
+  return getApps()[0];
+}
 
+export function getAdminDb(): Firestore {
+  if (_db) return _db;
+  getAdminApp();
   _db = getFirestore();
   _db.settings({ ignoreUndefinedProperties: true });
   return _db;

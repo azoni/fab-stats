@@ -15,8 +15,13 @@
 //   GET /.netlify/functions/community-aggregator?mode=full&token=...
 //
 // Writes:
-//   community/_players — { v, players: CompactPlayer[], count, withStats,
-//                          truncated, bytes, updatedAt }
+//   community/_players      — { v, players: CompactPlayer[], count, withStats,
+//                               truncated, bytes, updatedAt }
+//   community/_meta_summary — { v, totalPlayers, totalMatches, totalHeroes,
+//                               mostPlayed, bestWinRate, updatedAt } — the
+//                               headline numbers the /meta OG tags + image show;
+//                               previously recomputed from a 500-doc leaderboard
+//                               scan on EVERY /meta page view (and per OG render)
 
 import type { Config } from "@netlify/functions";
 import { getAdminDb } from "./firebase-admin.ts";
@@ -41,7 +46,10 @@ interface LeaderboardDoc {
   displayName?: string;
   photoUrl?: string;
   topHero?: string;
+  topHeroMatches?: number;
   totalMatches?: number;
+  totalWins?: number;
+  heroBreakdown?: { hero: string; matches: number; wins: number }[];
   winRate?: number;
   eloRating?: number;
   teamName?: string;
@@ -82,12 +90,102 @@ interface CompactPlayer {
   v?: number; // lastVisit (epoch DAY seconds) — for "recently active" default sort
 }
 
+// ── /meta headline summary ────────────────────────────────────────────────
+// Same aggregation the og-rewrite-meta edge function and og-image used to run
+// inline over a 500-doc slice of the leaderboard on every request. Computed
+// here over EVERY guest-visible entry instead (the slice made the totals an
+// arbitrary subset) and published as one small doc.
+
+interface MetaHeroAgg {
+  hero: string;
+  matches: number;
+  wins: number;
+  players: number;
+}
+
+interface MetaSummary {
+  totalPlayers: number;
+  totalMatches: number;
+  totalHeroes: number;
+  mostPlayed: MetaHeroAgg | null;
+  bestWinRate: MetaHeroAgg | null;
+}
+
+// Mirror of the edge function's filter — junk "hero" names that leaked into
+// heroBreakdown from bad imports.
+function isLikelyHeroName(name: string): boolean {
+  if (!name || name.length < 2) return false;
+  const lower = name.toLowerCase().trim();
+  const blocked = [
+    "not rated", "rated", "unrated", "competitive", "casual",
+    "classic constructed", "blitz", "draft", "sealed", "clash",
+    "ultimate pit fight", "other", "unknown",
+  ];
+  if (blocked.includes(lower)) return false;
+  if (/\b(19|20)\d{2}\b/.test(name)) return false;
+  return true;
+}
+
+function buildMetaSummary(docs: LeaderboardDoc[]): MetaSummary {
+  const heroMap = new Map<string, { matches: number; wins: number; players: Set<string> }>();
+  let totalMatches = 0;
+  let playerCount = 0;
+
+  for (const d of docs) {
+    if (!d.userId || BLOCKED_USER_IDS.has(d.userId)) continue;
+    // Guest-visible entries only — the same set the logged-out /meta page shows.
+    if (d.isPublic !== true || d.hideFromGuests === true) continue;
+    playerCount++;
+    totalMatches += Number(d.totalMatches || 0);
+
+    if (Array.isArray(d.heroBreakdown) && d.heroBreakdown.length > 0) {
+      for (const item of d.heroBreakdown) {
+        const hero = item?.hero;
+        if (!hero || !isLikelyHeroName(hero)) continue;
+        const cur = heroMap.get(hero) || { matches: 0, wins: 0, players: new Set<string>() };
+        cur.matches += Number(item.matches || 0);
+        cur.wins += Number(item.wins || 0);
+        cur.players.add(d.userId);
+        heroMap.set(hero, cur);
+      }
+    } else if (d.topHero && isLikelyHeroName(d.topHero)) {
+      const matches = Number(d.topHeroMatches || 0);
+      const wins = Math.round(matches * (Number(d.winRate || 0) / 100));
+      const cur = heroMap.get(d.topHero) || { matches: 0, wins: 0, players: new Set<string>() };
+      cur.matches += matches;
+      cur.wins += wins;
+      cur.players.add(d.userId);
+      heroMap.set(d.topHero, cur);
+    }
+  }
+
+  const heroList: MetaHeroAgg[] = [...heroMap.entries()].map(([hero, v]) => ({
+    hero,
+    matches: v.matches,
+    wins: v.wins,
+    players: v.players.size,
+  }));
+  const mostPlayed = heroList.length > 0 ? heroList.reduce((best, h) => (h.matches > best.matches ? h : best)) : null;
+  const eligible = heroList.filter((h) => h.matches >= 50);
+  const bestWinRate =
+    eligible.length > 0
+      ? eligible.reduce((best, h) => {
+          const hWr = h.matches > 0 ? h.wins / h.matches : 0;
+          const bWr = best.matches > 0 ? best.wins / best.matches : 0;
+          return hWr > bWr ? h : best;
+        })
+      : null;
+
+  return { totalPlayers: playerCount, totalMatches, totalHeroes: heroMap.size, mostPlayed, bestWinRate };
+}
+
 async function buildPlayers(): Promise<{
   all: CompactPlayer[];
   guest: CompactPlayer[];
   total: number;
   withStats: number;
   healedPrivacyFields: number;
+  metaSummary: MetaSummary;
 }> {
   const db = getAdminDb();
   const [unameSnap, lbSnap, visitSnap, profileSnap] = await Promise.all([
@@ -105,8 +203,10 @@ async function buildPlayers(): Promise<{
   const lastVisitByUid = (visitSnap.data() as Record<string, string> | undefined) || {};
 
   const lbByUid = new Map<string, LeaderboardDoc>();
+  const lbDocs: LeaderboardDoc[] = [];
   for (const doc of lbSnap.docs) {
     const data = doc.data() as LeaderboardDoc;
+    lbDocs.push(data);
     if (data.userId) lbByUid.set(data.userId, data);
   }
 
@@ -151,8 +251,16 @@ async function buildPlayers(): Promise<{
     healedPrivacyFields = toPatch.length;
     if (healedPrivacyFields > 0) {
       console.log(`[community-aggregator] Healed privacy fields on ${healedPrivacyFields} leaderboard docs`);
+      // Reflect the patch in this run's in-memory docs so the summary below
+      // sees the same visibility the client queries will.
+      for (const { ref, patch } of toPatch) {
+        const data = lbByUid.get(ref.id);
+        if (data) Object.assign(data, patch);
+      }
     }
   }
+
+  const metaSummary = buildMetaSummary(lbDocs);
 
   const all: CompactPlayer[] = []; // includes hideFromGuests players (auth-only doc)
   const guest: CompactPlayer[] = []; // excludes hideFromGuests players (public doc)
@@ -230,7 +338,7 @@ async function buildPlayers(): Promise<{
   const byMatches = (a: CompactPlayer, b: CompactPlayer) => (b.m || 0) - (a.m || 0);
   all.sort(byMatches);
   guest.sort(byMatches);
-  return { all, guest, total: all.length, withStats, healedPrivacyFields };
+  return { all, guest, total: all.length, withStats, healedPrivacyFields, metaSummary };
 }
 
 /** Serialize under the doc-size limit: drop photo URLs first, then truncate the
@@ -254,7 +362,7 @@ function fitToLimit(players: CompactPlayer[]): { list: CompactPlayer[]; truncate
 }
 
 async function run() {
-  const { all, guest, total, withStats, healedPrivacyFields } = await buildPlayers();
+  const { all, guest, total, withStats, healedPrivacyFields, metaSummary } = await buildPlayers();
   const db = getAdminDb();
   const now = new Date().toISOString();
 
@@ -284,6 +392,11 @@ async function run() {
       bytes: authFit.bytes,
       updatedAt: now,
     }),
+    db.collection("community").doc("_meta_summary").set({
+      v: 1,
+      ...metaSummary,
+      updatedAt: now,
+    }),
   ]);
 
   return {
@@ -291,6 +404,12 @@ async function run() {
     guestCount: guest.length,
     withStats,
     healedPrivacyFields,
+    metaSummary: {
+      players: metaSummary.totalPlayers,
+      matches: metaSummary.totalMatches,
+      heroes: metaSummary.totalHeroes,
+      mostPlayed: metaSummary.mostPlayed?.hero ?? null,
+    },
     guestWritten: guestFit.list.length,
     authWritten: authFit.list.length,
     guestTruncated: guestFit.truncated,

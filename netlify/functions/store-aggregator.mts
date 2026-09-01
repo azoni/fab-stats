@@ -299,9 +299,25 @@ function aggregate(docs: LeaderboardDoc[], aliasGroups: StoreAliasGroup[] = []):
 // bypasses security rules so it can. Private players are COUNTED in a store's
 // uniquePlayers/totalMatches (they did log matches there), but aggregate() omits
 // them from the named `players` list so no private identity is exposed.
+//
+// Every read projects to the fields aggregate() touches: a heavy player's doc
+// carries ~50 KB of heroBreakdownDetailed/eventKeys that this function never
+// looks at, so the projection cuts bandwidth 10–50× per run.
+const LEADERBOARD_FIELDS = [
+  "userId",
+  "username",
+  "displayName",
+  "photoUrl",
+  "isPublic",
+  "hideFromGuests",
+  "venueBreakdown",
+  "venueSlugs",
+  "updatedAt",
+] as const;
+
 async function fetchAllLeaderboard(): Promise<LeaderboardDoc[]> {
   const db = getAdminDb();
-  const snap = await db.collection("leaderboard").get();
+  const snap = await db.collection("leaderboard").select(...LEADERBOARD_FIELDS).get();
   return snap.docs.map((d) => d.data() as LeaderboardDoc);
 }
 
@@ -317,6 +333,7 @@ async function fetchChangedLeaderboard(sinceIso: string): Promise<LeaderboardDoc
   const snap = await db
     .collection("leaderboard")
     .where("updatedAt", ">", sinceIso)
+    .select(...LEADERBOARD_FIELDS)
     .get();
   return snap.docs.map((d) => d.data() as LeaderboardDoc);
 }
@@ -326,6 +343,7 @@ async function fetchLeaderboardByVenueSlug(slug: string): Promise<LeaderboardDoc
   const snap = await db
     .collection("leaderboard")
     .where("venueSlugs", "array-contains", slug)
+    .select(...LEADERBOARD_FIELDS)
     .get();
   return snap.docs.map((d) => d.data() as LeaderboardDoc);
 }
@@ -426,6 +444,50 @@ async function rebuildDirectoryFromAggregates(): Promise<number> {
   return capped.length;
 }
 
+/**
+ * Incremental runs used to call rebuildDirectoryFromAggregates() — a full
+ * read of every storeAggregates doc (~4k) — 48 times a day, although at most
+ * a handful of stores change per run. Patch the directory doc in place
+ * instead: replace/remove only the affected slugs, keep everything else.
+ * Falls back to the full rebuild when the doc is missing or pre-v2.
+ * `totalAggregated` (count of ALL store docs incl. sub-threshold ones) is
+ * refreshed by the daily full run; the patch carries the previous value.
+ */
+async function patchDirectory(
+  aggregates: Map<string, StoreAggregate>,
+  affectedSlugs: Set<string>,
+): Promise<number> {
+  const db = getAdminDb();
+  const ref = db.collection("storeAggregates").doc("_directory");
+  const snap = await ref.get();
+  const data = snap.data() as
+    | { v?: number; stores?: CompactDirectoryEntry[]; totalAggregated?: number }
+    | undefined;
+  if (!data || data.v !== 2 || !Array.isArray(data.stores)) {
+    return rebuildDirectoryFromAggregates();
+  }
+  const bySlug = new Map<string, CompactDirectoryEntry>();
+  for (const e of data.stores) if (e && typeof e.s === "string") bySlug.set(e.s, e);
+  for (const slug of affectedSlugs) {
+    const agg = aggregates.get(slug);
+    if (agg && agg.totalMatches >= DIRECTORY_MIN_MATCHES) {
+      bySlug.set(slug, { s: agg.slug, n: agg.name, m: agg.totalMatches, p: agg.uniquePlayers });
+    } else {
+      bySlug.delete(slug);
+    }
+  }
+  const entries = [...bySlug.values()].sort((a, b) => b.m - a.m).slice(0, DIRECTORY_MAX_STORES);
+  await ref.set({
+    v: 2,
+    stores: entries,
+    count: entries.length,
+    totalAggregated: data.totalAggregated ?? entries.length,
+    minMatches: DIRECTORY_MIN_MATCHES,
+    updatedAt: new Date().toISOString(),
+  });
+  return entries.length;
+}
+
 async function runFull(): Promise<{ stores: number; written: number; deleted: number; ms: number }> {
   const t0 = Date.now();
   const [docs, aliasGroups] = await Promise.all([fetchAllLeaderboard(), fetchStoreAliases()]);
@@ -517,7 +579,7 @@ async function runIncremental(sinceIso: string): Promise<{
   }
 
   const { written, deleted } = await writeAggregates(aggregates, "incremental", affectedSlugs);
-  const stores = await rebuildDirectoryFromAggregates();
+  const stores = await patchDirectory(aggregates, affectedSlugs);
   const now = new Date().toISOString();
   await getAdminDb()
     .collection("storeAggregates")
