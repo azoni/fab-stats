@@ -212,9 +212,9 @@ export function searchHeroes(query: string, format?: string): HeroInfo[] {
 
 // Rotating constructed formats where a hero that has since moved to Living
 // Legend may still appear in *historical* match records — so LL heroes stay
-// selectable. Limited/other formats (Draft, Sealed, Clash, Ultimate Pit Fight)
-// are strict: a hero must actually be legal in that format to be picked. This
-// keeps e.g. Arakni (a CC/LL hero) out of a Draft event's hero picker.
+// selectable. Limited formats (Draft, Sealed, Ultimate Pit Fight) are strict:
+// a hero must actually be legal in that format to be picked. This keeps e.g.
+// Arakni (a CC/LL hero) out of a Draft event's hero picker.
 const LL_HISTORICAL_FORMATS = new Set<string>([
   "Classic Constructed",
   "Blitz",
@@ -224,16 +224,60 @@ const LL_HISTORICAL_FORMATS = new Set<string>([
   "Golden Age",
 ]);
 
-/** Filter heroes by game format. Returns all heroes if format has no mapping
- *  ("Other"/unknown). For rotating constructed formats, Living Legend heroes
- *  are also included so historical matches remain recordable. */
+// The formats the card data actually carries hero legality for. GameFormat
+// offers "Clash", but FaB publishes no card legality for it — the upstream
+// @flesh-and-blood/types `Format` enum has no such member ("Clash" there is a
+// card *keyword*), so not one hero lists it and the strict branch below used to
+// filter a Clash picker down to ZERO selectable heroes. Formats the data has
+// never heard of are treated like "Other" instead. Deriving this from the data
+// rather than hardcoding "Clash" also means a format the package renames
+// degrades to "show everything" instead of to an empty dropdown.
+const FORMATS_WITH_LEGALITY_DATA = new Set<string>();
+for (const hero of allHeroes) {
+  for (const f of hero.legalFormats) FORMATS_WITH_LEGALITY_DATA.add(f);
+}
+
+/** Whether `format` narrows the hero pool at all. False for "" / "Other" and
+ *  for app-only formats the card data doesn't cover (Clash) — those show every
+ *  hero, so there is no such thing as an "illegal" pick to explain. */
+export function formatFiltersHeroes(format: string): boolean {
+  return !!format && format !== "Other" && FORMATS_WITH_LEGALITY_DATA.has(format);
+}
+
+/** Filter heroes by game format. Returns all heroes when the format doesn't
+ *  narrow the pool (see `formatFiltersHeroes`). For rotating constructed
+ *  formats, Living Legend heroes are also included so historical matches
+ *  remain recordable. */
 export function getHeroesForFormat(format: string): HeroInfo[] {
-  // "Other" or unknown formats → show all heroes
-  if (!format || format === "Other") return allHeroes;
+  if (!formatFiltersHeroes(format)) return allHeroes;
   const includeLivingLegend = LL_HISTORICAL_FORMATS.has(format);
   return allHeroes.filter(
     (h) =>
       h.legalFormats.includes(format) ||
       (includeLivingLegend && h.legalFormats.includes("Living Legend"))
   );
+}
+
+// NOT filtered on: the card package also carries a per-hero `bannedFormats`,
+// which overlaps `legalFormats` (a hero is listed both legal and banned in
+// Silver Age). Deliberately ignored, for two reasons:
+//   1. It encodes *benchings*, not bans — FaB benches Silver Age heroes for one
+//      or two seasons, pre-release to pre-release, after which they come back.
+//      That is time-dependent legality, exactly what LL_HISTORICAL_FORMATS
+//      already keeps permissive so old matches stay recordable. Filtering on it
+//      would make last season's Briar matches impossible to record.
+//   2. The data lags the announcements badly. At the pinned 5.0.0 it named
+//      Baalghor / Ira / Kano / Kayo / Prism; the actual 2026-09-18 benching is
+//      Briar, Chane, Oldhim and Oscilio (which 5.2.6 has) — no overlap at all.
+// Benching is a Silver Age mechanism, so honouring it in the strict formats
+// would be dead code. If FaB ever bans a hero outright in Draft/Sealed, revisit.
+
+/** Heroes matching `query` that `format` excludes — the pool complement of
+ *  `searchHeroes`. Drives the "not legal in <format>" hint in the hero picker:
+ *  without it a legal-but-filtered hero (Baalghor in Sealed) just returns an
+ *  empty dropdown, which reads as a broken search rather than a rules answer. */
+export function searchHeroesOutsideFormat(query: string, format: string): HeroInfo[] {
+  if (!query.trim() || !formatFiltersHeroes(format)) return [];
+  const eligible = new Set(getHeroesForFormat(format).map((h) => h.name));
+  return searchHeroes(query).filter((h) => !eligible.has(h.name));
 }

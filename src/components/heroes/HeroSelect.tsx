@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { allHeroes, searchHeroes, getHeroesForFormat } from "@/lib/heroes";
+import { allHeroes, searchHeroes, getHeroesForFormat, searchHeroesOutsideFormat } from "@/lib/heroes";
 import { CloseIcon } from "@/components/icons/NavIcons";
 import type { HeroInfo } from "@/types";
 
@@ -25,6 +25,11 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
   const results: HeroInfo[] = query.trim()
     ? searchHeroes(query, format)
     : pool;
+  // Heroes the search would have found if the format weren't filtering. Listed
+  // as unselectable hints (capped — "a" matches a lot) so a rules exclusion
+  // reads as one instead of as an empty, apparently-broken dropdown.
+  const excluded = format ? searchHeroesOutsideFormat(query, format) : [];
+  const shownExcluded = excluded.slice(0, 6);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -137,13 +142,13 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
             className="flex-1 bg-transparent outline-none text-fab-text placeholder:text-fab-dim text-sm"
             role="combobox"
             aria-label={label}
-            aria-expanded={isOpen && (results.length > 0 || !!allowClear)}
+            aria-expanded={isOpen && (results.length > 0 || shownExcluded.length > 0 || !!allowClear)}
             aria-controls="hero-select-options"
             aria-activedescendant={results[highlighted] ? `hero-option-${highlighted}` : undefined}
           />
         )}
       </div>
-      {isOpen && (results.length > 0 || allowClear) && (
+      {isOpen && (results.length > 0 || shownExcluded.length > 0 || allowClear) && (
         <div id="hero-select-options" role="listbox" className={`absolute z-50 w-full max-h-60 overflow-y-auto bg-fab-surface border border-fab-border rounded-md shadow-lg ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
           {allowClear && !query.trim() && (
             <button
@@ -186,6 +191,26 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
               </span>
             </button>
           ))}
+          {shownExcluded.length > 0 && (
+            <div className="border-t border-fab-border/60">
+              <p className="px-3 pt-2 pb-1 text-[11px] font-medium uppercase tracking-wide text-fab-dim">
+                Not legal in {format}
+              </p>
+              {shownExcluded.map((hero) => (
+                <div
+                  key={hero.cardIdentifier}
+                  className="px-3 py-1.5 text-sm text-fab-dim flex items-center gap-2 cursor-not-allowed"
+                  title={`${hero.name} is not legal in ${format}. Legal in: ${hero.legalFormats.join(", ")}`}
+                >
+                  <span className="line-through">{hero.name}</span>
+                  <span className="text-xs">{hero.legalFormats.join(", ")}</span>
+                </div>
+              ))}
+              <p className="px-3 pt-1 pb-2 text-[11px] text-fab-dim">
+                Set the format to &ldquo;Other&rdquo; to record one anyway.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
