@@ -51,6 +51,7 @@ const EVENT_TYPE_OPTIONS = [
   { value: "Skirmish", label: "Skirmish" },
   { value: "Road to Nationals", label: "Road to Nationals" },
   { value: "ProQuest", label: "ProQuest" },
+  { value: "Battlegrounds", label: "Battlegrounds" },
   { value: "Battle Hardened", label: "Battle Hardened" },
   { value: "The Calling", label: "The Calling" },
   { value: "Nationals", label: "Nationals" },
@@ -104,18 +105,16 @@ export default function TournamentStatsPage() {
   }, [allEvents, filterEventType, filterFormat, filterHero]);
 
   // Cross-filtered options
-  const { formats, heroes, eventTypes } = useMemo(() => {
+  const { formats, heroes } = useMemo(() => {
     const fmts = new Set<string>();
     const hrs = new Set<string>();
-    const ets = new Set<string>();
     for (const e of allEvents) {
-      if (e.eventType) ets.add(e.eventType);
       for (const f of e.formats) fmts.add(f);
       for (const m of e.matches) {
         if (m.heroPlayed && m.heroPlayed !== "Unknown") hrs.add(m.heroPlayed);
       }
     }
-    return { formats: [...fmts].sort(), heroes: [...hrs].sort(), eventTypes: [...ets].sort() };
+    return { formats: [...fmts].sort(), heroes: [...hrs].sort() };
   }, [allEvents]);
 
   // Tournament analytics
@@ -151,7 +150,7 @@ export default function TournamentStatsPage() {
 
         {/* Preview — what you'd see */}
         <div className="bg-fab-surface border border-fab-border rounded-xl p-5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80 mb-2">What's tracked</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80 mb-2">What&apos;s tracked</p>
           <h2 className="text-base font-bold text-fab-text mb-3">Your tournament performance, all in one place</h2>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-fab-muted mb-5">
             <li className="flex gap-2"><span className="text-fab-gold shrink-0">•</span><span>Round-by-round win rates and streak runs</span></li>
