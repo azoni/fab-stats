@@ -1,5 +1,5 @@
 "use client";
-import { useCallback } from "react";
+import { Suspense, useCallback } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { MatchList } from "@/components/matches/MatchList";
@@ -66,19 +66,22 @@ export function MatchesTab({ matches, user, profile, updateMatch, deleteMatch, h
 
   return (
     <div>
-      {matches.length > 0 && (user || privacyControl) && (
-        <div className="flex flex-wrap items-center justify-end gap-2 mb-4">
-          {privacyControl}
-          {user && (
-            <Link
-              href="/matches/new"
-              className="inline-flex h-9 items-center rounded-md bg-fab-gold px-4 text-sm font-semibold text-fab-bg transition-colors hover:bg-fab-gold-light shrink-0"
-            >
-              + Log Match
-            </Link>
-          )}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h1 className="text-lg font-bold text-fab-text">Match history</h1>
+        {matches.length > 0 && (user || privacyControl) && (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {privacyControl}
+            {user && (
+              <Link
+                href="/matches/new"
+                className="inline-flex h-9 items-center rounded-md bg-fab-gold px-4 text-sm font-semibold text-fab-bg transition-colors hover:bg-fab-gold-light shrink-0"
+              >
+                + Log Match
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
 
       {matches.length === 0 && loadError && user ? (
         <ErrorState
@@ -122,7 +125,9 @@ export function MatchesTab({ matches, user, profile, updateMatch, deleteMatch, h
           </div>
         </div>
       ) : (
-        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} onDeleteMatch={deleteMatch ? handleDeleteMatch : undefined} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
+        <Suspense fallback={<p className="text-sm text-fab-muted" role="status">Loading match filters…</p>}>
+          <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} onDeleteMatch={deleteMatch ? handleDeleteMatch : undefined} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
+        </Suspense>
       )}
     </div>
   );
