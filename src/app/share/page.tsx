@@ -1,6 +1,6 @@
 "use client";
 
-import ImportPage from "@/app/import/page";
+import ImportPage from "@/app/import/ImportPageContent";
 
 export default function SharePage() {
   return <ImportPage shareMode />;
