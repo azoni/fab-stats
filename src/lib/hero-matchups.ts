@@ -12,7 +12,13 @@ import {
 import { db } from "@/lib/firebase";
 import { MatchResult, type MatchRecord, type HeroMatchupDoc } from "@/types";
 import { getHeroByName, resolveHeroName } from "@/lib/heroes";
-import { getEventType, refineEventType } from "@/lib/stats";
+import { getEventType } from "@/lib/stats";
+import {
+  aggregateCommunityHeroMatchups,
+  type CommunityMatchupCell,
+} from "@/lib/hero-matchup-data";
+
+export { getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchup-data";
 
 // ── Helpers ──
 
@@ -45,47 +51,6 @@ function addTally(group: { hero1Wins: number; hero2Wins: number; draws: number; 
     group.draws++;
   }
   group.total++;
-}
-
-/** Convert a preset to a list of month strings. */
-export function getMonthsForPreset(preset: string): string[] {
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-  if (preset === "all") return []; // empty = no filter (fetch all)
-
-  if (preset === "30d") {
-    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return [
-      `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`,
-      currentMonth,
-    ];
-  }
-
-  if (preset === "90d") {
-    const months: string[] = [];
-    for (let i = 2; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-    }
-    return months;
-  }
-
-  // Custom: preset is "custom:YYYY-MM-DD:YYYY-MM-DD"
-  if (preset.startsWith("custom:")) {
-    const [, startDate, endDate] = preset.split(":");
-    if (!startDate || !endDate) return [currentMonth];
-    const months: string[] = [];
-    const d = new Date(startDate + "T00:00:00");
-    const end = new Date(endDate + "T00:00:00");
-    while (d <= end) {
-      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-      d.setMonth(d.getMonth() + 1);
-    }
-    return months;
-  }
-
-  return [currentMonth];
 }
 
 // ── Write: Aggregate during import ──
@@ -619,62 +584,6 @@ function resultDeltas(result: string, sign: 1 | -1, isHero1: boolean): [number, 
 
 // ── Read: Fetch community matchup data ──
 
-export interface CommunityMatchupCell {
-  hero1: string;
-  hero2: string;
-  hero1Wins: number;
-  hero2Wins: number;
-  draws: number;
-  total: number;
-}
-
-type MatchupTally = { hero1Wins: number; hero2Wins: number; draws: number; total: number };
-
-const EVENT_TYPE_ALIASES: Record<string, string> = {
-  calling: "The Calling",
-  "the calling": "The Calling",
-  rtn: "Road to Nationals",
-  "road to national": "Road to Nationals",
-  "road to nationals": "Road to Nationals",
-  pq: "ProQuest",
-  proquest: "ProQuest",
-  "pro quest": "ProQuest",
-  "battle hardened": "Battle Hardened",
-  "pro tour": "Pro Tour",
-  worlds: "Worlds",
-  "world championship": "Worlds",
-};
-
-function normalizeEventTypeLabel(value: string): string {
-  const trimmed = value.trim();
-  const lower = trimmed.toLowerCase();
-  return EVENT_TYPE_ALIASES[lower] || refineEventType(trimmed, trimmed);
-}
-
-function findEventTypeStats(
-  map: Record<string, MatchupTally> | undefined,
-  target: string,
-): MatchupTally | null {
-  if (!map) return null;
-  if (map[target]) return map[target];
-  const normalizedTarget = normalizeEventTypeLabel(target);
-  for (const [key, stats] of Object.entries(map)) {
-    if (key === target || key.toLowerCase() === target.toLowerCase()) return stats;
-    if (normalizeEventTypeLabel(key) === normalizedTarget) return stats;
-  }
-  return null;
-}
-
-function findFormatEventTypeStats(
-  map: Record<string, Record<string, MatchupTally>> | undefined,
-  format: string,
-  eventType: string,
-): MatchupTally | null {
-  if (!map) return null;
-  const formatMap = map[format] || Object.entries(map).find(([key]) => key.toLowerCase() === format.toLowerCase())?.[1];
-  return findEventTypeStats(formatMap, eventType);
-}
-
 // In-memory caches. The RAW docs are cached per month-set (several slots),
 // because format / rated / eventType are applied client-side to the same
 // docs — a single result slot keyed on all four meant every filter click on
@@ -811,43 +720,7 @@ export async function getCommunityHeroMatchups(
 
   const docs = await fetchMatchupDocs(months);
 
-  // Aggregate across months per hero pair
-  const pairMap = new Map<string, CommunityMatchupCell>();
-
-  for (const d of docs) {
-    const key = `${d.hero1}_${d.hero2}`;
-    let cell = pairMap.get(key);
-    if (!cell) {
-      cell = { hero1: d.hero1, hero2: d.hero2, hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
-      pairMap.set(key, cell);
-    }
-
-    // Determine the source stats based on format and rated filters
-    let src: MatchupTally | null = null;
-    if (format && eventType) {
-      src = findFormatEventTypeStats(d.byFormatEventType, format, eventType) || findEventTypeStats(d.byEventType, eventType);
-    } else if (eventType) {
-      src = findEventTypeStats(d.byEventType, eventType);
-    } else if (format && rated) {
-      // Both filters: no pre-computed intersection, skip (would need byFormatRated)
-      // Fall back to format-only for now
-      src = d.byFormat?.[format] || null;
-    } else if (format) {
-      src = d.byFormat?.[format] || null;
-    } else if (rated) {
-      src = d.byRated?.[rated] || null;
-    } else {
-      src = d;
-    }
-    if (src) {
-      cell.hero1Wins += src.hero1Wins;
-      cell.hero2Wins += src.hero2Wins;
-      cell.draws += src.draws;
-      cell.total += src.total;
-    }
-  }
-
-  const result = [...pairMap.values()].filter((c) => c.total > 0);
+  const result = aggregateCommunityHeroMatchups(docs, format, rated, eventType);
 
   if (resultCache.size >= 32) {
     const oldest = resultCache.keys().next().value;

@@ -1,1094 +1,587 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback } from "react";
+
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { computeHeroStats, getEventType } from "@/lib/stats";
-import { getAvailableFormats } from "@/lib/meta-stats";
-import { getHeroByName, resolveHeroName, isLivingLegendHero, buildHeroLabels } from "@/lib/heroes";
-
-import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
-import { MatchResult, type MatchRecord, type LeaderboardEntry, type HeroStats } from "@/types";
-import { useDragScroll } from "@/hooks/useDragScroll";
 import { HeroImg } from "@/components/heroes/HeroImg";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { MatchCard } from "@/components/matches/MatchCard";
+import { MatchFilterSelect } from "@/components/matches/MatchFilterSelect";
+import { useDragScroll } from "@/hooks/useDragScroll";
+import { useMatchupFilters } from "@/hooks/useMatchupFilters";
+import { getMatchFilterOptions } from "@/lib/match-history";
+import { getPersonalMatchups, type MatchupFilters } from "@/lib/personal-matchups";
+import { MatchResult, type HeroStats, type MatchRecord, type MatchupRecord } from "@/types";
 
-type Mode = "personal" | "community";
-type Period = "all" | "30d" | "90d" | "custom";
-type AgeFilter = "adult" | "young" | "all";
-type PersonalView = "list" | "grid";
-type SortKey = "played" | "winrate" | "alpha" | "worst";
+const control =
+  "min-h-11 w-full min-w-0 rounded-md border border-fab-border bg-fab-surface px-3 py-2 text-sm text-fab-text outline-none focus-visible:ring-2 focus-visible:ring-fab-gold/50 sm:min-h-9 sm:py-1.5";
+const action =
+  "min-h-11 rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-fab-gold/50 sm:min-h-9 sm:py-1.5";
+const privacyKey = "fab-stats-hide-opponent-names";
 
-const PERIOD_PRESETS: { id: Period; label: string }[] = [
-  { id: "all", label: "All Time" },
-  { id: "30d", label: "30 Days" },
-  { id: "90d", label: "90 Days" },
-];
-
-function isYoungHero(name: string): boolean {
-  const hero = getHeroByName(name);
-  return hero?.young === true;
+function subscribePrivacy(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("fab-stats-opponent-privacy", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("fab-stats-opponent-privacy", callback);
+  };
+}
+function readPrivacy() {
+  try {
+    return window.localStorage.getItem(privacyKey) === "true";
+  } catch {
+    return false;
+  }
 }
 
-function passesHeroFilter(name: string, ageFilter: AgeFilter, includeLivingLegend: boolean): boolean {
-  if (!includeLivingLegend && isLivingLegendHero(name)) return false;
-  if (ageFilter === "adult" && isYoungHero(name)) return false;
-  if (ageFilter === "young" && !isYoungHero(name)) return false;
-  return true;
+function rateStyle(rate: number, total: number) {
+  if (total < 5) return { text: "text-fab-muted", bg: "bg-fab-surface" };
+  if (rate >= 60) return { text: "text-fab-win", bg: "bg-fab-win/15" };
+  if (rate >= 45) return { text: "text-fab-draw", bg: "bg-fab-draw/10" };
+  return { text: "text-fab-loss", bg: "bg-fab-loss/15" };
 }
 
-
-interface MatchupMatrixProps {
-  matches: MatchRecord[];
-  entries: LeaderboardEntry[];
-  isLoaded: boolean;
+function pairLabel(hero: string, matchup: MatchupRecord) {
+  return `${hero} versus ${matchup.opponentHero}: ${matchup.wins} wins, ${matchup.losses} losses, ${matchup.draws} draws, ${matchup.winRate.toFixed(0)}% win rate. View ${matchup.totalMatches} matches`;
 }
 
-export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps) {
-  const [mode, setMode] = useState<Mode>("personal");
-  const [format, setFormat] = useState<string>("");
-  const [eventType, setEventType] = useState<string>("");
-  const [ratedFilter, setRatedFilter] = useState<"all" | "rated" | "unrated">("all");
-  const [selectedCell, setSelectedCell] = useState<{ hero: string; opp: string } | null>(null);
-  const [ageFilter, setAgeFilter] = useState<AgeFilter>("adult");
-  const [includeLivingLegend, setIncludeLivingLegend] = useState(false);
-  const [heroFilter, setHeroFilter] = useState<string>("");
-  const [personalView, setPersonalView] = useState<PersonalView>("grid");
-
-  // Shared time filter state
-  const [period, setPeriod] = useState<Period>("all");
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
-
-  // Community state
-  const [communityData, setCommunityData] = useState<CommunityMatchupCell[]>([]);
-  const [communityLoading, setCommunityLoading] = useState(false);
-
-  // Formats for personal data
-  const personalFormats = useMemo(() => {
-    const set = new Set(matches.map((m) => m.format).filter(Boolean));
-    return [...set].sort();
-  }, [matches]);
-
-  const personalEventTypes = useMemo(() => {
-    const set = new Set(matches.map((m) => getEventType(m)).filter((t) => t && t !== "Unknown"));
-    return [...set].sort();
-  }, [matches]);
-
-  // Matches (excluding byes) with no recorded opponent hero — these can't
-  // contribute to the matchup breakdown, so nudge the user to fill them in.
-  const missingOppCount = useMemo(
-    () =>
-      matches.filter(
-        (m) => m.result !== MatchResult.Bye && (!m.opponentHero || m.opponentHero === "Unknown")
-      ).length,
-    [matches]
+export function MatchupMatrix({ matches, isLoaded }: { matches: MatchRecord[]; isLoaded: boolean }) {
+  const { filters, setFilters, clearFilters } = useMatchupFilters();
+  const savedPrivacy = useSyncExternalStore(subscribePrivacy, readPrivacy, () => false);
+  const [privacyOverride, setPrivacyOverride] = useState<boolean | null>(null);
+  const hideNames = privacyOverride ?? savedPrivacy;
+  const options = useMemo(() => getMatchFilterOptions(matches.filter((m) => m.result !== MatchResult.Bye)), [matches]);
+  const { records, heroStats, missingHeroes } = useMemo(
+    () => getPersonalMatchups(matches, filters),
+    [matches, filters],
   );
-
-  // Formats for community data
-  const communityFormats = useMemo(() => getAvailableFormats(entries), [entries]);
-
-  const formats = mode === "personal" ? personalFormats : communityFormats;
-
-  // Filter matches by format and date
-  const filteredMatches = useMemo(() => {
-    let m = matches;
-    if (format) m = m.filter((match) => match.format === format);
-    if (eventType) m = m.filter((match) => getEventType(match) === eventType);
-    if (ratedFilter === "rated") m = m.filter((match) => match.rated === true);
-    else if (ratedFilter === "unrated") m = m.filter((match) => match.rated !== true);
-    if (period === "30d") {
-      const since = new Date();
-      since.setDate(since.getDate() - 30);
-      const sinceStr = since.toISOString().slice(0, 10);
-      m = m.filter((match) => match.date >= sinceStr);
-    } else if (period === "90d") {
-      const since = new Date();
-      since.setDate(since.getDate() - 90);
-      const sinceStr = since.toISOString().slice(0, 10);
-      m = m.filter((match) => match.date >= sinceStr);
-    } else if (period === "custom" && customStart && customEnd) {
-      m = m.filter((match) => match.date >= customStart && match.date <= customEnd);
-    }
-    return m;
-  }, [matches, format, eventType, ratedFilter, period, customStart, customEnd]);
-
-  // Personal hero stats
-  const heroStats = useMemo(
-    () => computeHeroStats(filteredMatches, false).filter((h) => getHeroByName(h.heroName)),
-    [filteredMatches]
+  const detailRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const pendingFocus = useRef(false);
+  const returningPair = useRef<string | null>(null);
+  const exactPair = !!(filters.hero && filters.opponentHero && records.length);
+  const pairKey = JSON.stringify([filters.hero, filters.opponentHero]);
+  const hasFilters = !!(
+    filters.hero ||
+    filters.opponentHero ||
+    filters.opponent ||
+    filters.event ||
+    filters.format ||
+    filters.eventType ||
+    filters.rated ||
+    filters.from ||
+    filters.to
   );
-
-  const allOpponents = useMemo(
-    () =>
-      [...new Set(filteredMatches.map((m) => m.opponentHero).filter((h): h is string => Boolean(h) && h !== "Unknown"))].sort(),
-    [filteredMatches]
-  );
-
-  // Available heroes for the filter dropdown
-  const playedHeroes = useMemo(
-    () => heroStats.map((h) => h.heroName).sort((a, b) => {
-      const aTotal = heroStats.find((h) => h.heroName === a)?.totalMatches || 0;
-      const bTotal = heroStats.find((h) => h.heroName === b)?.totalMatches || 0;
-      return bTotal - aTotal;
-    }),
-    [heroStats]
-  );
-
-  // Fetch community matchup data
-  const fetchCommunity = useCallback(async () => {
-    setCommunityLoading(true);
-    try {
-      let preset = period as string;
-      if (period === "custom" && customStart && customEnd) {
-        preset = `custom:${customStart}:${customEnd}`;
-      }
-      const months = getMonthsForPreset(preset);
-      const data = await getCommunityHeroMatchups(months, format || undefined);
-      setCommunityData(data);
-    } catch {
-      setCommunityData([]);
-    } finally {
-      setCommunityLoading(false);
-    }
-  }, [period, customStart, customEnd, format]);
+  const advancedCount = [filters.format, filters.eventType, filters.rated, filters.from, filters.to].filter(
+    Boolean,
+  ).length;
+  const pairCount = heroStats.reduce((count, hero) => count + hero.matchups.length, 0);
+  const invalidRange = !!(filters.from && filters.to && filters.from > filters.to);
 
   useEffect(() => {
-    if (mode === "community") {
-      fetchCommunity();
+    if (!exactPair && returningPair.current && rootRef.current) {
+      const pair = returningPair.current;
+      returningPair.current = null;
+      const button = [...rootRef.current.querySelectorAll<HTMLButtonElement>("button[data-pair]")].find(
+        (item) => item.dataset.pair === pair,
+      );
+      const target = button || rootRef.current.querySelector<HTMLButtonElement>("button");
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: "nearest" });
     }
-  }, [mode, fetchCommunity]);
+    if (!pendingFocus.current || !exactPair || !detailRef.current) return;
+    pendingFocus.current = false;
+    detailRef.current.focus({ preventScroll: true });
+    detailRef.current.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }, [exactPair, pairKey]);
 
-  // Reset hero filter when switching modes
-  useEffect(() => {
-    setHeroFilter("");
-  }, [mode]);
-
-  if (!isLoaded) {
-    return <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />;
+  function openPair(hero: string, opponentHero: string) {
+    pendingFocus.current = true;
+    setFilters({ hero, opponentHero });
   }
 
+  const playerOptions = hideNames
+    ? options.opponents.map((option, index) => ({ value: option.value, label: `Player ${index + 1}` }))
+    : options.opponents;
+
+  if (!isLoaded)
+    return (
+      <p role="status" className="py-12 text-center text-sm text-fab-muted">
+        Loading your matchups…
+      </p>
+    );
+
   return (
-    <div>
-      {/* Mode toggle + filters */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="flex rounded-lg border border-fab-border overflow-hidden">
-          <button
-            onClick={() => { setMode("personal"); }}
-            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-              mode === "personal" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
-            }`}
-          >
-            Personal
-          </button>
-          <button
-            onClick={() => { setMode("community"); }}
-            className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-fab-border ${
-              mode === "community" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
-            }`}
-          >
-            Community
-          </button>
-        </div>
-
-        {/* Format filter */}
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setFormat("")}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-              !format ? "bg-fab-gold/15 text-fab-gold" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-            }`}
-          >
-            All Formats
-          </button>
-          {formats.map((f) => (
-            <button
-              key={f}
-              onClick={() => setFormat(f)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                format === f ? "bg-fab-gold/15 text-fab-gold" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-
-        {mode === "personal" && personalEventTypes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              onClick={() => setEventType("")}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                !eventType ? "bg-fab-gold/15 text-fab-gold" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-              }`}
-            >
-              All Event Types
-            </button>
-            {personalEventTypes.map((type) => (
-              <button
-                key={type}
-                onClick={() => setEventType(type)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                  eventType === type ? "bg-fab-gold/15 text-fab-gold" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Rated filter */}
-        <div className="flex gap-1.5">
-          {(["all", "rated", "unrated"] as const).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRatedFilter(r)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                ratedFilter === r ? "bg-fab-gold/15 text-fab-gold" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-              }`}
-            >
-              {r === "all" ? "All Events" : r === "rated" ? "Rated" : "Unrated"}
-            </button>
-          ))}
-        </div>
-
-        {/* Timeframe presets */}
-        <div className="flex flex-wrap gap-1.5">
-          {PERIOD_PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setPeriod(p.id)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                period === p.id ? "bg-teal-500/15 text-teal-400" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-          <button
-            onClick={() => setPeriod("custom")}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-              period === "custom" ? "bg-teal-500/15 text-teal-400" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-            }`}
-          >
-            Custom
-          </button>
-        </div>
-      </div>
-
-      {/* Custom date range inputs */}
-      {period === "custom" && (
-        <div className="flex items-center gap-2 mb-4">
-          <input
-            type="date"
-            value={customStart}
-            onChange={(e) => setCustomStart(e.target.value)}
-            className="px-2 py-1 text-xs rounded-lg bg-fab-surface border border-fab-border text-fab-text"
+    <div ref={rootRef} className="space-y-5">
+      <section
+        aria-label="Filter your matchups"
+        className="space-y-3 rounded-lg border border-fab-border bg-fab-surface/30 p-3 sm:p-4"
+      >
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <MatchFilterSelect
+            label="Your hero"
+            value={filters.hero}
+            onChange={(hero) => setFilters({ hero })}
+            options={options.heroes.filter((o) => o.value !== "none")}
+            allLabel="All heroes"
           />
-          <span className="text-xs text-fab-dim">to</span>
-          <input
-            type="date"
-            value={customEnd}
-            onChange={(e) => setCustomEnd(e.target.value)}
-            className="px-2 py-1 text-xs rounded-lg bg-fab-surface border border-fab-border text-fab-text"
+          <MatchFilterSelect
+            label="Opponent hero"
+            value={filters.opponentHero}
+            onChange={(opponentHero) => setFilters({ opponentHero })}
+            options={options.opponentHeroes.filter((o) => o.value !== "none")}
+            allLabel="All heroes"
+          />
+          <MatchFilterSelect
+            label="Opponent player"
+            value={filters.opponent}
+            onChange={(opponent) => setFilters({ opponent })}
+            options={playerOptions}
+            allLabel="All players"
+          />
+          <MatchFilterSelect
+            label="Event"
+            value={filters.event}
+            onChange={(event) => setFilters({ event })}
+            options={options.events}
+            allLabel="All events"
           />
         </div>
-      )}
-
-      {/* Hero filtering row: age + Living Legend + hero picker (personal) + view toggle */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        {/* Age filter */}
-        <div className="flex rounded-lg border border-fab-border overflow-hidden">
-          {([
-            { id: "adult" as const, label: "Adult" },
-            { id: "young" as const, label: "Young" },
-            { id: "all" as const, label: "All Ages" },
-          ]).map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => setAgeFilter(opt.id)}
-              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                opt.id !== "adult" ? "border-l border-fab-border" : ""
-              } ${
-                ageFilter === opt.id
-                  ? "bg-fab-gold/15 text-fab-gold"
-                  : "text-fab-muted hover:text-fab-text"
-              }`}
-            >
-              {opt.label}
+        <details className="group" open={advancedCount > 0 || undefined}>
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm text-fab-muted outline-none hover:text-fab-text focus-visible:ring-2 focus-visible:ring-fab-gold/50 sm:min-h-9">
+            <span aria-hidden="true" className="text-fab-gold group-open:rotate-90">
+              ▸
+            </span>
+            Format, event type & dates {advancedCount > 0 && <span className="text-fab-gold">({advancedCount})</span>}
+          </summary>
+          <div className="grid grid-cols-1 gap-3 pt-2 min-[390px]:grid-cols-2 lg:grid-cols-5">
+            <MatchFilterSelect
+              label="Format"
+              value={filters.format}
+              onChange={(format) => setFilters({ format })}
+              options={options.formats}
+              allLabel="All formats"
+            />
+            <MatchFilterSelect
+              label="Event type"
+              value={filters.eventType}
+              onChange={(eventType) => setFilters({ eventType })}
+              options={options.eventTypes}
+              allLabel="All event types"
+            />
+            <label className="min-w-0 text-[13px] font-medium text-fab-muted">
+              Rating
+              <select
+                className={`${control} mt-1 block`}
+                value={filters.rated}
+                onChange={(e) => setFilters({ rated: e.target.value as MatchupFilters["rated"] })}
+              >
+                <option value="">All ratings</option>
+                <option value="rated">Rated</option>
+                <option value="unrated">Unrated</option>
+              </select>
+            </label>
+            <label className="min-w-0 text-[13px] font-medium text-fab-muted">
+              From
+              <input
+                className={`${control} mt-1 block`}
+                type="date"
+                value={filters.from}
+                onChange={(e) => setFilters({ from: e.target.value })}
+                aria-invalid={invalidRange || undefined}
+                aria-describedby={invalidRange ? "matchup-date-error" : undefined}
+              />
+            </label>
+            <label className="min-w-0 text-[13px] font-medium text-fab-muted">
+              Through
+              <input
+                className={`${control} mt-1 block`}
+                type="date"
+                value={filters.to}
+                onChange={(e) => setFilters({ to: e.target.value })}
+                aria-invalid={invalidRange || undefined}
+                aria-describedby={invalidRange ? "matchup-date-error" : undefined}
+              />
+            </label>
+          </div>
+        </details>
+        {invalidRange && (
+          <p id="matchup-date-error" role="alert" className="text-sm text-fab-loss">
+            Choose an end date on or after the start date.
+          </p>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-fab-border/60 pt-2">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-fab-muted sm:min-h-9">
+            <input
+              type="checkbox"
+              checked={hideNames}
+              className="h-4 w-4 accent-fab-gold"
+              onChange={(e) => {
+                // Privacy still works for this view when browser storage is blocked.
+                setPrivacyOverride(e.target.checked);
+                try {
+                  window.localStorage.setItem(privacyKey, String(e.target.checked));
+                  window.dispatchEvent(new Event("fab-stats-opponent-privacy"));
+                  setPrivacyOverride(null);
+                } catch {
+                  /* Storage may be unavailable in private browsing. */
+                }
+              }}
+            />
+            Hide player names
+          </label>
+          {hasFilters && (
+            <button type="button" onClick={clearFilters} className={`${action} text-fab-gold hover:bg-fab-gold/10`}>
+              Clear filters
             </button>
-          ))}
+          )}
         </div>
+      </section>
 
-        {/* Living Legend toggle */}
-        <button
-          onClick={() => setIncludeLivingLegend(!includeLivingLegend)}
-          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
-            includeLivingLegend
-              ? "bg-purple-500/15 text-purple-400"
-              : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-          }`}
-        >
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-          </svg>
-          Living Legend
-        </button>
-
-        {/* Hero picker — personal mode only */}
-        {mode === "personal" && playedHeroes.length > 1 && (
-          <select
-            value={heroFilter}
-            onChange={(e) => setHeroFilter(e.target.value)}
-            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-fab-surface border border-fab-border text-fab-text"
-          >
-            <option value="">All Heroes ({playedHeroes.length})</option>
-            {playedHeroes.map((h) => (
-              <option key={h} value={h}>{h}</option>
-            ))}
-          </select>
-        )}
-
-        {/* View toggle — personal mode only */}
-        {mode === "personal" && (
-          <div className="flex items-center gap-1.5 ml-auto">
-            <span className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wide text-fab-dim">
-              View
-            </span>
-            <div className="flex rounded-lg border border-fab-border overflow-hidden bg-fab-surface">
-              <button
-                onClick={() => setPersonalView("list")}
-                aria-pressed={personalView === "list"}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  personalView === "list"
-                    ? "bg-fab-gold text-fab-bg"
-                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                }`}
-                title="List view"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
-                </svg>
-                List
-              </button>
-              <button
-                onClick={() => setPersonalView("grid")}
-                aria-pressed={personalView === "grid"}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors border-l border-fab-border ${
-                  personalView === "grid"
-                    ? "bg-fab-gold text-fab-bg"
-                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                }`}
-                title="Grid view"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                </svg>
-                Grid
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Nudge: fill in missing opponent heroes for richer matchup data */}
-      {mode === "personal" && missingOppCount > 0 && (
-        <div className="flex items-center justify-between gap-3 mb-4 rounded-lg border border-fab-gold/25 bg-fab-gold/10 px-4 py-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="hidden sm:flex items-center justify-center w-9 h-9 shrink-0 rounded-md bg-fab-gold/15 border border-fab-gold/25 text-fab-gold">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-              </svg>
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-fab-text">Fill in your opponents&apos; heroes</p>
-              <p className="text-xs text-fab-muted">
-                {missingOppCount} {missingOppCount === 1 ? "match is" : "matches are"} missing an opponent hero. Add them (if you can remember) for a sharper matchup breakdown.
-              </p>
-            </div>
-          </div>
+      {missingHeroes > 0 && (
+        <div className="flex items-center gap-3 text-xs leading-relaxed text-fab-muted">
+          <p className="min-w-0 flex-1">
+            {missingHeroes} {missingHeroes === 1 ? "match is" : "matches are"} missing hero selections and excluded from
+            these pairings.
+          </p>
           <Link
-            href="/matches?filter=no-opp-hero"
-            className="inline-flex items-center gap-1.5 shrink-0 rounded-md bg-fab-gold px-3 py-1.5 text-xs font-semibold text-fab-bg hover:bg-fab-gold-light transition-colors whitespace-nowrap"
+            href="/matches"
+            className="inline-flex min-h-11 shrink-0 items-center text-fab-gold underline underline-offset-4 sm:min-h-9"
           >
-            Add heroes
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
+            Review matches
           </Link>
         </div>
       )}
 
-      {mode === "personal" ? (
-        personalView === "list" ? (
-          <PersonalList
-            heroStats={heroStats}
-            heroFilter={heroFilter}
-            selectedCell={selectedCell}
-            onCellClick={setSelectedCell}
-            ageFilter={ageFilter}
-            includeLivingLegend={includeLivingLegend}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p role="status" className="text-sm text-fab-muted">
+          <span className="font-semibold tabular-nums text-fab-text">{records.length}</span> matches ·{" "}
+          <span className="tabular-nums">{pairCount}</span> {pairCount === 1 ? "pairing" : "pairings"}
+        </p>
+        {!exactPair && (
+          <div className="flex flex-wrap items-center gap-2">
+            {filters.view === "list" && (
+              <label className="flex items-center gap-2 text-xs text-fab-muted">
+                Sort
+                <select
+                  className={control}
+                  value={filters.order}
+                  onChange={(e) => setFilters({ order: e.target.value as MatchupFilters["order"] })}
+                >
+                  <option value="played">Most played</option>
+                  <option value="worst">Lowest win rate</option>
+                  <option value="best">Highest win rate</option>
+                  <option value="alpha">Hero A–Z</option>
+                </select>
+              </label>
+            )}
+            <div className="flex rounded-md border border-fab-border p-0.5" role="group" aria-label="Matchup view">
+              {(["list", "grid"] as const).map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  aria-pressed={filters.view === view}
+                  className={`${action} ${filters.view === view ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"}`}
+                  onClick={() => setFilters({ view })}
+                >
+                  {view === "list" ? "List" : "Grid"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {records.length === 0 ? (
+        <div className="rounded-lg border border-fab-border py-12 px-4 text-center">
+          <h2 className="font-semibold text-fab-text">
+            {hasFilters ? "No matchups match these filters" : "Your matchups start here"}
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fab-muted">
+            {hasFilters
+              ? "Try another hero, player or event, or clear your filters."
+              : "Import matches with both heroes recorded to see your results by pairing."}
+          </p>
+          {hasFilters ? (
+            <button className={`${action} mt-3 text-fab-gold hover:bg-fab-gold/10`} onClick={clearFilters}>
+              Reset matchup filters
+            </button>
+          ) : (
+            <Link href="/import" className={`${action} mt-3 inline-flex items-center bg-fab-gold/15 text-fab-gold`}>
+              Import matches
+            </Link>
+          )}
+        </div>
+      ) : exactPair ? (
+        <div
+          ref={detailRef}
+          tabIndex={-1}
+          className="scroll-mt-20 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-fab-gold/50"
+          aria-label={`${filters.hero} versus ${filters.opponentHero}`}
+        >
+          <PairDetail
+            key={JSON.stringify(filters)}
+            records={records}
+            hero={heroStats[0]}
+            hideNames={hideNames}
+            onClose={() => {
+              returningPair.current = pairKey;
+              setFilters({ hero: "", opponentHero: "" });
+            }}
           />
-        ) : (
-          <PersonalGrid
-            heroStats={heroStats}
-            allOpponents={allOpponents}
-            heroFilter={heroFilter}
-            selectedCell={selectedCell}
-            onCellClick={setSelectedCell}
-            ageFilter={ageFilter}
-            includeLivingLegend={includeLivingLegend}
-          />
-        )
+        </div>
+      ) : filters.view === "list" ? (
+        <PersonalList heroStats={heroStats} order={filters.order} onPair={openPair} />
       ) : (
-        <CommunityMatchupGrid
-          data={communityData}
-          loading={communityLoading}
-          selectedCell={selectedCell}
-          onCellClick={setSelectedCell}
-          ageFilter={ageFilter}
-          includeLivingLegend={includeLivingLegend}
-        />
+        <PersonalGrid heroStats={heroStats} onPair={openPair} />
+      )}
+
+      {records.length > 0 && (
+        <p className="text-xs leading-relaxed text-fab-dim">
+          Win rate = wins ÷ matches, including draws. Byes are excluded. Pairings with fewer than 5 matches are marked
+          as a small sample.
+        </p>
       )}
     </div>
   );
 }
 
-// ── Personal List View ──
-
 function PersonalList({
   heroStats,
-  heroFilter,
-  selectedCell,
-  onCellClick,
-  ageFilter,
-  includeLivingLegend,
+  order,
+  onPair,
 }: {
   heroStats: HeroStats[];
-  heroFilter: string;
-  selectedCell: { hero: string; opp: string } | null;
-  onCellClick: (cell: { hero: string; opp: string } | null) => void;
-  ageFilter: AgeFilter;
-  includeLivingLegend: boolean;
+  order: MatchupFilters["order"];
+  onPair: (hero: string, opponent: string) => void;
 }) {
-  const [sortBy, setSortBy] = useState<SortKey>("played");
-
-  const filteredStats = useMemo(
-    () => heroStats.filter((h) =>
-      passesHeroFilter(h.heroName, ageFilter, includeLivingLegend) &&
-      (!heroFilter || h.heroName === heroFilter)
-    ),
-    [heroStats, ageFilter, includeLivingLegend, heroFilter]
-  );
-
-  if (filteredStats.length === 0) {
-    return (
-      <EmptyState
-        title="No matchup data yet"
-        subtitle="Log matches with hero selections to see your matchups."
-      />
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {filteredStats.map((hero) => {
-        const matchups = hero.matchups
-          .filter((m) => m.opponentHero !== "Unknown" && passesHeroFilter(m.opponentHero, ageFilter, includeLivingLegend))
-          .sort((a, b) => {
-            if (sortBy === "alpha") return a.opponentHero.localeCompare(b.opponentHero);
-            if (sortBy === "winrate") return b.winRate - a.winRate;
-            if (sortBy === "worst") return a.winRate - b.winRate;
-            return b.totalMatches - a.totalMatches;
-          });
-
-        if (matchups.length === 0) return null;
-        const maxMatches = Math.max(...matchups.map((m) => m.totalMatches));
-
+      {heroStats.map((hero) => {
+        const matchups = [...hero.matchups].sort((a, b) => {
+          if (order === "alpha") return a.opponentHero.localeCompare(b.opponentHero);
+          if (order === "best") return b.winRate - a.winRate || b.totalMatches - a.totalMatches;
+          if (order === "worst") return a.winRate - b.winRate || b.totalMatches - a.totalMatches;
+          return b.totalMatches - a.totalMatches || a.opponentHero.localeCompare(b.opponentHero);
+        });
         return (
-          <div key={hero.heroName}>
-            {/* Hero header */}
-            <div className="flex items-center gap-2 mb-3">
+          <section key={hero.heroName} aria-label={`${hero.heroName} matchups`}>
+            <div className="mb-3 flex items-center gap-2">
               <HeroImg name={hero.heroName} size="md" />
-              <h3 className="text-sm font-bold text-fab-text">{hero.heroName}</h3>
-              <span className="text-xs text-fab-dim">{hero.totalMatches} matches</span>
-
-              {/* Sort controls */}
-              <div className="flex gap-1 ml-auto">
-                {([
-                  { id: "played" as const, label: "Most Played" },
-                  { id: "winrate" as const, label: "Best WR" },
-                  { id: "worst" as const, label: "Worst WR" },
-                  { id: "alpha" as const, label: "A-Z" },
-                ]).map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSortBy(s.id)}
-                    className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                      sortBy === s.id ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:text-fab-text"
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+              <h2 className="min-w-0 text-sm font-bold text-fab-text">{hero.heroName}</h2>
+              <span className="ml-auto shrink-0 text-xs tabular-nums text-fab-muted">{hero.totalMatches} matches</span>
             </div>
-
-            {/* Matchup rows */}
-            <div className="space-y-1">
+            <div className="divide-y divide-fab-border/50 rounded-lg border border-fab-border bg-fab-surface/20">
               {matchups.map((mu) => {
-                const isSelected = selectedCell?.hero === hero.heroName && selectedCell?.opp === mu.opponentHero;
-                const barWidth = maxMatches > 0 ? (mu.totalMatches / maxMatches) * 100 : 0;
-                const wrColor = mu.winRate >= 60
-                  ? "text-fab-win"
-                  : mu.winRate >= 45
-                    ? "text-yellow-400"
-                    : "text-fab-loss";
-                const barColor = mu.winRate >= 60
-                  ? "bg-green-500/25"
-                  : mu.winRate >= 45
-                    ? "bg-yellow-500/15"
-                    : "bg-red-500/20";
-                const rowBg = isSelected ? "ring-1 ring-fab-gold bg-fab-gold/5" : "hover:bg-fab-surface/50";
-
+                const style = rateStyle(mu.winRate, mu.totalMatches);
                 return (
                   <button
+                    type="button"
                     key={mu.opponentHero}
-                    onClick={() => onCellClick(isSelected ? null : { hero: hero.heroName, opp: mu.opponentHero })}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all cursor-pointer ${rowBg}`}
+                    aria-label={pairLabel(hero.heroName, mu)}
+                    data-pair={JSON.stringify([hero.heroName, mu.opponentHero])}
+                    onClick={() => onPair(hero.heroName, mu.opponentHero)}
+                    className="flex min-h-16 w-full items-center gap-3 rounded-md px-3 py-3 text-left outline-none transition-colors hover:bg-fab-gold/5 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fab-gold"
                   >
-                    <HeroImg name={mu.opponentHero} />
-                    <span className="text-sm font-medium text-fab-text w-36 min-w-[90px] truncate text-left">
-                      {mu.opponentHero.split(",")[0]}
+                    <HeroImg name={mu.opponentHero} size="md" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-fab-text">{mu.opponentHero}</span>
+                      <span className="mt-0.5 block text-xs text-fab-muted">
+                        {mu.totalMatches} matches{mu.totalMatches < 5 ? " · Small sample" : ""}
+                      </span>
                     </span>
-
-                    {/* Win rate bar */}
-                    <div className="flex-1 h-5 bg-fab-bg rounded-full overflow-hidden relative" title={`${mu.totalMatches} matches`}>
-                      <div className={`absolute inset-y-0 left-0 rounded-full transition-all ${barColor}`} style={{ width: `${barWidth}%` }} />
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-current opacity-15"
-                        style={{ width: `${mu.winRate}%`, color: mu.winRate >= 60 ? "#22c55e" : mu.winRate >= 45 ? "#eab308" : "#ef4444" }}
+                    <span
+                      aria-hidden="true"
+                      className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-fab-border sm:block"
+                    >
+                      <span
+                        className={`block h-full rounded-full ${mu.totalMatches < 5 ? "bg-fab-muted" : mu.winRate >= 60 ? "bg-fab-win" : mu.winRate >= 45 ? "bg-fab-draw" : "bg-fab-loss"}`}
+                        style={{ width: `${mu.winRate}%` }}
                       />
-                    </div>
-
-                    <span className="text-xs text-fab-dim w-12 text-right font-mono">
-                      {mu.wins}-{mu.losses}{mu.draws > 0 ? `-${mu.draws}` : ""}
                     </span>
-                    <span className={`text-sm font-bold w-12 text-right ${wrColor}`}>
-                      {mu.winRate.toFixed(0)}%
+                    <span className="shrink-0 text-right tabular-nums">
+                      <span className={`block text-base font-bold ${style.text}`}>{mu.winRate.toFixed(0)}%</span>
+                      <span className="block text-xs text-fab-muted">
+                        {mu.wins}W–{mu.losses}L{mu.draws > 0 ? `–${mu.draws}D` : ""}
+                      </span>
+                    </span>
+                    <span aria-hidden="true" className="text-fab-dim">
+                      ›
                     </span>
                   </button>
                 );
               })}
             </div>
-
-            {/* Detail panel */}
-            {selectedCell && selectedCell.hero === hero.heroName && (() => {
-              const mu = matchups.find((m) => m.opponentHero === selectedCell.opp);
-              if (!mu) return null;
-              return (
-                <div className="mt-2 p-3 bg-fab-surface border border-fab-border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-bold text-fab-text">
-                      {hero.heroName} vs {selectedCell.opp}
-                    </h4>
-                    <button onClick={() => onCellClick(null)} className="text-fab-dim hover:text-fab-muted">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-fab-win font-semibold">{mu.wins}W</span>
-                    <span className="text-fab-loss font-semibold">{mu.losses}L</span>
-                    {mu.draws > 0 && <span className="text-fab-draw font-semibold">{mu.draws}D</span>}
-                    <span className="text-fab-muted">{mu.totalMatches} match{mu.totalMatches !== 1 ? "es" : ""}</span>
-                    <span className={`font-bold ${mu.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                      {mu.winRate.toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
+          </section>
         );
       })}
     </div>
   );
 }
 
-// ── Personal Grid View ──
-
 function PersonalGrid({
   heroStats,
-  allOpponents,
-  heroFilter,
-  selectedCell,
-  onCellClick,
-  ageFilter,
-  includeLivingLegend,
+  onPair,
 }: {
   heroStats: HeroStats[];
-  allOpponents: string[];
-  heroFilter: string;
-  selectedCell: { hero: string; opp: string } | null;
-  onCellClick: (cell: { hero: string; opp: string } | null) => void;
-  ageFilter: AgeFilter;
-  includeLivingLegend: boolean;
+  onPair: (hero: string, opponent: string) => void;
 }) {
-  const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
-  const [highlightRow, setHighlightRow] = useState<string | null>(null);
-  const [highlightCol, setHighlightCol] = useState<string | null>(null);
-
-  // Filter heroes and opponents by age + LL + hero filter
-  const filteredStats = useMemo(
-    () => heroStats.filter((h) =>
-      passesHeroFilter(h.heroName, ageFilter, includeLivingLegend) &&
-      (!heroFilter || h.heroName === heroFilter)
-    ),
-    [heroStats, ageFilter, includeLivingLegend, heroFilter]
-  );
-  const filteredOpponents = useMemo(
-    () => allOpponents.filter((o) => passesHeroFilter(o, ageFilter, includeLivingLegend)),
-    [allOpponents, ageFilter, includeLivingLegend]
-  );
-  const heroLabels = useMemo(
-    () => buildHeroLabels([...new Set([...filteredStats.map((h) => h.heroName), ...filteredOpponents])]),
-    [filteredStats, filteredOpponents]
-  );
-
-  if (filteredStats.length === 0 || filteredOpponents.length === 0) {
-    return (
-      <EmptyState
-        title="No matchup data yet"
-        subtitle="Log matches with hero selections to see your matchup grid."
-      />
-    );
-  }
-
-  const selectedMu = selectedCell
-    ? filteredStats
-        .find((h) => h.heroName === selectedCell.hero)
-        ?.matchups.find((m) => m.opponentHero === selectedCell.opp)
-    : null;
-
+  const { ref, onMouseDown, movedRef } = useDragScroll();
+  const opponents = [...new Set(heroStats.flatMap((hero) => hero.matchups.map((mu) => mu.opponentHero)))].sort();
   return (
     <div>
-      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border bg-fab-bg">
-        <table className="w-full text-sm border-collapse">
+      <p className="mb-2 text-xs text-fab-muted">
+        Your heroes are rows; opponent heroes are columns. Select a result to see its matches.
+      </p>
+      <div
+        ref={ref}
+        onMouseDown={onMouseDown}
+        tabIndex={0}
+        role="region"
+        aria-label="Your matchup grid, scroll to see more heroes"
+        className="max-h-[65vh] overflow-auto rounded-lg border border-fab-border bg-fab-bg outline-none focus-visible:ring-2 focus-visible:ring-fab-gold/50"
+      >
+        <table className="w-full border-collapse text-sm">
+          <caption className="sr-only">
+            Your hero versus opponent hero. Each cell shows win rate and wins, losses, draws.
+          </caption>
           <thead>
             <tr>
-              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-surface z-20">
-                Your Hero / Opp
+              <th
+                scope="col"
+                className="sticky top-0 left-0 z-30 min-w-28 border-b border-fab-border bg-fab-surface p-3 text-left text-xs text-fab-muted"
+              >
+                Your hero /<br />
+                opponent
               </th>
-              {filteredOpponents.map((opp) => {
-                const lbl = heroLabels.get(opp);
-                return (
+              {opponents.map((opponent) => (
                 <th
-                  key={opp}
-                  title={opp}
-                  onClick={() => setHighlightCol(highlightCol === opp ? null : opp)}
-                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-surface z-10 cursor-pointer select-none transition-colors ${
-                    highlightCol === opp ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
-                  }`}
+                  key={opponent}
+                  scope="col"
+                  className="sticky top-0 z-20 min-w-32 border-b border-fab-border bg-fab-surface p-2 text-center font-medium text-fab-muted"
                 >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <HeroImg name={opp} />
-                    <span className="text-[10px] leading-tight">{lbl?.primary ?? opp.split(",")[0]}</span>
-                    {lbl?.secondary && (
-                      <span className="max-w-[76px] truncate text-[8px] leading-none text-fab-gold/70">{lbl.secondary}</span>
-                    )}
-                  </div>
+                  <span className="flex flex-col items-center gap-1">
+                    <HeroImg name={opponent} />
+                    <span className="max-w-40 text-xs leading-snug">{opponent}</span>
+                  </span>
                 </th>
-                );
-              })}
+              ))}
             </tr>
           </thead>
           <tbody>
-            {filteredStats.map((hero) => {
-              const isRowHL = highlightRow === hero.heroName;
-              return (
-                <tr key={hero.heroName}>
-                  <td
-                    onClick={() => setHighlightRow(isRowHL ? null : hero.heroName)}
-                    className={`p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 whitespace-nowrap z-10 cursor-pointer select-none transition-colors ${
-                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-surface hover:text-fab-gold"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <HeroImg name={hero.heroName} />
-                      <span className="truncate max-w-[150px]" title={hero.heroName}>
-                        {heroLabels.get(hero.heroName)?.primary ?? hero.heroName.split(",")[0]}
-                        {heroLabels.get(hero.heroName)?.secondary && (
-                          <span className="text-fab-gold/70"> · {heroLabels.get(hero.heroName)!.secondary}</span>
-                        )}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-fab-dim ml-6">({hero.totalMatches})</span>
-                  </td>
-                  {filteredOpponents.map((opp) => {
-                    const mu = hero.matchups.find((m) => m.opponentHero === opp);
-                    const isSelected = selectedCell?.hero === hero.heroName && selectedCell?.opp === opp;
-                    const isHL = isRowHL || highlightCol === opp;
-                    if (!mu) {
-                      return (
-                        <td key={opp} className={`p-2 text-center border-b border-fab-border/50 text-fab-dim ${isHL ? "bg-fab-gold/5" : ""}`}>
-                          -
-                        </td>
-                      );
-                    }
-                    const bgColor =
-                      mu.winRate >= 60
-                        ? "bg-fab-win/30"
-                        : mu.winRate >= 45
-                          ? "bg-fab-draw/20"
-                          : "bg-fab-loss/30";
-                    const textColor =
-                      mu.winRate >= 60
-                        ? "text-fab-win"
-                        : mu.winRate >= 45
-                          ? "text-fab-draw"
-                          : "text-fab-loss";
-
+            {heroStats.map((hero) => (
+              <tr key={hero.heroName}>
+                <th
+                  scope="row"
+                  className="sticky left-0 z-10 max-w-48 border-b border-fab-border/50 bg-fab-surface p-2 text-left text-xs font-semibold text-fab-text"
+                >
+                  <span className="flex items-center gap-2">
+                    <HeroImg name={hero.heroName} />
+                    <span>{hero.heroName}</span>
+                  </span>
+                </th>
+                {opponents.map((opponent) => {
+                  const mu = hero.matchups.find((m) => m.opponentHero === opponent);
+                  if (!mu)
                     return (
-                      <td
-                        key={opp}
-                        onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: hero.heroName, opp }); }}
-                        className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
-                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:ring-1 hover:ring-fab-gold/30 hover:shadow-[0_0_8px_rgba(212,165,74,0.1)]"
-                        } ${isHL ? "!bg-fab-gold/10" : ""}`}
-                      >
-                        <div className={`font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
-                        <div className="text-xs text-fab-dim">
-                          {mu.wins}-{mu.losses}
-                          {mu.draws > 0 ? `-${mu.draws}` : ""}
-                        </div>
+                      <td key={opponent} className="border-b border-fab-border/50 text-center text-fab-dim">
+                        <span aria-label="No matches">—</span>
                       </td>
                     );
-                  })}
-                </tr>
-              );
-            })}
+                  const style = rateStyle(mu.winRate, mu.totalMatches);
+                  return (
+                    <td key={opponent} className={`border-b border-fab-border/50 p-0 ${style.bg}`}>
+                      <button
+                        type="button"
+                        aria-label={pairLabel(hero.heroName, mu)}
+                        data-pair={JSON.stringify([hero.heroName, mu.opponentHero])}
+                        onClick={(e) => {
+                          if (e.detail === 0 || !movedRef.current) onPair(hero.heroName, opponent);
+                        }}
+                        className="min-h-16 w-full px-2 py-3 text-center outline-none hover:ring-1 hover:ring-inset hover:ring-fab-gold/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fab-gold"
+                      >
+                        <span className={`block font-bold tabular-nums ${style.text}`}>{mu.winRate.toFixed(0)}%</span>
+                        <span className="block text-xs tabular-nums text-fab-muted">
+                          {mu.wins}W–{mu.losses}L{mu.draws ? `–${mu.draws}D` : ""}
+                        </span>
+                        {mu.totalMatches < 5 && <span className="block text-[10px] text-fab-dim">Small sample</span>}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-
-      {/* Detail panel */}
-      {selectedCell && selectedMu && (
-        <div className="mt-3 p-3 bg-fab-surface border border-fab-border rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-fab-text">
-              {selectedCell.hero} vs {selectedCell.opp}
-            </h3>
-            <button onClick={() => onCellClick(null)} className="text-fab-dim hover:text-fab-muted">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-fab-win font-semibold">{selectedMu.wins}W</span>
-            <span className="text-fab-loss font-semibold">{selectedMu.losses}L</span>
-            {selectedMu.draws > 0 && <span className="text-fab-draw font-semibold">{selectedMu.draws}D</span>}
-            <span className="text-fab-muted">
-              {selectedMu.totalMatches} match{selectedMu.totalMatches !== 1 ? "es" : ""}
-            </span>
-            <span className={`font-bold ${selectedMu.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-              {selectedMu.winRate.toFixed(1)}%
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-// ── Community Matchup Grid ──
-
-interface ProcessedHeroRow {
-  hero: string;
-  totalMatches: number;
-  overallWinRate: number;
-  matchups: Map<string, { wins: number; losses: number; draws: number; total: number; winRate: number }>;
-}
-
-function CommunityMatchupGrid({
-  data,
-  loading,
-  selectedCell,
-  onCellClick,
-  ageFilter,
-  includeLivingLegend,
+function PairDetail({
+  records,
+  hero,
+  hideNames,
+  onClose,
 }: {
-  data: CommunityMatchupCell[];
-  loading: boolean;
-  selectedCell: { hero: string; opp: string } | null;
-  onCellClick: (cell: { hero: string; opp: string } | null) => void;
-  ageFilter: AgeFilter;
-  includeLivingLegend: boolean;
+  records: MatchRecord[];
+  hero: HeroStats;
+  hideNames: boolean;
+  onClose: () => void;
 }) {
-  const [showAll, setShowAll] = useState(true);
-  const [heroSearch, setHeroSearch] = useState("");
-  const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
-  const [highlightRow, setHighlightRow] = useState<string | null>(null);
-  const [highlightCol, setHighlightCol] = useState<string | null>(null);
-
-  // Build per-hero rows from the pair data, applying hero filters
-  const { heroRows, allHeroes, totalMatches } = useMemo(() => {
-    const heroMap = new Map<string, Map<string, { wins: number; losses: number; draws: number; total: number }>>();
-    let total = 0;
-
-    for (const cell of data) {
-      const h1 = resolveHeroName(cell.hero1);
-      const h2 = resolveHeroName(cell.hero2);
-      if (!h1 || !h2) continue;
-      const h1Pass = passesHeroFilter(h1, ageFilter, includeLivingLegend);
-      const h2Pass = passesHeroFilter(h2, ageFilter, includeLivingLegend);
-      if (!h1Pass || !h2Pass) continue;
-
-      total += cell.total;
-
-      // hero1's perspective
-      if (!heroMap.has(h1)) heroMap.set(h1, new Map());
-      heroMap.get(h1)!.set(h2, {
-        wins: cell.hero1Wins,
-        losses: cell.hero2Wins,
-        draws: cell.draws,
-        total: cell.total,
-      });
-
-      // hero2's perspective (mirror)
-      if (!heroMap.has(h2)) heroMap.set(h2, new Map());
-      heroMap.get(h2)!.set(h1, {
-        wins: cell.hero2Wins,
-        losses: cell.hero1Wins,
-        draws: cell.draws,
-        total: cell.total,
-      });
-    }
-
-    // Build sorted rows
-    const rows: ProcessedHeroRow[] = [];
-    for (const [hero, matchups] of heroMap) {
-      let totalForHero = 0;
-      let totalWins = 0;
-      const enriched = new Map<string, { wins: number; losses: number; draws: number; total: number; winRate: number }>();
-      for (const [opp, stats] of matchups) {
-        totalForHero += stats.total;
-        totalWins += stats.wins;
-        enriched.set(opp, {
-          ...stats,
-          winRate: stats.total > 0 ? (stats.wins / stats.total) * 100 : 0,
-        });
-      }
-      rows.push({ hero, totalMatches: totalForHero, overallWinRate: totalForHero > 0 ? (totalWins / totalForHero) * 100 : 0, matchups: enriched });
-    }
-
-    rows.sort((a, b) => b.totalMatches - a.totalMatches);
-
-    // Column heroes = same order (by total matches)
-    const heroes = rows.map((r) => r.hero);
-
-    return { heroRows: rows, allHeroes: heroes, totalMatches: total };
-  }, [data, ageFilter, includeLivingLegend]);
-
-  // Disambiguate heroes that share a first name (e.g. the three adult Araknis).
-  const heroLabels = useMemo(() => buildHeroLabels(allHeroes), [allHeroes]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-fab-gold/30 border-t-fab-gold rounded-full animate-spin" />
-        <span className="ml-3 text-sm text-fab-dim">Loading community matchup data...</span>
-      </div>
-    );
-  }
-
-  if (heroRows.length === 0) {
-    return (
-      <EmptyState
-        title="No community matchup data yet"
-        subtitle="Matchup data is generated when players log matches with hero and opponent hero data."
-      />
-    );
-  }
-
-  const searchLower = heroSearch.toLowerCase().trim();
-  const filteredRows = searchLower
-    ? heroRows.filter((r) => r.hero.toLowerCase().includes(searchLower))
-    : heroRows;
-  const displayRows = showAll ? filteredRows : filteredRows.slice(0, 20);
-  const displayCols = showAll ? allHeroes : allHeroes.slice(0, 20);
-
-  // Find selected cell data
-  const selectedMu = selectedCell
-    ? heroRows.find((r) => r.hero === selectedCell.hero)?.matchups.get(selectedCell.opp)
-    : null;
-
+  const [limit, setLimit] = useState(10);
+  const matchup = hero.matchups[0];
+  const style = rateStyle(matchup.winRate, matchup.totalMatches);
   return (
-    <div>
-      {/* Data coverage + search */}
-      <div className="flex items-center gap-4 mb-3 text-xs text-fab-dim">
-        <span>{totalMatches.toLocaleString()} matches</span>
-        <span>{filteredRows.length} of {heroRows.length} heroes</span>
-        <input
-          type="text"
-          value={heroSearch}
-          onChange={(e) => setHeroSearch(e.target.value)}
-          placeholder="Search heroes..."
-          className="ml-auto px-2.5 py-1 rounded-lg text-xs bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/50 w-36"
-        />
+    <section aria-labelledby="pair-detail-heading" className="space-y-4">
+      <div className="rounded-lg border border-fab-border bg-fab-surface/50 p-4">
+        <button type="button" onClick={onClose} className={`${action} -ml-3 mb-2 text-fab-gold hover:bg-fab-gold/10`}>
+          ← All pairings
+        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <HeroImg name={hero.heroName} size="md" />
+          <h2 id="pair-detail-heading" className="text-base font-bold text-fab-text">
+            {hero.heroName} <span className="font-normal text-fab-muted">vs</span> {matchup.opponentHero}
+          </h2>
+          <HeroImg name={matchup.opponentHero} size="md" />
+        </div>
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-2 tabular-nums">
+          <span className={`text-2xl font-bold ${style.text}`}>
+            {matchup.winRate.toFixed(1)}% <span className="text-xs font-normal text-fab-muted">win rate</span>
+          </span>
+          <span className="text-sm text-fab-text">
+            {matchup.wins}W · {matchup.losses}L · {matchup.draws}D
+          </span>
+          <span className="text-sm text-fab-muted">{records.length} matches</span>
+        </div>
+        {records.length < 5 && (
+          <p className="mt-2 text-xs text-fab-muted">
+            Small sample — a few more games will give you a clearer picture.
+          </p>
+        )}
       </div>
-
-      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border bg-fab-bg">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr>
-              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-surface z-20">
-                Hero / vs
-              </th>
-              {displayCols.map((hero) => {
-                const lbl = heroLabels.get(hero);
-                return (
-                <th
-                  key={hero}
-                  title={hero}
-                  onClick={() => setHighlightCol(highlightCol === hero ? null : hero)}
-                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-surface z-10 cursor-pointer select-none transition-colors ${
-                    highlightCol === hero ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
-                  }`}
-                >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <HeroImg name={hero} />
-                    <span className="text-[10px] leading-tight">{lbl?.primary ?? hero.split(",")[0]}</span>
-                    {lbl?.secondary && (
-                      <span className="max-w-[76px] truncate text-[8px] leading-none text-fab-gold/70">{lbl.secondary}</span>
-                    )}
-                  </div>
-                </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {displayRows.map((row) => {
-              const isRowHL = highlightRow === row.hero;
-              return (
-                <tr key={row.hero}>
-                  <td
-                    onClick={() => setHighlightRow(isRowHL ? null : row.hero)}
-                    className={`p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 whitespace-nowrap z-10 cursor-pointer select-none transition-colors ${
-                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-surface hover:text-fab-gold"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <HeroImg name={row.hero} />
-                      <span className="truncate max-w-[130px]" title={row.hero}>
-                        {heroLabels.get(row.hero)?.primary ?? row.hero.split(",")[0]}
-                        {heroLabels.get(row.hero)?.secondary && (
-                          <span className="text-fab-gold/70"> · {heroLabels.get(row.hero)!.secondary}</span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[10px]">
-                      <span className={row.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}>{row.overallWinRate.toFixed(0)}%</span>
-                      <span className="text-fab-dim">({row.totalMatches})</span>
-                    </div>
-                  </td>
-                  {displayCols.map((opp) => {
-                    const isHL = isRowHL || highlightCol === opp;
-                    if (opp === row.hero) {
-                      return (
-                        <td key={opp} className={`p-2 text-center border-b border-fab-border/50 ${isHL ? "bg-fab-gold/5" : "bg-fab-surface/30"}`}>
-                          <span className="text-fab-dim text-xs">-</span>
-                        </td>
-                      );
-                    }
-                    const mu = row.matchups.get(opp);
-                    const isSelected = selectedCell?.hero === row.hero && selectedCell?.opp === opp;
-                    if (!mu || mu.total === 0) {
-                      return (
-                        <td key={opp} className={`p-2 text-center border-b border-fab-border/50 text-fab-dim ${isHL ? "bg-fab-gold/5" : ""}`}>
-                          -
-                        </td>
-                      );
-                    }
-
-                    const lowSample = mu.total < 5;
-                    const bgColor = lowSample
-                      ? "bg-fab-surface/40"
-                      : mu.winRate >= 60
-                        ? "bg-fab-win/30"
-                        : mu.winRate >= 45
-                          ? "bg-fab-draw/20"
-                          : "bg-fab-loss/30";
-                    const textColor = lowSample
-                      ? "text-fab-dim"
-                      : mu.winRate >= 60
-                        ? "text-fab-win"
-                        : mu.winRate >= 45
-                          ? "text-fab-draw"
-                          : "text-fab-loss";
-
-                    return (
-                      <td
-                        key={opp}
-                        onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: row.hero, opp }); }}
-                        className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
-                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:ring-1 hover:ring-fab-gold/30 hover:shadow-[0_0_8px_rgba(212,165,74,0.1)]"
-                        } ${isHL ? "!bg-fab-gold/10" : ""}`}
-                        title={lowSample ? `Low sample (${mu.total} matches)` : undefined}
-                      >
-                        <div className={`font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
-                        <div className="text-xs text-fab-dim">
-                          {mu.wins}-{mu.losses}
-                          {mu.draws > 0 ? `-${mu.draws}` : ""}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-fab-text">Matches behind this matchup</h3>
+        <p className="text-xs text-fab-muted">
+          Newest first · {Math.min(limit, records.length)} of {records.length}
+        </p>
       </div>
-
-      {/* Show all / collapse */}
-      {heroRows.length > 20 && (
+      <div className="space-y-2">
+        {records.slice(0, limit).map((match) => (
+          <MatchCard key={match.id} match={match} obfuscateOpponents={hideNames} />
+        ))}
+      </div>
+      {limit < records.length && (
         <button
-          onClick={() => setShowAll(!showAll)}
-          className="mt-3 text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium"
+          type="button"
+          className={`${action} w-full border border-fab-border text-fab-gold hover:bg-fab-gold/5`}
+          onClick={() => setLimit((current) => current + 10)}
         >
-          {showAll ? "Show top 20" : `Show all ${heroRows.length} heroes`}
+          Show more matches
         </button>
       )}
-
-      {/* Detail panel */}
-      {selectedCell && selectedMu && (
-        <div className="mt-3 p-3 bg-fab-surface border border-fab-border rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-fab-text">
-              {selectedCell.hero} vs {selectedCell.opp}
-            </h3>
-            <button onClick={() => onCellClick(null)} className="text-fab-dim hover:text-fab-muted">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-fab-win font-semibold">{selectedMu.wins}W</span>
-            <span className="text-fab-loss font-semibold">{selectedMu.losses}L</span>
-            {selectedMu.draws > 0 && <span className="text-fab-draw font-semibold">{selectedMu.draws}D</span>}
-            <span className="text-fab-muted">
-              {selectedMu.total} match{selectedMu.total !== 1 ? "es" : ""}
-            </span>
-            <span className={`font-bold ${selectedMu.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-              {selectedMu.winRate.toFixed(1)}%
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
+    </section>
   );
 }
